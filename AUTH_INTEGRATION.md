@@ -1,190 +1,95 @@
-# Auth Gateway Integration
+# Grudge Auth Gateway Integration
 
 ## Overview
-This application now integrates with the Grudge Auth Gateway deployed at `https://auth-gateway-flax.vercel.app` for user authentication.
 
-## How It Works
+GGE authenticates via the **Grudge Auth Gateway** at `https://auth-gateway-flax.vercel.app`. All auth flows produce a **JWT** stored in localStorage as `grudge_auth_token`. The auth gateway is the source of truth for the shared `accounts` table across all Grudge Studio apps.
 
-### 1. Authentication Flow
+## Authentication Flow
+
 ```
-User visits app
+User visits GGE
     ↓
-AuthGuard checks localStorage for token
+AuthGuard checks localStorage for JWT
     ↓
-No token? → Redirect to auth-gateway-flax.vercel.app
+No token? → Redirect to auth-gateway-flax.vercel.app?return=GGE_URL
     ↓
-User logs in/registers
+User logs in (password, Puter, guest, or wallet)
     ↓
-Auth gateway saves token to localStorage:
-  - grudge_auth_token
-  - grudge_user_id
-  - grudge_username
+Auth gateway issues JWT, stores in localStorage:
+  - grudge_auth_token  (JWT)
+  - grudge_id          (Grudge ID, e.g. GRUDGE_LQXM8K_...)
+  - grudge_user_id     (numeric user ID)
+  - grudge_username    (display name)
     ↓
-Redirect back to app with token
-    ↓
-User authenticated ✅
+Redirect back to GGE → User authenticated ✅
 ```
 
-### 2. Files Modified/Created
+## Key Files
 
-#### New Files
-- `client/src/lib/auth.ts` - Authentication utilities
-- `client/src/components/AuthGuard.tsx` - Authentication guard component
-- `client/index.html` - Vite entry point
+- `client/src/lib/auth.ts` — All auth functions (login, logout, token storage, API helper)
+- `client/src/components/AuthGuard.tsx` — Wraps the app, redirects if not authenticated
+- `server/middleware/grudgeJwt.ts` — Express middleware that verifies JWT on protected routes
 
-#### Modified Files
-- `client/src/App.tsx` - Wrapped with AuthGuard
-- `client/src/components/app-sidebar.tsx` - Added logout button, shows username
+## Client-Side API (`client/src/lib/auth.ts`)
 
-### 3. Key Functions
+| Function | Description |
+|---|---|
+| `getAuthData()` | Returns current auth data (token, grudgeId, username) or `null` |
+| `checkAuth()` | Same as `getAuthData()` but redirects to login if not authenticated |
+| `loginWithPassword(user, pass)` | Login via auth-gateway `/api/login` |
+| `registerAccount(user, pass, email?)` | Register via auth-gateway `/api/register` |
+| `loginWithPuter(uuid, username)` | Bridge Puter.js auth to Grudge JWT |
+| `loginAsGuest(deviceId?)` | Guest login via auth-gateway `/api/guest` |
+| `verifyToken()` | Verify current JWT with server |
+| `apiCall(endpoint, options)` | Fetch wrapper that auto-attaches `Authorization: Bearer` header |
+| `logout()` | Clear all auth data and redirect to login |
+| `logoutSilent()` | Clear auth data without redirect |
 
-#### `checkAuth()`
-Checks if user has valid token, redirects to login if not.
+## Usage in Components
 
-#### `logout()`
-Clears tokens and redirects to login page.
-
-#### `apiCall(endpoint, options)`
-Makes authenticated API calls with Bearer token.
-
-#### `getAuthData()`
-Gets current auth data without redirecting.
-
-## Usage
-
-### In Components
 ```tsx
-import { getAuthData, logout } from '@/lib/auth';
+import { getAuthData, logout, apiCall } from '@/lib/auth';
 
 function MyComponent() {
   const auth = getAuthData();
-  
   return (
     <div>
-      <p>Welcome, {auth?.username}!</p>
+      <p>Welcome, {auth?.username}! (Grudge ID: {auth?.grudgeId})</p>
       <button onClick={logout}>Logout</button>
     </div>
   );
 }
-```
 
-### Making API Calls
-```tsx
-import { apiCall } from '@/lib/auth';
-
-// Automatically includes Bearer token
-const data = await apiCall('user/profile');
-```
-
-## Backend API Endpoints
-
-The following protected endpoints are now available:
-
-### User Profile
-- `GET /api/user/profile` - Get current user's profile with game data
-  - Returns: user info, game profile, stats, wallet balances
-  - Authentication: Required
-  
-- `PATCH /api/user/profile` - Update user profile
-  - Body: `{ displayName?, firstName?, lastName? }`
-  - Authentication: Required
-
-### Characters
-- `GET /api/user/characters` - Get user's owned characters
-  - Authentication: Required
-
-### Stats
-- `GET /api/user/stats` - Get user's game statistics
-  - Returns: level, xp, games played, wins, win rate
-  - Authentication: Required
-
-### Example Usage
-```typescript
-import { apiCall } from '@/lib/auth';
-
-// Get user profile
+// Authenticated API call (auto-attaches JWT)
 const profile = await apiCall('user/profile');
-console.log(profile.user.username); // "player123"
-console.log(profile.profile.level); // 5
-
-// Update profile
-await apiCall('user/profile', {
-  method: 'PATCH',
-  body: JSON.stringify({ displayName: 'NewName' })
-});
 ```
 
-## Testing
+## localStorage Keys
 
-1. **Clear localStorage** to test fresh login flow
-2. **Visit the app** - should redirect to auth-gateway-flax.vercel.app
-3. **Login or create account** at auth gateway
-4. **Get redirected back** with token
-5. **Check sidebar** - should show username and logout button
+| Key | Value |
+|---|---|
+| `grudge_auth_token` | JWT (signed by auth-gateway) |
+| `grudge_id` | Universal Grudge ID (e.g. `GRUDGE_LQXM8K_7H9P4W2NXQ`) |
+| `grudge_user_id` | Numeric account ID |
+| `grudge_username` | Display name |
+| `grudge_puter_auth` | `"true"` if logged in via Puter |
 
-## Development
+## Server-Side Verification
 
-### Local Development
-```bash
-npm run dev
-```
+The Express middleware at `server/middleware/grudgeJwt.ts` verifies JWTs on protected routes. It decodes the token and attaches the user to `req.user`.
 
-The app will run on `http://localhost:5173` (default Vite port).
+## Auth Gateway Endpoints (proxied through GGE)
 
-### Production Build
-```bash
-npm run build
-```
+GGE proxies auth calls to `auth-gateway-flax.vercel.app`:
 
-Builds to `dist/public` as configured in `vite.config.ts`.
-
-## Environment Variables
-
-No environment variables needed for auth gateway integration - the URL is hardcoded to production:
-- `https://auth-gateway-flax.vercel.app`
-
-If you need to test with a local auth gateway, update the `AUTH_GATEWAY` constant in `client/src/lib/auth.ts`.
-
-## Token Storage
-
-Tokens are stored in `localStorage`:
-- `grudge_auth_token` - 64-character hex authentication token
-- `grudge_user_id` - UUID of the user
-- `grudge_username` - Display name of the user
-
-## Security Notes
-
-1. **HTTPS Only** - Auth gateway uses HTTPS (Vercel)
-2. **Token Expiration** - Tokens expire after 7 days (30 days for guests)
-3. **Logout** - Always clear tokens on logout
-4. **API Calls** - Always include Bearer token in Authorization header
+- `POST /api/login` — Username/password login
+- `POST /api/register` — Create account
+- `POST /api/guest` — Guest login
+- `POST /api/auth/puter` — Puter UUID → JWT bridge
+- `GET /api/auth/verify` — Verify token
 
 ## Troubleshooting
 
-### Token Not Persisting
-- Check browser localStorage settings
-- Make sure no other code is clearing localStorage
-
-### Infinite Redirect Loop
-- Verify token is being set after login
-- Check browser console for errors
-
-### 401 Unauthorized
-- Token may have expired
-- Try logging out and back in
-
-## Next Steps
-
-1. ✅ Auth integration completed
-2. ✅ Logout functionality added
-3. ✅ Backend API endpoints to verify tokens
-4. ✅ User profile API with auth data
-5. ✅ Protected routes based on user permissions
-6. ⏳ Enhanced profile page UI (in progress)
-7. ⏳ Deploy to production
-
-## Related Documentation
-
-- [Auth Gateway Integration Guide](https://github.com/yourusername/Warlord-Crafting-Suite/auth-gateway/INTEGRATION_GRUDGEWARLORDS.md)
-- [Database Schema](https://github.com/yourusername/Warlord-Crafting-Suite/auth-gateway/DATABASE_SCHEMA.md)
-- [Deployment Summary](https://github.com/yourusername/Warlord-Crafting-Suite/auth-gateway/DEPLOYMENT_SUMMARY.md)
+- **Infinite redirect loop**: Token not being stored after login. Check browser console.
+- **401 Unauthorized**: JWT expired or `JWT_SECRET` mismatch between GGE and auth-gateway.
+- **Token not persisting**: Check localStorage isn't being cleared by other code.
