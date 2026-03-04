@@ -9,7 +9,7 @@
  */
 
 import type { Express } from "express";
-import { GRUDACHAIN_URL, GRUDACHAIN_API, GAME_API_GRUDA, GRUDACHAIN_SOURCE, WCS_URL } from "@shared/grudachain";
+import { GRUDACHAIN_URL, GRUDACHAIN_API, GAME_API_GRUDA, GRUDACHAIN_SOURCE, WCS_URL } from "../../shared/grudachain";
 
 const PROXY_TIMEOUT_MS = 15_000;
 
