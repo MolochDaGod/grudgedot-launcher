@@ -8,16 +8,15 @@
 let _app: any = null;
 let _initError: any = null;
 
-async function bootstrap() {
-  // ── dynamic imports — only evaluated on first request ──
-  const { default: dotenv } = await import("dotenv");
-  dotenv.config();
+function bootstrap() {
+  // require() is bundled by ncc (dynamic import() is NOT, causing ERR_MODULE_NOT_FOUND)
+  require("dotenv").config();
 
-  const { default: express } = await import("express");
-  const { serveStatic, log } = await import("../server/serverUtils");
-  const { storage } = await import("../server/storage");
-  const { isDatabaseConfigured } = await import("../server/db");
-  const { setupGrudgeAuth } = await import("../server/grudgeAuth");
+  const express = require("express");
+  const { serveStatic, log } = require("../server/serverUtils");
+  const { storage } = require("../server/storage");
+  const { isDatabaseConfigured } = require("../server/db");
+  const { setupGrudgeAuth } = require("../server/grudgeAuth");
 
   const app = express();
 
@@ -70,7 +69,7 @@ async function bootstrap() {
   app.use(async (req: any, res: any, next: any) => {
     if (!routesRegistered) {
       try {
-        const { registerRoutes } = await import("../server/routes");
+        const { registerRoutes } = require("../server/routes");
         await registerRoutes(app);
         routesRegistered = true;
         log("Routes registered successfully");
@@ -94,7 +93,7 @@ async function bootstrap() {
   return app;
 }
 
-export default async function handler(req: any, res: any) {
+export default function handler(req: any, res: any) {
   // Return cached error from a previous failed bootstrap
   if (_initError) {
     return res.status(500).json({
@@ -107,7 +106,7 @@ export default async function handler(req: any, res: any) {
   // Lazy-init on first invocation
   if (!_app) {
     try {
-      _app = await bootstrap();
+      _app = bootstrap();
     } catch (err: any) {
       _initError = err;
       console.error("BOOTSTRAP ERROR:", err);
