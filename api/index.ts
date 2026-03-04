@@ -1,37 +1,37 @@
 /**
  * Vercel serverless entry point.
- * Uses lazy bootstrap so the module evaluates without importing heavy
- * server dependencies.  If bootstrap fails, the handler returns a
- * JSON error instead of crashing with FUNCTION_INVOCATION_FAILED.
+ * Static imports are bundled by ncc. Module-level init is wrapped
+ * so that if anything throws we still get a JSON error response
+ * instead of an opaque FUNCTION_INVOCATION_FAILED.
  */
+import dotenv from "dotenv";
+dotenv.config();
 
-let _app: any = null;
-let _initError: any = null;
+import express, { type Request, Response, NextFunction } from "express";
+import { serveStatic, log } from "../server/serverUtils";
+import { storage } from "../server/storage";
+import { isDatabaseConfigured } from "../server/db";
+import { setupGrudgeAuth } from "../server/grudgeAuth";
 
-function bootstrap() {
-  // require() is bundled by ncc (dynamic import() is NOT, causing ERR_MODULE_NOT_FOUND)
-  require("dotenv").config();
+// ── Build the Express app (runs once at cold-start) ──
+let _app: ReturnType<typeof express> | null = null;
+let _initError: Error | null = null;
 
-  const express = require("express");
-  const { serveStatic, log } = require("../server/serverUtils");
-  const { storage } = require("../server/storage");
-  const { isDatabaseConfigured } = require("../server/db");
-  const { setupGrudgeAuth } = require("../server/grudgeAuth");
-
+try {
   const app = express();
 
   app.use(express.json({
-    verify: (req: any, _res: any, buf: any) => { req.rawBody = buf; },
+    verify: (req: any, _res, buf) => { (req as any).rawBody = buf; },
   }));
   app.use(express.urlencoded({ extended: false }));
 
   // Request logger
-  app.use((req: any, res: any, next: any) => {
+  app.use((req, res, next) => {
     const start = Date.now();
     const reqPath = req.path;
     let captured: any;
     const origJson = res.json;
-    res.json = function (body: any, ...a: any[]) {
+    res.json = function (body, ...a: any[]) {
       captured = body;
       return origJson.apply(res, [body, ...a]);
     };
@@ -46,77 +46,63 @@ function bootstrap() {
     next();
   });
 
-  // Auth routes (gateway proxy — no DB needed)
+  // Auth (gateway proxy — no DB needed)
   setupGrudgeAuth(app);
-  log("Grudge Authentication configured (gateway proxy mode)");
+  log("Grudge Auth configured (gateway proxy)");
 
   // Seed DB if configured
   if (isDatabaseConfigured()) {
     storage.seedAssets()
       .then(() => storage.seedRtsAssets())
       .then(() => storage.seedGameData())
-      .then(() => log("Database seeded successfully"))
-      .catch((err: any) => {
-        log("Warning: Database seeding failed (OK for serverless cold starts)");
+      .then(() => log("Database seeded"))
+      .catch((err) => {
+        log("Warning: DB seeding failed (OK for serverless cold starts)");
         console.error(err);
       });
   } else {
     log("Warning: DATABASE_URL not set — running without database");
   }
 
-  // Lazy-load heavy routes on first request
-  let routesRegistered = false;
-  app.use(async (req: any, res: any, next: any) => {
-    if (!routesRegistered) {
+  // Lazy-load heavy routes (Socket.IO, OpenAI, etc.) on first request
+  let routesLoaded = false;
+  app.use(async (_req, _res, next) => {
+    if (!routesLoaded) {
       try {
-        const { registerRoutes } = require("../server/routes");
+        const { registerRoutes } = await import("../server/routes.js");
         await registerRoutes(app);
-        routesRegistered = true;
-        log("Routes registered successfully");
-      } catch (error) {
-        console.error("Failed to register routes:", error);
+        routesLoaded = true;
+        log("Routes registered");
+      } catch (err) {
+        console.error("Failed to register routes:", err);
       }
     }
     next();
   });
 
   // Error handler
-  app.use((err: any, _req: any, res: any, _next: any) => {
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
     console.error("Request error:", err);
-    res.status(status).json({ message });
+    res.status(status).json({ message: err.message || "Internal Server Error" });
   });
 
   serveStatic(app);
   log("Serverless function initialized");
-  return app;
+  _app = app;
+} catch (err: any) {
+  _initError = err;
+  console.error("BOOTSTRAP ERROR:", err);
 }
 
+// ── Handler — Vercel calls this per request ──
 export default function handler(req: any, res: any) {
-  // Return cached error from a previous failed bootstrap
-  if (_initError) {
+  if (_initError || !_app) {
     return res.status(500).json({
       error: "Function bootstrap failed",
-      message: _initError.message,
-      stack: _initError.stack?.split("\n").slice(0, 10),
+      message: _initError?.message ?? "unknown",
+      stack: _initError?.stack?.split("\n").slice(0, 10),
     });
   }
-
-  // Lazy-init on first invocation
-  if (!_app) {
-    try {
-      _app = bootstrap();
-    } catch (err: any) {
-      _initError = err;
-      console.error("BOOTSTRAP ERROR:", err);
-      return res.status(500).json({
-        error: "Function bootstrap failed",
-        message: err.message,
-        stack: err.stack?.split("\n").slice(0, 10),
-      });
-    }
-  }
-
   return _app(req, res);
 }
