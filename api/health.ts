@@ -1,7 +1,5 @@
-// Standalone health check — no server imports, diagnoses function bootstrap issues
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-export default function handler(_req: VercelRequest, res: VercelResponse) {
+// Standalone health check — ZERO imports so Vercel can compile this independently
+export default function handler(_req: any, res: any) {
   res.status(200).json({
     status: 'healthy',
     service: 'GDevelop Assistant',

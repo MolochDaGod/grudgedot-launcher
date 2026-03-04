@@ -10,10 +10,21 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Use __dirname directly (CJS) or derive from import.meta.url (ESM).
+// Vercel compiles ESM→CJS — import.meta.url may not survive the transform.
+const __dirname_safe: string = (() => {
+  try {
+    // CJS — __dirname is globally available
+    if (typeof __dirname !== "undefined") return __dirname;
+  } catch {}
+  try {
+    // ESM fallback
+    const { fileURLToPath } = require("url");
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch {}
+  return process.cwd();
+})();
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -28,8 +39,8 @@ export function log(message: string, source = "express") {
 
 export function serveStatic(app: Express) {
   const candidates = [
-    path.resolve(__dirname, "..", "dist", "public"),
-    path.resolve(__dirname, "public"),
+    path.resolve(__dirname_safe, "..", "dist", "public"),
+    path.resolve(__dirname_safe, "public"),
     path.resolve(process.cwd(), "dist", "public"),
   ];
 

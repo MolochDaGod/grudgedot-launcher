@@ -13,7 +13,13 @@
  * - Integration with existing asset pipeline
  */
 
-import { Client } from "@replit/object-storage";
+// @replit/object-storage only works on Replit — dynamically import to avoid crash on Vercel
+let ReplitClient: any = null;
+try {
+  if (process.env.REPL_ID || process.env.REPLIT_DEPLOYMENT) {
+    ReplitClient = require("@replit/object-storage").Client;
+  }
+} catch {}
 import { db } from "../db";
 import { 
   userObjects, 
@@ -51,11 +57,16 @@ export interface AuditContext {
 }
 
 export class AleHermesService {
-  private client: Client;
+  private client: any;
   private agentName = "ALE_HERMES";
 
   constructor() {
-    this.client = new Client();
+    if (!ReplitClient) {
+      console.warn(`[${this.agentName}] @replit/object-storage unavailable — storage ops will no-op`);
+      this.client = null;
+    } else {
+      this.client = new ReplitClient();
+    }
   }
 
   private buildObjectKey(userId: string, namespace: StorageNamespace, filename: string): string {
