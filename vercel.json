@@ -4,6 +4,7 @@
   "framework": null,
   "routes": [
     { "handle": "filesystem" },
+    { "src": "/api/health", "dest": "/api/health.ts" },
     { "src": "/api/(.*)", "dest": "/api/index.ts" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
