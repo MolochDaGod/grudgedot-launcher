@@ -28,6 +28,35 @@ type StandingMode = "Stand" | "Prone";
 type Race = "human" | "alien" | "undead" | "mechanical" | "nature";
 type DamageType = "physical" | "magic" | "fire" | "ice" | "explosive" | "poison";
 
+interface RtsModel {
+  grudgeId: string;
+  displayName: string;
+  file: string;
+  category: string;
+  unitType: string;
+  customizable?: boolean;
+  sizeBytes: number;
+  tags?: string[];
+}
+
+interface RtsRaceData {
+  name: string;
+  faction: string;
+  emoji: string;
+  color: string;
+  models: RtsModel[];
+}
+
+interface RtsModelCatalog {
+  baseUrl: string;
+  totalModels: number;
+  races: Record<string, RtsRaceData>;
+  vehicles?: RtsModel[];
+  stats?: {
+    totalByRace?: Record<string, number>;
+  };
+}
+
 const RACES: { value: Race; label: string; color: string }[] = [
   { value: "human", label: "Human", color: "bg-blue-500" },
   { value: "alien", label: "Alien", color: "bg-green-500" },
@@ -1028,7 +1057,7 @@ function ActorsPanel() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: rtsModelCatalog, isLoading } = useQuery<any>({
+  const { data: rtsModelCatalog, isLoading } = useQuery<RtsModelCatalog>({
     queryKey: ["objectstore-rts-models"],
     queryFn: async () => {
       const res = await fetch("https://molochdagod.github.io/ObjectStore/api/v1/rtsModels.json");
@@ -1126,14 +1155,14 @@ function ActorsPanel() {
         ) : (
           <>
             {/* Race sections */}
-            {Object.entries(rtsModelCatalog.races as Record<string, any>)
+            {Object.entries(rtsModelCatalog.races)
               .filter(([raceId]) => raceFilter === "all" || raceFilter === raceId)
               .map(([raceId, raceData]) => {
-                const models = (raceData.models as any[]).filter((m: any) => {
+                const models = raceData.models.filter((m) => {
                   const matchesCat = categoryFilter === "all" || m.category === categoryFilter;
                   const matchesSearch = searchQuery === "" ||
                     m.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    m.tags?.some((t: string) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+                    m.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
                   return matchesCat && matchesSearch;
                 });
                 if (models.length === 0) return null;
@@ -1148,7 +1177,7 @@ function ActorsPanel() {
                       <span className="text-xs text-muted-foreground">{models.length} models</span>
                     </div>
                     <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
-                      {models.map((model: any) => (
+                      {models.map((model) => (
                         <Card key={model.grudgeId} className="overflow-hidden hover-elevate" data-testid={`card-actor-${model.grudgeId}`}>
                           <div className="h-20 w-full bg-muted flex items-center justify-center">
                             <Swords className="h-6 w-6 text-muted-foreground" />
@@ -1191,12 +1220,12 @@ function ActorsPanel() {
                 </div>
                 <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
                   {rtsModelCatalog.vehicles
-                    .filter((m: any) => {
+                    .filter((m) => {
                       return searchQuery === "" ||
                         m.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        m.tags?.some((t: string) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+                        m.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
                     })
-                    .map((model: any) => (
+                    .map((model) => (
                     <Card key={model.grudgeId} className="overflow-hidden hover-elevate" data-testid={`card-actor-${model.grudgeId}`}>
                       <div className="h-20 w-full bg-muted flex items-center justify-center">
                         <Swords className="h-6 w-6 text-muted-foreground" />
