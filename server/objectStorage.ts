@@ -2,6 +2,8 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Response } from "express";
 import { randomUUID } from "crypto";
+import * as fs from "fs";
+import * as nodePath from "path";
 import {
   ObjectAclPolicy,
   ObjectPermission,
@@ -375,6 +377,20 @@ export class ObjectStorageService {
   }
 
   async listAllPublicAssets(prefix?: string): Promise<Array<{name: string, path: string, fullPath: string}>> {
+    // Fallback to static manifest when GCS is unavailable (Vercel)
+    if (!objectStorageClient) {
+      const assets = this.getStaticManifest();
+      let filtered = assets;
+      if (prefix) {
+        filtered = assets.filter(a => a.storagePath?.includes(prefix));
+      }
+      return filtered.map(a => ({
+        name: a.filename,
+        path: a.storagePath || a.url,
+        fullPath: a.url,
+      }));
+    }
+
     const publicSearchPaths = this.getPublicObjectSearchPaths();
     if (publicSearchPaths.length === 0) {
       return [];
@@ -398,6 +414,36 @@ export class ObjectStorageService {
     return `/api/assets/public/${publicPath}`;
   }
 
+  // Read static asset manifest bundled in public/ (used as fallback when GCS unavailable)
+  private getStaticManifest(filter?: { type?: string; folder?: string }): Array<{
+    id: string;
+    uuid: string;
+    filename: string;
+    type: string;
+    folder: string;
+    url: string;
+    directUrl: string;
+    storagePath: string;
+    size?: number;
+    tags?: string[];
+  }> {
+    try {
+      const manifestPath = nodePath.join(process.cwd(), "public", "asset-manifest.json");
+      const raw = fs.readFileSync(manifestPath, "utf-8");
+      const manifest = JSON.parse(raw);
+      let assets: any[] = manifest.assets || [];
+      if (filter?.type) {
+        assets = assets.filter((a: any) => a.type === filter.type);
+      }
+      if (filter?.folder) {
+        assets = assets.filter((a: any) => a.folder?.includes(filter.folder!));
+      }
+      return assets;
+    } catch {
+      return [];
+    }
+  }
+
   // Enhanced asset registry with UUIDs and full metadata
   async getAssetRegistry(filter?: { type?: string; folder?: string }): Promise<Array<{
     id: string;
@@ -412,9 +458,14 @@ export class ObjectStorageService {
     contentType?: string;
     createdAt?: string;
   }>> {
+    // Fallback to static manifest when GCS is unavailable (Vercel)
+    if (!objectStorageClient) {
+      return this.getStaticManifest(filter);
+    }
+
     const publicSearchPaths = this.getPublicObjectSearchPaths();
     if (publicSearchPaths.length === 0) {
-      return [];
+      return this.getStaticManifest(filter);
     }
 
     const basePath = publicSearchPaths[0];
@@ -479,10 +530,21 @@ export class ObjectStorageService {
     return filtered;
   }
 
+  // Find asset URL from static manifest by ID (used on Vercel for redirect)
+  getStaticAssetUrl(id: string): string | null {
+    const assets = this.getStaticManifest();
+    const asset = assets.find(a => a.id === id || a.uuid === id);
+    return asset?.url || null;
+  }
+
   async getAssetById(id: string): Promise<{
     file: File;
     metadata: any;
   } | null> {
+    if (!objectStorageClient) {
+      return null;
+    }
+
     const publicSearchPaths = this.getPublicObjectSearchPaths();
     if (publicSearchPaths.length === 0) {
       return null;

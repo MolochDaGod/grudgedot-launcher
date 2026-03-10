@@ -421,15 +421,178 @@ export default function CharacterEditor() {
     );
   }, [extractBodyParts, toast]);
 
+  const createProceduralMannequin = useCallback(() => {
+    if (!sceneRef.current) return;
+    if (modelRef.current) {
+      sceneRef.current.remove(modelRef.current);
+    }
+
+    const root = new THREE.Group();
+    root.name = "Mannequin";
+
+    const skin = 0xd4a574;
+    const cloth = 0x555568;
+    const metal = 0x888899;
+
+    const mat = (color: number, m = 0.1, r = 0.7) =>
+      new THREE.MeshStandardMaterial({ color, metalness: m, roughness: r, side: THREE.DoubleSide });
+
+    // Head
+    const headGroup = new THREE.Group(); headGroup.name = "Head";
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), mat(skin));
+    headMesh.position.y = 1.65; headMesh.castShadow = true;
+    headGroup.add(headMesh);
+    root.add(headGroup);
+
+    // Helmet slot (slightly larger invisible sphere)
+    const helmetGroup = new THREE.Group(); helmetGroup.name = "Helmet";
+    const helmetMesh = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 16), mat(metal, 0.6, 0.3));
+    helmetMesh.position.y = 1.67; helmetMesh.castShadow = true;
+    helmetGroup.add(helmetMesh);
+    root.add(helmetGroup);
+
+    // Torso
+    const torsoGroup = new THREE.Group(); torsoGroup.name = "Torso";
+    const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.44, 0.2), mat(cloth));
+    torsoMesh.position.y = 1.28; torsoMesh.castShadow = true;
+    torsoGroup.add(torsoMesh);
+    root.add(torsoGroup);
+
+    // Chest armor
+    const chestGroup = new THREE.Group(); chestGroup.name = "Chest Armor";
+    const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.46, 0.22), mat(metal, 0.6, 0.3));
+    chestMesh.position.y = 1.28; chestMesh.castShadow = true;
+    chestGroup.add(chestMesh);
+    root.add(chestGroup);
+
+    // Shoulders
+    for (const side of [-1, 1]) {
+      const shoulderGroup = new THREE.Group(); shoulderGroup.name = side === -1 ? "Left Shoulder" : "Right Shoulder";
+      const shoulderMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), mat(metal, 0.6, 0.3));
+      shoulderMesh.position.set(side * 0.24, 1.46, 0); shoulderMesh.castShadow = true;
+      shoulderGroup.add(shoulderMesh);
+      root.add(shoulderGroup);
+    }
+
+    // Arms
+    for (const side of [-1, 1]) {
+      const armGroup = new THREE.Group(); armGroup.name = side === -1 ? "Left Arm" : "Right Arm";
+      // Upper arm
+      const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.26, 8), mat(skin));
+      upper.position.set(side * 0.26, 1.32, 0); upper.castShadow = true;
+      armGroup.add(upper);
+      // Forearm
+      const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.24, 8), mat(skin));
+      fore.position.set(side * 0.26, 1.08, 0); fore.castShadow = true;
+      armGroup.add(fore);
+      root.add(armGroup);
+
+      // Hand
+      const handGroup = new THREE.Group(); handGroup.name = side === -1 ? "Left Hand" : "Right Hand";
+      const handMesh = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), mat(skin));
+      handMesh.position.set(side * 0.26, 0.94, 0); handMesh.castShadow = true;
+      handGroup.add(handMesh);
+      root.add(handGroup);
+
+      // Gauntlet
+      const gauntletGroup = new THREE.Group(); gauntletGroup.name = side === -1 ? "Left Gauntlet" : "Right Gauntlet";
+      const gauntletMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.14, 8), mat(metal, 0.6, 0.3));
+      gauntletMesh.position.set(side * 0.26, 1.01, 0); gauntletMesh.castShadow = true;
+      gauntletGroup.add(gauntletMesh);
+      root.add(gauntletGroup);
+    }
+
+    // Hips / Belt
+    const beltGroup = new THREE.Group(); beltGroup.name = "Belt";
+    const beltMesh = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.2), mat(0x4a3728, 0.1, 0.8));
+    beltMesh.position.y = 1.04; beltMesh.castShadow = true;
+    beltGroup.add(beltMesh);
+    root.add(beltGroup);
+
+    // Legs
+    for (const side of [-1, 1]) {
+      const legGroup = new THREE.Group(); legGroup.name = side === -1 ? "Left Leg" : "Right Leg";
+      // Thigh
+      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.32, 8), mat(cloth));
+      thigh.position.set(side * 0.1, 0.84, 0); thigh.castShadow = true;
+      legGroup.add(thigh);
+      // Shin
+      const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.045, 0.32, 8), mat(cloth));
+      shin.position.set(side * 0.1, 0.52, 0); shin.castShadow = true;
+      legGroup.add(shin);
+      root.add(legGroup);
+
+      // Greave
+      const greaveGroup = new THREE.Group(); greaveGroup.name = side === -1 ? "Left Greave" : "Right Greave";
+      const greaveMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.2, 8), mat(metal, 0.6, 0.3));
+      greaveMesh.position.set(side * 0.1, 0.55, 0); greaveMesh.castShadow = true;
+      greaveGroup.add(greaveMesh);
+      root.add(greaveGroup);
+
+      // Boot
+      const bootGroup = new THREE.Group(); bootGroup.name = side === -1 ? "Left Boot" : "Right Boot";
+      const bootMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.14), mat(0x3a2a1a, 0.1, 0.8));
+      bootMesh.position.set(side * 0.1, 0.34, 0.02); bootMesh.castShadow = true;
+      bootGroup.add(bootMesh);
+      root.add(bootGroup);
+    }
+
+    // Cape
+    const capeGroup = new THREE.Group(); capeGroup.name = "Cape";
+    const capeShape = new THREE.Shape();
+    capeShape.moveTo(-0.16, 0); capeShape.lineTo(0.16, 0);
+    capeShape.lineTo(0.2, -0.5); capeShape.lineTo(-0.2, -0.5); capeShape.closePath();
+    const capeMesh = new THREE.Mesh(new THREE.ShapeGeometry(capeShape), mat(0x8b1a1a, 0, 0.9));
+    capeMesh.position.set(0, 1.48, -0.12); capeMesh.rotation.x = 0.1; capeMesh.castShadow = true;
+    capeGroup.add(capeMesh);
+    root.add(capeGroup);
+
+    // Weapon (right hand sword)
+    const weaponGroup = new THREE.Group(); weaponGroup.name = "Weapon";
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.4, 0.06), mat(0xccccdd, 0.8, 0.2));
+    blade.position.set(0.26, 0.7, 0); blade.castShadow = true;
+    weaponGroup.add(blade);
+    const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.1, 6), mat(0x4a3728));
+    hilt.position.set(0.26, 0.48, 0); hilt.castShadow = true;
+    weaponGroup.add(hilt);
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.04), mat(0xdaa520, 0.5, 0.3));
+    guard.position.set(0.26, 0.5, 0); guard.castShadow = true;
+    weaponGroup.add(guard);
+    root.add(weaponGroup);
+
+    // Shield (left hand)
+    const shieldGroup = new THREE.Group(); shieldGroup.name = "Shield";
+    const shieldMesh = new THREE.Mesh(new THREE.CircleGeometry(0.14, 16), mat(metal, 0.6, 0.3));
+    shieldMesh.position.set(-0.32, 1.1, 0.08); shieldMesh.castShadow = true;
+    shieldGroup.add(shieldMesh);
+    const boss = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), mat(0xdaa520, 0.5, 0.3));
+    boss.position.set(-0.32, 1.1, 0.1); boss.castShadow = true;
+    shieldGroup.add(boss);
+    root.add(shieldGroup);
+
+    // Center the model
+    root.position.y = -0.9;
+    modelRef.current = root;
+    sceneRef.current.add(root);
+
+    const parts = extractBodyParts(root);
+    setBodyParts(parts);
+    setModelLoaded(true);
+
+    toast({
+      title: "Default Mannequin Loaded",
+      description: `Knight mannequin ready — ${parts.length} body parts. Upload a GLB to replace.`,
+    });
+  }, [extractBodyParts, toast]);
+
   useEffect(() => {
     if (sceneRef.current && !modelLoaded && !loading) {
       const timer = setTimeout(() => {
-        // Use boxman model as default stock character from Object Storage
-        loadModel('/public-objects/assets/sketchbook/characters/boxman.glb', 'Boxman Character');
+        createProceduralMannequin();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [loadModel, modelLoaded, loading]);
+  }, [createProceduralMannequin, modelLoaded, loading]);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

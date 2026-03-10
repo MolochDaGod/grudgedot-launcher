@@ -31,6 +31,8 @@ function parseObjectPath(path: string): { bucketName: string; objectName: string
 // Grudge auth is handled in grudgeAuth.ts
 import { registerUserRoutes } from "./routes/user";
 import { registerGrudaWarsRoutes } from "./routes/grudaWars";
+import { registerModelRoutes } from "./routes/models";
+import { registerAssetTaggerRoutes } from "./workers/asset-tagger";
 import { registerGrudaLegionRoutes } from "./services/grudaLegion";
 import { lobbyManager } from "./multiplayer/lobby";
 import { overdriveEngine } from "./services/overdriveEngine";
@@ -196,6 +198,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Gruda Wars routes (hero sync, GRUDACHAIN status, WCS config)
   registerGrudaWarsRoutes(app);
+
+  // 3D Model Registry routes (scan, search, stream models by Grudge UUID)
+  registerModelRoutes(app);
+
+  // AI-assisted asset tagger (enhanced tagging, descriptions, related models)
+  registerAssetTaggerRoutes(app);
 
   // GRUDA Legion proxy (AI chat, code gen, health check → Railway deployment)
   registerGrudaLegionRoutes(app);
@@ -2378,6 +2386,16 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   app.get("/api/asset-registry/:id", async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
+      
+      // On Vercel (no GCS), redirect to the static file URL
+      if (!objectStorageClient) {
+        const staticUrl = objectStorageService.getStaticAssetUrl(req.params.id);
+        if (staticUrl) {
+          return res.redirect(302, staticUrl);
+        }
+        return res.status(404).json({ error: "Asset not found" });
+      }
+      
       const result = await objectStorageService.getAssetById(req.params.id);
       
       if (!result) {

@@ -7,7 +7,9 @@ vite.config.ts.*
 
 # Large asset directories - excluded from deployment
 attached_assets/
+_staging/
 public/assets/
+public/models/
 public/grudge-warlords/
 public/grudge-drive/
 public/games/
