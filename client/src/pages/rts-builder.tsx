@@ -1074,7 +1074,7 @@ function ActorsPanel() {
 
         {/* Race Filter */}
         <div className="flex gap-1 flex-wrap mb-2">
-          {["all", ...(rtsModelCatalog ? Object.keys(rtsModelCatalog.races) : [])].map((race) => {
+          {["all", ...Object.keys(rtsModelCatalog?.races || {})].map((race) => {
             const raceData = race !== "all" ? rtsModelCatalog?.races[race] : null;
             const count = race === "all"
               ? (rtsModelCatalog?.totalModels ?? 0)
