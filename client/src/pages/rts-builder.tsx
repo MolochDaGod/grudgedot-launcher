@@ -1223,8 +1223,9 @@ function ActorsPanel() {
                   );
                 });
             })()}
-            {/* Vehicles section */}
-            {(raceFilter === "all") && (categoryFilter === "all" || categoryFilter === "vehicle") && rtsModelCatalog.vehicles?.length > 0 && (
+            {/* Vehicles section — shown when category is "vehicle" (regardless of race filter)
+                or when showing all categories with no race filter */}
+            {(categoryFilter === "vehicle" || (raceFilter === "all" && categoryFilter === "all")) && rtsModelCatalog.vehicles?.length > 0 && (
               <div className="mb-5">
                 <div className="mb-2 flex items-center gap-2">
                   <span>\ud83d\udea2</span>
