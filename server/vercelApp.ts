@@ -24,6 +24,7 @@ import { registerGrudaWarsRoutes } from "./routes/grudaWars";
 import { registerUserRoutes } from "./routes/user";
 import { registerAccountRoutes } from "./routes/accountRoutes";
 import { registerOpenRTSRoutes } from "./routes/openrts";
+import { overdriveEngine } from "./services/overdriveEngine";
 import { isDatabaseConfigured } from "./db";
 import { storage } from "./storage";
 import {
@@ -77,7 +78,7 @@ const xai = process.env.XAI_API_KEY
 const GDEVELOP_SYSTEM_PROMPT = `You are an expert GDevelop game development assistant powered by xAI's Grok. You help with game design, mechanics, GDevelop event systems, asset recommendations, and integration with tools like Three.js, Babylon.js, and LUME. Be practical, actionable, and encouraging.`;
 
 // ════════════════════════════════════════════
-// Auth routes (proxy to auth-gateway)
+// Auth routes (direct DB — no external gateway)
 // ════════════════════════════════════════════
 setupGrudgeAuth(app);
 
@@ -85,30 +86,27 @@ setupGrudgeAuth(app);
 // Health check
 // ════════════════════════════════════════════
 app.get("/api/health", async (_req: Request, res: Response) => {
-  // Quick auth-gateway ping (non-blocking, 3s timeout)
-  let gatewayOk = false;
+  // Direct DB connectivity check (no external gateway dependency)
+  let dbOk = false;
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 3000);
-    const gw = await fetch(
-      `${process.env.AUTH_GATEWAY_URL || "https://auth-gateway-flax.vercel.app"}/api/health`,
-      { signal: ctrl.signal },
-    );
-    clearTimeout(t);
-    gatewayOk = gw.ok;
-  } catch { /* unreachable */ }
+    if (isDatabaseConfigured()) {
+      await db.query.accounts.findFirst();
+      dbOk = true;
+    }
+  } catch { /* DB unreachable */ }
 
   res.json({
     status: "healthy",
     service: "GDevelop Assistant (Vercel)",
     timestamp: new Date().toISOString(),
     runtime: process.version,
+    authMode: "direct-db",
     env: {
       hasDatabase: isDatabaseConfigured(),
+      dbConnected: dbOk,
       hasSessionSecret: !!process.env.SESSION_SECRET,
       hasXaiKey: !!process.env.XAI_API_KEY,
       hasMeshyKey: !!process.env.MESHY_API_KEY,
-      authGateway: gatewayOk ? "reachable" : "unreachable",
       nodeEnv: process.env.NODE_ENV || "not-set",
     },
   });

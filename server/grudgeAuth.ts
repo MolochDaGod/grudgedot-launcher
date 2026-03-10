@@ -1,52 +1,62 @@
 /**
- * Grudge Auth Routes (GGE)
- * All authentication is delegated to the auth-gateway (source of truth).
- * This file proxies login/register/guest/puter requests and provides
- * JWT-verified /api/auth/* endpoints for the GGE client.
+ * Grudge Auth Routes (GGE) — Direct DB Authentication
+ *
+ * All auth flows hit the shared Neon `accounts` table directly.
+ * Same pattern as WCS (Warlord Crafting Suite).
+ * No external gateway proxy — one fewer point of failure.
+ *
+ * JWT payload: { grudgeId, username, userId }
+ * Signed with SESSION_SECRET, expires in 30 days.
  */
 
 import type { Express } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { requireAuth } from "./middleware/grudgeJwt";
 import { db } from "./db";
 import { accounts } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
-const AUTH_GATEWAY = process.env.AUTH_GATEWAY_URL || "https://auth-gateway-flax.vercel.app";
+const SESSION_SECRET = process.env.SESSION_SECRET || "grudge-default-secret";
+const JWT_EXPIRY = "30d";
+
 const CROSSMINT_API = "https://www.crossmint.com/api/2025-06-09";
 const CROSSMINT_KEY = process.env.CROSSMINT_SERVER_API_KEY || "";
 
-// ── Proxy helper ──
+// ── Helpers ──
 
-async function gatewayProxy(
-  endpoint: string,
-  method: string,
-  body?: Record<string, any>,
-  headers?: Record<string, string>,
-): Promise<{ ok: boolean; status: number; data: any }> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
+function generateGrudgeId(): string {
+  const timestamp = Date.now();
+  const random = crypto.randomBytes(4).toString("hex").toUpperCase();
+  return `GRUDGE-${timestamp}-${random}`;
+}
 
-  try {
-    const res = await fetch(`${AUTH_GATEWAY}/api/${endpoint}`, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(headers || {}),
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, status: res.status, data };
-  } catch (err: any) {
-    clearTimeout(timeout);
-    return {
-      ok: false,
-      status: 503,
-      data: { error: "Auth gateway unreachable", details: err.message },
-    };
-  }
+function signToken(account: { grudgeId: string; username: string; id: string }): string {
+  return jwt.sign(
+    { grudgeId: account.grudgeId, username: account.username, userId: account.id },
+    SESSION_SECRET,
+    { expiresIn: JWT_EXPIRY },
+  );
+}
+
+function buildUserPayload(account: any) {
+  return {
+    id: account.id,
+    grudgeId: account.grudgeId,
+    username: account.username,
+    displayName: account.displayName,
+    email: account.email,
+    walletAddress: account.walletAddress,
+    faction: account.faction,
+    avatarUrl: account.avatarUrl,
+    isPremium: account.isPremium,
+    gold: account.gold,
+    gbuxBalance: account.gbuxBalance,
+    totalCharacters: account.totalCharacters,
+    totalIslands: account.totalIslands,
+    createdAt: account.createdAt,
+  };
 }
 
 // ── Crossmint wallet helper ──
@@ -55,33 +65,19 @@ async function createCrossmintWallet(
   grudgeId: string,
   email?: string,
 ): Promise<{ walletId: string; walletAddress: string } | null> {
-  if (!CROSSMINT_KEY) {
-    console.warn("⚠️  CROSSMINT_SERVER_API_KEY not set — skipping wallet creation");
-    return null;
-  }
+  if (!CROSSMINT_KEY) return null;
   try {
-    // Determine owner: use email if available, otherwise use grudgeId as userId
     const owner = email ? `email:${email}` : `userId:grudge-${grudgeId}`;
-
     const res = await fetch(`${CROSSMINT_API}/wallets`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-KEY": CROSSMINT_KEY,
-      },
-      body: JSON.stringify({
-        chainType: "solana",
-        type: "mpc",
-        owner,
-      }),
+      headers: { "Content-Type": "application/json", "X-API-KEY": CROSSMINT_KEY },
+      body: JSON.stringify({ chainType: "solana", type: "mpc", owner }),
     });
     if (!res.ok) {
-      const errText = await res.text();
-      console.error("Crossmint wallet creation failed:", res.status, errText);
+      console.error("Crossmint wallet creation failed:", res.status, await res.text());
       return null;
     }
     const data = await res.json();
-    // New API returns { address, ... } — also handle legacy { publicKey, id }
     const walletAddress = data.address || data.publicKey || "";
     const walletId = data.locator || data.id || "";
     console.log(`✅ Crossmint wallet created for ${owner}: ${walletAddress}`);
@@ -92,187 +88,300 @@ async function createCrossmintWallet(
   }
 }
 
-// ── Local account upsert helper ──
+// ── Route registration ──
 
-async function upsertLocalAccount(gatewayData: any, isNewRegistration = false) {
-  const grudgeId = gatewayData.grudgeId || gatewayData.user?.grudgeId;
-  if (!grudgeId) return null;
+export function setupGrudgeAuth(app: Express) {
+  // ─── GET /api/login & /api/register → redirect to in-app auth page ───
+  app.get("/api/login", (_req, res) => res.redirect(302, "/auth"));
+  app.get("/api/register", (_req, res) => res.redirect(302, "/auth"));
 
-  const username =
-    gatewayData.username || gatewayData.user?.username || "unknown";
-  const email = gatewayData.email || gatewayData.user?.email;
-  const puterUuid = gatewayData.puterUuid || gatewayData.user?.puterUuid;
-  const puterUsername =
-    gatewayData.puterUsername || gatewayData.user?.puterUsername;
-  const discordId = gatewayData.discordId || gatewayData.user?.discordId;
-  const discordUsername =
-    gatewayData.discordUsername || gatewayData.user?.discordUsername;
-  const isGuest = gatewayData.isGuest ?? gatewayData.user?.isGuest ?? false;
+  // ════════════════════════════════════════════
+  // POST /api/login — username/email/grudgeId + password
+  // ════════════════════════════════════════════
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { username, password, identifier } = req.body || {};
+      const loginId = identifier || username;
 
-  try {
-    // Check if account already exists
-    const existing = await db
-      .select()
-      .from(accounts)
-      .where(eq(accounts.grudgeId, grudgeId))
-      .limit(1);
-
-    if (existing.length > 0) {
-      const acct = existing[0];
-      const updateFields: Record<string, any> = {
-        lastLoginAt: new Date(),
-        updatedAt: new Date(),
-        ...(puterUuid ? { puterUuid } : {}),
-        ...(puterUsername ? { puterUsername } : {}),
-        ...(discordId ? { discordId } : {}),
-        ...(discordUsername ? { discordUsername } : {}),
-        ...(email ? { email } : {}),
-      };
-
-      // ── Backfill: create Crossmint wallet if account is missing one ──
-      if (!acct.crossmintWalletId) {
-        console.log(`🔑 Account ${grudgeId} missing wallet — creating Crossmint wallet...`);
-        const wallet = await createCrossmintWallet(grudgeId, email || acct.email || undefined);
-        if (wallet) {
-          updateFields.walletAddress = wallet.walletAddress;
-          updateFields.walletType = "crossmint-custodial";
-          updateFields.crossmintWalletId = wallet.walletId;
-        }
+      if (!loginId || !password) {
+        return res.status(400).json({ error: "Username and password required" });
       }
 
-      await db
-        .update(accounts)
-        .set(updateFields)
-        .where(eq(accounts.grudgeId, grudgeId));
+      const account = await db.query.accounts.findFirst({
+        where: or(
+          eq(accounts.username, loginId),
+          eq(accounts.email, loginId),
+          eq(accounts.grudgeId, loginId),
+        ),
+      });
 
-      // Return updated account
-      return { ...acct, ...updateFields };
+      if (!account || !account.passwordHash) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const valid = await bcrypt.compare(password, account.passwordHash);
+      if (!valid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      await db.update(accounts)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(accounts.grudgeId, account.grudgeId));
+
+      const token = signToken(account);
+
+      res.json({
+        success: true,
+        grudgeId: account.grudgeId,
+        userId: account.id,
+        username: account.username,
+        displayName: account.displayName,
+        token,
+        user: buildUserPayload(account),
+      });
+    } catch (err: any) {
+      console.error("[POST /api/login] error:", err.message, err.stack);
+      res.status(500).json({ error: "Login failed", details: err.message });
     }
+  });
 
-    // New account — create Crossmint wallet if this is a registration
-    let walletAddress: string | undefined;
-    let crossmintWalletId: string | undefined;
-    if (isNewRegistration) {
+  // ════════════════════════════════════════════
+  // POST /api/register — create new account
+  // ════════════════════════════════════════════
+  app.post("/api/register", async (req, res) => {
+    try {
+      const { username, password, email } = req.body || {};
+
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password required" });
+      }
+      if (username.length < 3 || username.length > 20) {
+        return res.status(400).json({ error: "Username must be 3-20 characters" });
+      }
+
+      const existing = await db.query.accounts.findFirst({
+        where: or(
+          eq(accounts.username, username),
+          ...(email ? [eq(accounts.email, email)] : []),
+        ),
+      });
+      if (existing) {
+        return res.status(409).json({ error: "Username or email already taken" });
+      }
+
+      const grudgeId = generateGrudgeId();
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      let walletAddress: string | undefined;
+      let crossmintWalletId: string | undefined;
       const wallet = await createCrossmintWallet(grudgeId, email);
       if (wallet) {
         walletAddress = wallet.walletAddress;
         crossmintWalletId = wallet.walletId;
       }
-    }
 
-    const [newAccount] = await db
-      .insert(accounts)
-      .values({
+      const [account] = await db.insert(accounts).values({
         grudgeId,
         username,
-        email,
-        puterUuid,
-        puterUsername,
-        discordId,
-        discordUsername,
-        isGuest,
+        displayName: username,
+        email: email || undefined,
+        passwordHash,
         walletAddress,
         walletType: walletAddress ? "crossmint-custodial" : undefined,
         crossmintWalletId,
+        isPremium: false,
+        isGuest: false,
+        gold: 1000,
         lastLoginAt: new Date(),
-      })
-      .returning();
-    return newAccount;
-  } catch (err: any) {
-    console.error("Account upsert error:", err.message);
-    return null;
-  }
-}
+      }).returning();
 
-// ── Route registration ──
+      const token = signToken(account);
 
-export function setupGrudgeAuth(app: Express) {
-  // ─── GET /api/login & /api/register → redirect to in-app auth page ───
-  // Prevents users from landing on a raw JSON endpoint
-  app.get("/api/login", (_req, res) => res.redirect(302, "/auth"));
-  app.get("/api/register", (_req, res) => res.redirect(302, "/auth"));
-
-  // ─── Proxy login to auth-gateway ───
-  app.post("/api/login", async (req, res) => {
-    try {
-      const result = await gatewayProxy("login", "POST", req.body);
-      if (result.ok) {
-        await upsertLocalAccount(result.data, false);
-      }
-      res.status(result.status).json(result.data);
+      res.json({
+        success: true,
+        grudgeId,
+        userId: account.id,
+        username,
+        displayName: account.displayName,
+        walletAddress: account.walletAddress,
+        token,
+        user: buildUserPayload(account),
+        message: `Welcome to GRUDGE Warlords! Your GRUDGE ID: ${grudgeId}`,
+      });
     } catch (err: any) {
-      console.error("[POST /api/login] crash:", err.message, err.stack);
-      res.status(500).json({ error: "Login failed", details: err.message });
-    }
-  });
-
-  // ─── Proxy register to auth-gateway ───
-  app.post("/api/register", async (req, res) => {
-    try {
-      const result = await gatewayProxy("register", "POST", req.body);
-      if (result.ok) {
-        const acct = await upsertLocalAccount(result.data, true);
-        if (acct?.walletAddress) {
-          result.data.walletAddress = acct.walletAddress;
-        }
-      }
-      res.status(result.status).json(result.data);
-    } catch (err: any) {
-      console.error("[POST /api/register] crash:", err.message, err.stack);
+      console.error("[POST /api/register] error:", err.message, err.stack);
       res.status(500).json({ error: "Registration failed", details: err.message });
     }
   });
 
-  // ─── Proxy guest login to auth-gateway ───
+  // ════════════════════════════════════════════
+  // POST /api/guest — instant guest account
+  // ════════════════════════════════════════════
   app.post("/api/guest", async (req, res) => {
     try {
-      const result = await gatewayProxy("guest", "POST", req.body);
-      if (result.ok) {
-        await upsertLocalAccount({ ...result.data, isGuest: true }, true);
-      }
-      res.status(result.status).json(result.data);
+      const grudgeId = generateGrudgeId();
+      const username = `Guest-${grudgeId.slice(-8)}`;
+
+      const [account] = await db.insert(accounts).values({
+        grudgeId,
+        username,
+        displayName: `Guest ${grudgeId.slice(-6)}`,
+        isGuest: true,
+        isPremium: false,
+        gold: 500,
+        lastLoginAt: new Date(),
+        metadata: { guestCreatedAt: new Date().toISOString() },
+      }).returning();
+
+      const token = signToken(account);
+
+      res.json({
+        success: true,
+        grudgeId,
+        userId: account.id,
+        username,
+        token,
+        user: buildUserPayload(account),
+        message: "Guest account created. Upgrade to save progress!",
+      });
     } catch (err: any) {
-      console.error("[POST /api/guest] crash:", err.message, err.stack);
+      console.error("[POST /api/guest] error:", err.message, err.stack);
       res.status(500).json({ error: "Guest login failed", details: err.message });
     }
   });
 
-  // ─── Puter sign-in → auth-gateway /api/puter → JWT ───
+  // ════════════════════════════════════════════
+  // POST /api/auth/puter — Puter SSO (find-or-create)
+  // ════════════════════════════════════════════
   app.post("/api/auth/puter", async (req, res) => {
     try {
       const { puterUuid, puterUsername } = req.body || {};
       if (!puterUuid) {
         return res.status(400).json({ error: "puterUuid is required" });
       }
-      const result = await gatewayProxy("puter", "POST", { puterUuid, puterUsername });
-      if (result.ok) {
-        await upsertLocalAccount({ ...result.data, puterUuid, puterUsername }, true);
+
+      let account = await db.query.accounts.findFirst({
+        where: eq(accounts.puterUuid, puterUuid),
+      });
+
+      if (!account) {
+        const grudgeId = generateGrudgeId();
+        const baseUsername = `puter_${puterUsername || puterUuid.slice(0, 8)}`;
+
+        const existingUsername = await db.query.accounts.findFirst({
+          where: eq(accounts.username, baseUsername),
+        });
+        const finalUsername = existingUsername
+          ? `puter_${puterUuid.slice(0, 8)}`
+          : baseUsername;
+
+        let walletAddress: string | undefined;
+        let crossmintWalletId: string | undefined;
+        const wallet = await createCrossmintWallet(grudgeId);
+        if (wallet) {
+          walletAddress = wallet.walletAddress;
+          crossmintWalletId = wallet.walletId;
+        }
+
+        [account] = await db.insert(accounts).values({
+          grudgeId,
+          username: finalUsername,
+          displayName: puterUsername || finalUsername,
+          puterUuid,
+          puterUsername,
+          walletAddress,
+          walletType: walletAddress ? "crossmint-custodial" : undefined,
+          crossmintWalletId,
+          isPremium: false,
+          gold: 1000,
+          gbuxBalance: 100,
+          lastLoginAt: new Date(),
+          metadata: { authMethod: "puter" },
+        }).returning();
+
+        console.log(`✅ New Puter account: ${account.grudgeId} (${finalUsername})`);
+      } else {
+        await db.update(accounts)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(accounts.grudgeId, account.grudgeId));
       }
-      res.status(result.status).json(result.data);
+
+      const token = signToken(account);
+
+      res.json({
+        success: true,
+        grudgeId: account.grudgeId,
+        userId: account.id,
+        username: account.username,
+        displayName: account.displayName,
+        walletAddress: account.walletAddress,
+        token,
+        user: buildUserPayload(account),
+      });
     } catch (err: any) {
-      console.error("[POST /api/auth/puter] crash:", err.message, err.stack);
+      console.error("[POST /api/auth/puter] error:", err.message, err.stack);
       res.status(500).json({ error: "Puter auth failed", details: err.message });
     }
   });
 
-  // ─── Verify token (proxy to auth-gateway /api/verify) ───
-  app.get("/api/auth/verify", async (req, res) => {
+  // ════════════════════════════════════════════
+  // POST /api/auth/link-puter — link Puter UUID to existing account
+  // ════════════════════════════════════════════
+  app.post("/api/auth/link-puter", requireAuth, async (req, res) => {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        return res.status(401).json({ error: "No token provided" });
-      }
-      const result = await gatewayProxy("verify", "GET", undefined, {
-        Authorization: authHeader,
-      });
-      res.status(result.status).json(result.data);
+      const grudgeId = req.grudgeUser?.grudgeId;
+      if (!grudgeId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { puterUuid, puterUsername } = req.body || {};
+      if (!puterUuid) return res.status(400).json({ error: "puterUuid required" });
+
+      await db.update(accounts)
+        .set({
+          puterUuid,
+          puterUsername: puterUsername || undefined,
+          updatedAt: new Date(),
+        })
+        .where(eq(accounts.grudgeId, grudgeId));
+
+      res.json({ success: true, message: "Puter account linked" });
     } catch (err: any) {
-      console.error("[GET /api/auth/verify] crash:", err.message, err.stack);
-      res.status(500).json({ error: "Token verification failed", details: err.message });
+      console.error("[POST /api/auth/link-puter] error:", err.message);
+      res.status(500).json({ error: "Failed to link Puter account" });
     }
   });
 
-  // ─── Get current user (JWT-verified locally) ───
+  // ════════════════════════════════════════════
+  // GET /api/auth/verify — verify JWT, return account info
+  // ════════════════════════════════════════════
+  app.get("/api/auth/verify", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) return res.status(401).json({ error: "No token provided" });
+
+      const decoded = jwt.verify(token, SESSION_SECRET) as any;
+
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.grudgeId, decoded.grudgeId),
+      });
+
+      if (!account) return res.status(404).json({ error: "Account not found" });
+
+      res.json({
+        success: true,
+        grudgeId: account.grudgeId,
+        username: account.username,
+        userId: account.id,
+        isPremium: account.isPremium,
+        user: buildUserPayload(account),
+      });
+    } catch {
+      res.status(401).json({ error: "Invalid or expired token" });
+    }
+  });
+
+  // ════════════════════════════════════════════
+  // GET /api/auth/user — current user from JWT (local verify)
+  // ════════════════════════════════════════════
   app.get("/api/auth/user", requireAuth, (req, res) => {
     const user = req.grudgeUser!;
     res.json({
@@ -284,89 +393,76 @@ export function setupGrudgeAuth(app: Express) {
     });
   });
 
-  // ─── Full profile (enriched from auth-gateway /api/verify) ───
-  app.get("/api/auth/me", async (req, res) => {
+  // ════════════════════════════════════════════
+  // GET /api/auth/me — full profile
+  // ════════════════════════════════════════════
+  app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-      const result = await gatewayProxy("verify", "GET", undefined, {
-        Authorization: authHeader,
+      const grudgeId = req.grudgeUser?.grudgeId;
+      if (!grudgeId) return res.status(401).json({ error: "Not authenticated" });
+
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.grudgeId, grudgeId),
       });
-      if (!result.ok) {
-        return res.status(result.status).json(result.data);
-      }
-      res.json(result.data);
+
+      if (!account) return res.status(404).json({ error: "Account not found" });
+
+      res.json({ success: true, ...buildUserPayload(account) });
     } catch (err: any) {
-      console.error("[GET /api/auth/me] crash:", err.message);
+      console.error("[GET /api/auth/me] error:", err.message);
       res.status(500).json({ error: "Profile fetch failed" });
     }
   });
 
-  // ─── Discord OAuth — get URL or handle callback ───
-  app.get("/api/auth/discord", async (req, res) => {
-    try {
-      const state = req.query.state || req.query.return || '';
-      const qs = state ? `?state=${encodeURIComponent(String(state))}` : '';
-      const result = await gatewayProxy(`discord${qs}`, "GET");
-      res.status(result.status).json(result.data);
-    } catch (err: any) {
-      console.error("[GET /api/auth/discord] crash:", err.message);
-      res.status(500).json({ error: "Discord auth failed" });
-    }
-  });
-
-  // ─── GitHub OAuth — get URL or handle callback ───
-  app.get("/api/auth/github", async (req, res) => {
-    try {
-      const state = req.query.state || req.query.return || '';
-      const qs = state ? `?state=${encodeURIComponent(String(state))}` : '';
-      const result = await gatewayProxy(`github${qs}`, "GET");
-      res.status(result.status).json(result.data);
-    } catch (err: any) {
-      console.error("[GET /api/auth/github] crash:", err.message);
-      res.status(500).json({ error: "GitHub auth failed" });
-    }
-  });
-
-  // ─── Google OAuth — get URL or handle callback ───
-  app.get("/api/auth/google", async (req, res) => {
-    try {
-      const state = req.query.state || req.query.return || '';
-      const qs = state ? `?state=${encodeURIComponent(String(state))}` : '';
-      const result = await gatewayProxy(`google${qs}`, "GET");
-      res.status(result.status).json(result.data);
-    } catch (err: any) {
-      console.error("[GET /api/auth/google] crash:", err.message);
-      res.status(500).json({ error: "Google auth failed" });
-    }
-  });
-
-  // ─── Phone (Twilio SMS) — send code / verify code ───
-  app.post("/api/auth/phone", async (req, res) => {
-    try {
-      const result = await gatewayProxy("phone", "POST", req.body);
-      res.status(result.status).json(result.data);
-    } catch (err: any) {
-      console.error("[POST /api/auth/phone] crash:", err.message);
-      res.status(500).json({ error: "Phone auth failed" });
-    }
-  });
-
-  // ─── Wallet connect — link or login via Solana wallet ───
+  // ════════════════════════════════════════════
+  // POST /api/auth/wallet — link or login via Solana wallet
+  // ════════════════════════════════════════════
   app.post("/api/auth/wallet", async (req, res) => {
     try {
-      const authHeader = req.headers.authorization;
-      const result = await gatewayProxy("connect-wallet", "POST", req.body, {
-        ...(authHeader ? { Authorization: authHeader } : {}),
+      const { walletAddress, walletType } = req.body || {};
+      if (!walletAddress) return res.status(400).json({ error: "walletAddress required" });
+
+      let account = await db.query.accounts.findFirst({
+        where: eq(accounts.walletAddress, walletAddress),
       });
-      res.status(result.status).json(result.data);
+
+      if (!account) {
+        const grudgeId = generateGrudgeId();
+        const username = `sol_${walletAddress.slice(0, 8)}`;
+
+        [account] = await db.insert(accounts).values({
+          grudgeId,
+          username,
+          displayName: username,
+          walletAddress,
+          walletType: walletType || "external",
+          isPremium: false,
+          gold: 1000,
+          lastLoginAt: new Date(),
+          metadata: { authMethod: "wallet" },
+        }).returning();
+      } else {
+        await db.update(accounts)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(accounts.grudgeId, account.grudgeId));
+      }
+
+      const token = signToken(account);
+
+      res.json({
+        success: true,
+        grudgeId: account.grudgeId,
+        userId: account.id,
+        username: account.username,
+        walletAddress: account.walletAddress,
+        token,
+        user: buildUserPayload(account),
+      });
     } catch (err: any) {
-      console.error("[POST /api/auth/wallet] crash:", err.message);
+      console.error("[POST /api/auth/wallet] error:", err.message);
       res.status(500).json({ error: "Wallet auth failed" });
     }
   });
 
-  console.log("✅ Grudge Auth routes registered (gateway proxy mode)");
+  console.log("✅ Grudge Auth routes registered (direct DB mode)");
 }
