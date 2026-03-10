@@ -7,8 +7,13 @@
 
 import type { Express } from "express";
 import { requireAuth } from "./middleware/grudgeJwt";
+import { db } from "./db";
+import { accounts } from "../shared/schema";
+import { eq } from "drizzle-orm";
 
 const AUTH_GATEWAY = process.env.AUTH_GATEWAY_URL || "https://auth-gateway-flax.vercel.app";
+const CROSSMINT_API = "https://www.crossmint.com/api/v1-alpha2";
+const CROSSMINT_KEY = process.env.CROSSMINT_SERVER_API_KEY || "";
 
 // ── Proxy helper ──
 
@@ -44,24 +49,150 @@ async function gatewayProxy(
   }
 }
 
+// ── Crossmint wallet helper ──
+
+async function createCrossmintWallet(
+  grudgeId: string,
+  email?: string,
+): Promise<{ walletId: string; walletAddress: string } | null> {
+  if (!CROSSMINT_KEY) {
+    console.warn("⚠️  CROSSMINT_SERVER_API_KEY not set — skipping wallet creation");
+    return null;
+  }
+  try {
+    const res = await fetch(`${CROSSMINT_API}/wallets`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-KEY": CROSSMINT_KEY,
+      },
+      body: JSON.stringify({
+        chain: "solana",
+        ...(email ? { email } : { linkedUser: `grudge:${grudgeId}` }),
+      }),
+    });
+    if (!res.ok) {
+      console.error("Crossmint wallet creation failed:", res.status, await res.text());
+      return null;
+    }
+    const data = await res.json();
+    return { walletId: data.id, walletAddress: data.publicKey || data.address || "" };
+  } catch (err: any) {
+    console.error("Crossmint wallet error:", err.message);
+    return null;
+  }
+}
+
+// ── Local account upsert helper ──
+
+async function upsertLocalAccount(gatewayData: any, isNewRegistration = false) {
+  const grudgeId = gatewayData.grudgeId || gatewayData.user?.grudgeId;
+  if (!grudgeId) return null;
+
+  const username =
+    gatewayData.username || gatewayData.user?.username || "unknown";
+  const email = gatewayData.email || gatewayData.user?.email;
+  const puterUuid = gatewayData.puterUuid || gatewayData.user?.puterUuid;
+  const puterUsername =
+    gatewayData.puterUsername || gatewayData.user?.puterUsername;
+  const discordId = gatewayData.discordId || gatewayData.user?.discordId;
+  const discordUsername =
+    gatewayData.discordUsername || gatewayData.user?.discordUsername;
+  const isGuest = gatewayData.isGuest ?? gatewayData.user?.isGuest ?? false;
+
+  try {
+    // Check if account already exists
+    const existing = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.grudgeId, grudgeId))
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Update last login + any new fields from gateway
+      await db
+        .update(accounts)
+        .set({
+          lastLoginAt: new Date(),
+          updatedAt: new Date(),
+          ...(puterUuid ? { puterUuid } : {}),
+          ...(puterUsername ? { puterUsername } : {}),
+          ...(discordId ? { discordId } : {}),
+          ...(discordUsername ? { discordUsername } : {}),
+          ...(email ? { email } : {}),
+        })
+        .where(eq(accounts.grudgeId, grudgeId));
+      return existing[0];
+    }
+
+    // New account — create Crossmint wallet if this is a registration
+    let walletAddress: string | undefined;
+    let crossmintWalletId: string | undefined;
+    if (isNewRegistration) {
+      const wallet = await createCrossmintWallet(grudgeId, email);
+      if (wallet) {
+        walletAddress = wallet.walletAddress;
+        crossmintWalletId = wallet.walletId;
+      }
+    }
+
+    const [newAccount] = await db
+      .insert(accounts)
+      .values({
+        grudgeId,
+        username,
+        email,
+        puterUuid,
+        puterUsername,
+        discordId,
+        discordUsername,
+        isGuest,
+        walletAddress,
+        walletType: walletAddress ? "crossmint-custodial" : undefined,
+        crossmintWalletId,
+        lastLoginAt: new Date(),
+      })
+      .returning();
+    return newAccount;
+  } catch (err: any) {
+    console.error("Account upsert error:", err.message);
+    return null;
+  }
+}
+
 // ── Route registration ──
 
 export function setupGrudgeAuth(app: Express) {
   // ─── Proxy login to auth-gateway ───
   app.post("/api/login", async (req, res) => {
     const result = await gatewayProxy("login", "POST", req.body);
+    if (result.ok) {
+      // Upsert local account on successful login (not new registration)
+      await upsertLocalAccount(result.data, false);
+    }
     res.status(result.status).json(result.data);
   });
 
   // ─── Proxy register to auth-gateway ───
   app.post("/api/register", async (req, res) => {
     const result = await gatewayProxy("register", "POST", req.body);
+    if (result.ok) {
+      // New registration → upsert account + create Crossmint wallet
+      const acct = await upsertLocalAccount(result.data, true);
+      if (acct?.walletAddress) {
+        result.data.walletAddress = acct.walletAddress;
+      }
+    }
     res.status(result.status).json(result.data);
   });
 
   // ─── Proxy guest login to auth-gateway ───
   app.post("/api/guest", async (req, res) => {
     const result = await gatewayProxy("guest", "POST", req.body);
+    if (result.ok) {
+      // Upsert guest account (isGuest = true)
+      await upsertLocalAccount({ ...result.data, isGuest: true }, true);
+    }
     res.status(result.status).json(result.data);
   });
 
@@ -73,6 +204,10 @@ export function setupGrudgeAuth(app: Express) {
       return res.status(400).json({ error: "puterUuid is required" });
     }
     const result = await gatewayProxy("puter", "POST", { puterUuid, puterUsername });
+    if (result.ok) {
+      // Upsert account with Puter identity
+      await upsertLocalAccount({ ...result.data, puterUuid, puterUsername }, true);
+    }
     res.status(result.status).json(result.data);
   });
 
