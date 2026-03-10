@@ -23,6 +23,7 @@ import { registerGrudaLegionRoutes } from "./services/grudaLegion";
 import { registerGrudaWarsRoutes } from "./routes/grudaWars";
 import { registerUserRoutes } from "./routes/user";
 import { registerAccountRoutes } from "./routes/accountRoutes";
+import { registerOpenRTSRoutes } from "./routes/openrts";
 import { isDatabaseConfigured } from "./db";
 import { storage } from "./storage";
 import {
@@ -104,6 +105,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 registerGrudaLegionRoutes(app);
 registerGrudaWarsRoutes(app);
 registerAccountRoutes(app);
+registerOpenRTSRoutes(app);
 
 // ════════════════════════════════════════════
 // DB-backed routes (only when DATABASE_URL is set)
