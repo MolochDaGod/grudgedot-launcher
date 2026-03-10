@@ -38,7 +38,7 @@ export default function AchievementsPage() {
           <p className="text-muted-foreground">Sign in to view your progress</p>
         </div>
         <Button asChild data-testid="button-login">
-          <a href="/api/login">
+          <a href="/auth">
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
           </a>

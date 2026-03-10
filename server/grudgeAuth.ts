@@ -12,7 +12,7 @@ import { accounts } from "../shared/schema";
 import { eq } from "drizzle-orm";
 
 const AUTH_GATEWAY = process.env.AUTH_GATEWAY_URL || "https://auth-gateway-flax.vercel.app";
-const CROSSMINT_API = "https://www.crossmint.com/api/v1-alpha2";
+const CROSSMINT_API = "https://www.crossmint.com/api/2025-06-09";
 const CROSSMINT_KEY = process.env.CROSSMINT_SERVER_API_KEY || "";
 
 // ── Proxy helper ──
@@ -60,6 +60,9 @@ async function createCrossmintWallet(
     return null;
   }
   try {
+    // Determine owner: use email if available, otherwise use grudgeId as userId
+    const owner = email ? `email:${email}` : `userId:grudge-${grudgeId}`;
+
     const res = await fetch(`${CROSSMINT_API}/wallets`, {
       method: "POST",
       headers: {
@@ -67,16 +70,22 @@ async function createCrossmintWallet(
         "X-API-KEY": CROSSMINT_KEY,
       },
       body: JSON.stringify({
-        chain: "solana",
-        ...(email ? { email } : { linkedUser: `grudge:${grudgeId}` }),
+        chainType: "solana",
+        type: "mpc",
+        owner,
       }),
     });
     if (!res.ok) {
-      console.error("Crossmint wallet creation failed:", res.status, await res.text());
+      const errText = await res.text();
+      console.error("Crossmint wallet creation failed:", res.status, errText);
       return null;
     }
     const data = await res.json();
-    return { walletId: data.id, walletAddress: data.publicKey || data.address || "" };
+    // New API returns { address, ... } — also handle legacy { publicKey, id }
+    const walletAddress = data.address || data.publicKey || "";
+    const walletId = data.locator || data.id || "";
+    console.log(`✅ Crossmint wallet created for ${owner}: ${walletAddress}`);
+    return { walletId, walletAddress };
   } catch (err: any) {
     console.error("Crossmint wallet error:", err.message);
     return null;
@@ -109,20 +118,35 @@ async function upsertLocalAccount(gatewayData: any, isNewRegistration = false) {
       .limit(1);
 
     if (existing.length > 0) {
-      // Update last login + any new fields from gateway
+      const acct = existing[0];
+      const updateFields: Record<string, any> = {
+        lastLoginAt: new Date(),
+        updatedAt: new Date(),
+        ...(puterUuid ? { puterUuid } : {}),
+        ...(puterUsername ? { puterUsername } : {}),
+        ...(discordId ? { discordId } : {}),
+        ...(discordUsername ? { discordUsername } : {}),
+        ...(email ? { email } : {}),
+      };
+
+      // ── Backfill: create Crossmint wallet if account is missing one ──
+      if (!acct.crossmintWalletId) {
+        console.log(`🔑 Account ${grudgeId} missing wallet — creating Crossmint wallet...`);
+        const wallet = await createCrossmintWallet(grudgeId, email || acct.email || undefined);
+        if (wallet) {
+          updateFields.walletAddress = wallet.walletAddress;
+          updateFields.walletType = "crossmint-custodial";
+          updateFields.crossmintWalletId = wallet.walletId;
+        }
+      }
+
       await db
         .update(accounts)
-        .set({
-          lastLoginAt: new Date(),
-          updatedAt: new Date(),
-          ...(puterUuid ? { puterUuid } : {}),
-          ...(puterUsername ? { puterUsername } : {}),
-          ...(discordId ? { discordId } : {}),
-          ...(discordUsername ? { discordUsername } : {}),
-          ...(email ? { email } : {}),
-        })
+        .set(updateFields)
         .where(eq(accounts.grudgeId, grudgeId));
-      return existing[0];
+
+      // Return updated account
+      return { ...acct, ...updateFields };
     }
 
     // New account — create Crossmint wallet if this is a registration
@@ -163,6 +187,11 @@ async function upsertLocalAccount(gatewayData: any, isNewRegistration = false) {
 // ── Route registration ──
 
 export function setupGrudgeAuth(app: Express) {
+  // ─── GET /api/login & /api/register → redirect to in-app auth page ───
+  // Prevents users from landing on a raw JSON endpoint
+  app.get("/api/login", (_req, res) => res.redirect(302, "/auth"));
+  app.get("/api/register", (_req, res) => res.redirect(302, "/auth"));
+
   // ─── Proxy login to auth-gateway ───
   app.post("/api/login", async (req, res) => {
     const result = await gatewayProxy("login", "POST", req.body);

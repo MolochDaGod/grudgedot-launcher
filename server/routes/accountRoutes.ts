@@ -10,6 +10,9 @@ import { db } from "../db";
 import { accounts, grudgeCharacters } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 
+const CROSSMINT_API = "https://www.crossmint.com/api/2025-06-09";
+const CROSSMINT_KEY = process.env.CROSSMINT_SERVER_API_KEY || "";
+
 export function registerAccountRoutes(app: Express) {
   // ─── GET /api/account/me ───
   // Returns the caller's Grudge account (from local DB)
@@ -154,6 +157,95 @@ export function registerAccountRoutes(app: Express) {
       });
     } catch (err: any) {
       console.error("GET /api/account/wallet error:", err.message);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ─── POST /api/account/wallet/ensure ───
+  // Ensures the caller has a Crossmint server-side Solana wallet.
+  // If one already exists, returns it. Otherwise creates one.
+  app.post("/api/account/wallet/ensure", requireAuth, async (req, res) => {
+    try {
+      const grudgeId = req.grudgeUser?.grudgeId;
+      if (!grudgeId) return res.status(401).json({ error: "No grudgeId in token" });
+
+      const [acct] = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.grudgeId, grudgeId))
+        .limit(1);
+
+      if (!acct) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+
+      // Already has a wallet
+      if (acct.crossmintWalletId && acct.walletAddress) {
+        return res.json({
+          wallet: {
+            walletAddress: acct.walletAddress,
+            walletType: acct.walletType,
+            crossmintWalletId: acct.crossmintWalletId,
+          },
+          created: false,
+        });
+      }
+
+      // Create wallet via Crossmint
+      if (!CROSSMINT_KEY) {
+        return res.status(503).json({ error: "Crossmint API key not configured" });
+      }
+
+      const owner = acct.email
+        ? `email:${acct.email}`
+        : `userId:grudge-${grudgeId}`;
+
+      const cmRes = await fetch(`${CROSSMINT_API}/wallets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": CROSSMINT_KEY,
+        },
+        body: JSON.stringify({
+          chainType: "solana",
+          type: "mpc",
+          owner,
+        }),
+      });
+
+      if (!cmRes.ok) {
+        const errText = await cmRes.text();
+        console.error("Crossmint wallet ensure failed:", cmRes.status, errText);
+        return res.status(502).json({ error: "Wallet creation failed", details: errText });
+      }
+
+      const data = await cmRes.json();
+      const walletAddress = data.address || data.publicKey || "";
+      const crossmintWalletId = data.locator || data.id || "";
+
+      // Persist to account
+      await db
+        .update(accounts)
+        .set({
+          walletAddress,
+          walletType: "crossmint-custodial",
+          crossmintWalletId,
+          updatedAt: new Date(),
+        })
+        .where(eq(accounts.id, acct.id));
+
+      console.log(`✅ Wallet ensured for ${grudgeId}: ${walletAddress}`);
+
+      return res.status(201).json({
+        wallet: {
+          walletAddress,
+          walletType: "crossmint-custodial",
+          crossmintWalletId,
+        },
+        created: true,
+      });
+    } catch (err: any) {
+      console.error("POST /api/account/wallet/ensure error:", err.message);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
