@@ -449,6 +449,11 @@ export default function AuthPage() {
             <p className="text-stone-600 text-xs text-center pt-2">
               Your GRUDGE ID works across all GRUDGE games. Sign in with Puter for Premium features.
             </p>
+            <div className="text-stone-600 text-xs text-center pt-1">
+              <a href="/privacy" className="hover:text-stone-400 underline">Privacy Policy</a>
+              <span className="mx-2">·</span>
+              <a href="/tos" className="hover:text-stone-400 underline">Terms of Service</a>
+            </div>
           </CardContent>
         </Card>
       </motion.div>

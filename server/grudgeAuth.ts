@@ -464,5 +464,167 @@ export function setupGrudgeAuth(app: Express) {
     }
   });
 
+  // ════════════════════════════════════════════
+  // Google OAuth — GET /api/auth/google → redirect URL
+  // ════════════════════════════════════════════
+  app.get("/api/auth/google", (req, res) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return res.status(503).json({ error: "Google OAuth not configured" });
+    }
+
+    const state = (req.query.state as string) || "/";
+    const redirectUri = `${getOrigin(req)}/api/auth/google/callback`;
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "openid email profile",
+      access_type: "offline",
+      prompt: "consent",
+      state,
+    });
+
+    res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params}` });
+  });
+
+  // ════════════════════════════════════════════
+  // Google OAuth callback — GET /api/auth/google/callback
+  // ════════════════════════════════════════════
+  app.get("/api/auth/google/callback", async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      if (!code) return res.status(400).send("Missing authorization code");
+
+      const clientId = process.env.GOOGLE_CLIENT_ID!;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+      const redirectUri = `${getOrigin(req)}/api/auth/google/callback`;
+
+      // Exchange code for tokens
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code: code as string,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        console.error("Google token exchange failed:", await tokenRes.text());
+        return res.redirect(`/auth?error=google_token_failed`);
+      }
+
+      const tokens = await tokenRes.json();
+
+      // Get user info
+      const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      });
+
+      if (!userRes.ok) {
+        return res.redirect(`/auth?error=google_userinfo_failed`);
+      }
+
+      const googleUser = await userRes.json();
+      const googleId = googleUser.id;
+      const googleEmail = googleUser.email;
+      const googleName = googleUser.name || googleEmail?.split("@")[0] || "GoogleUser";
+      const googleAvatar = googleUser.picture;
+
+      // Find existing account by googleId or email
+      let account = await db.query.accounts.findFirst({
+        where: eq(accounts.googleId, googleId),
+      });
+
+      if (!account && googleEmail) {
+        account = await db.query.accounts.findFirst({
+          where: eq(accounts.email, googleEmail),
+        });
+        // Link Google ID to existing email account
+        if (account) {
+          await db.update(accounts)
+            .set({ googleId, googleEmail, avatarUrl: account.avatarUrl || googleAvatar })
+            .where(eq(accounts.id, account.id));
+        }
+      }
+
+      if (!account) {
+        // Create new account
+        const grudgeId = generateGrudgeId();
+        const baseUsername = googleName.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20) || `g_${googleId.slice(0, 8)}`;
+
+        // Ensure unique username
+        const existingUsername = await db.query.accounts.findFirst({
+          where: eq(accounts.username, baseUsername),
+        });
+        const finalUsername = existingUsername
+          ? `${baseUsername}_${crypto.randomBytes(3).toString("hex")}`
+          : baseUsername;
+
+        let walletAddress: string | undefined;
+        let crossmintWalletId: string | undefined;
+        const wallet = await createCrossmintWallet(grudgeId, googleEmail);
+        if (wallet) {
+          walletAddress = wallet.walletAddress;
+          crossmintWalletId = wallet.walletId;
+        }
+
+        [account] = await db.insert(accounts).values({
+          grudgeId,
+          username: finalUsername,
+          displayName: googleName,
+          email: googleEmail,
+          avatarUrl: googleAvatar,
+          googleId,
+          googleEmail,
+          walletAddress,
+          walletType: walletAddress ? "crossmint-custodial" : undefined,
+          crossmintWalletId,
+          isPremium: false,
+          gold: 1000,
+          lastLoginAt: new Date(),
+          metadata: { authMethod: "google" },
+        }).returning();
+
+        console.log(`✅ New Google account: ${account.grudgeId} (${finalUsername})`);
+      } else {
+        await db.update(accounts)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(accounts.grudgeId, account.grudgeId));
+      }
+
+      const token = signToken(account);
+
+      // Redirect back to the app with auth params
+      const returnUrl = (state as string) || "/auth";
+      const separator = returnUrl.includes("?") ? "&" : "?";
+      const authParams = new URLSearchParams({
+        token,
+        grudgeId: account.grudgeId,
+        userId: account.id,
+        username: account.username || "",
+        displayName: account.displayName || "",
+        provider: "google",
+      });
+
+      res.redirect(`${returnUrl}${separator}${authParams}`);
+    } catch (err: any) {
+      console.error("[GET /api/auth/google/callback] error:", err.message, err.stack);
+      res.redirect(`/auth?error=google_auth_failed`);
+    }
+  });
+
   console.log("✅ Grudge Auth routes registered (direct DB mode)");
+}
+
+// Helper to derive origin from request (handles Vercel proxying)
+function getOrigin(req: any): string {
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${proto}://${host}`;
 }

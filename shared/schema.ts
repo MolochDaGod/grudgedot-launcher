@@ -664,6 +664,9 @@ export const accounts = pgTable("accounts", {
   // Auth — Puter (Grudge ID IS the Puter ID)
   puterUuid: varchar("puter_uuid", { length: 255 }),
   puterUsername: varchar("puter_username", { length: 100 }),
+  // Auth — Google
+  googleId: varchar("google_id", { length: 255 }),
+  googleEmail: varchar("google_email", { length: 255 }),
   // Auth — Discord
   discordId: varchar("discord_id", { length: 255 }),
   discordUsername: varchar("discord_username", { length: 100 }),

@@ -18,6 +18,8 @@ import ChatPage from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 
 const AuthPage = lazy(() => import("@/pages/auth"));
+const PrivacyPage = lazy(() => import("@/pages/privacy"));
+const TermsPage = lazy(() => import("@/pages/tos"));
 
 const ProjectsPage = lazy(() => import("@/pages/projects"));
 const DocsPage = lazy(() => import("@/pages/docs"));
@@ -235,6 +237,12 @@ function AuthRouter() {
       <Route path="/auth">
         <AuthPage />
         <Toaster />
+      </Route>
+      <Route path="/privacy">
+        <PrivacyPage />
+      </Route>
+      <Route path="/tos">
+        <TermsPage />
       </Route>
       <Route>
         <AuthGuard>

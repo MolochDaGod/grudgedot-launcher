@@ -1,0 +1,163 @@
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+export default function TermsPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 text-stone-200">
+      <div className="max-w-3xl mx-auto px-6 py-12">
+        <Link href="/auth" className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 mb-8">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Login
+        </Link>
+
+        <h1
+          className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800 font-serif mb-2"
+        >
+          Terms of Service
+        </h1>
+        <p className="text-stone-500 text-sm mb-8">Last updated: March 11, 2026</p>
+
+        <div className="space-y-6 text-stone-300 text-sm leading-relaxed">
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">1. Acceptance of Terms</h2>
+            <p>
+              By accessing or using the GDevelop Assistant platform, Grudge Warlords, or any
+              Grudge Studio services ("Services"), you agree to be bound by these Terms of
+              Service. If you do not agree, do not use the Services.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">2. GRUDGE ID & Account</h2>
+            <p>
+              When you create an account, you receive a unique GRUDGE ID that serves as your
+              identity across all Grudge Studio games and services. You are responsible for
+              maintaining the security of your account credentials. You may not share, sell, or
+              transfer your GRUDGE ID.
+            </p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li>One account per person. Multiple accounts may be suspended.</li>
+              <li>Guest accounts are temporary and may be purged after 90 days of inactivity.</li>
+              <li>Account names must not be offensive, impersonate others, or violate trademarks.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">3. Use of Services</h2>
+            <p>You agree to use the Services only for lawful purposes. You may not:</p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li>Exploit bugs, glitches, or vulnerabilities for unfair advantage</li>
+              <li>Use bots, scripts, or automation to interact with the Services without permission</li>
+              <li>Harass, threaten, or abuse other users</li>
+              <li>Attempt to gain unauthorized access to other accounts or our systems</li>
+              <li>Reverse engineer, decompile, or disassemble any part of the Services</li>
+              <li>Use the AI assistant to generate harmful, illegal, or abusive content</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">4. Virtual Currency & Items</h2>
+            <p>
+              Gold, GBUX, and other in-game currencies are virtual items with no real-world
+              monetary value unless explicitly stated. Grudge Studio reserves the right to modify
+              virtual currency balances, item values, and game economies at any time.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">5. NFTs & Blockchain</h2>
+            <p>
+              Certain in-game items (characters, islands) may be minted as compressed NFTs (cNFTs)
+              on the Solana blockchain. By minting, you acknowledge:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li>Blockchain transactions are irreversible</li>
+              <li>NFT ownership is tracked on-chain and subject to blockchain rules</li>
+              <li>Grudge Studio is not responsible for loss due to wallet compromise</li>
+              <li>Custodial wallets (via Crossmint) are provided for convenience but are managed by Crossmint's terms</li>
+              <li>NFT ownership does not grant intellectual property rights to Grudge Studio assets</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">6. User Content</h2>
+            <p>
+              You retain ownership of original content you create (custom maps, character
+              configurations, chat messages). By using the Services, you grant Grudge Studio a
+              non-exclusive, worldwide license to store, display, and process your content as
+              needed to operate the Services.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">7. AI-Generated Content</h2>
+            <p>
+              Content generated by AI features (chat responses, sprites, 3D models, game
+              suggestions) is provided as-is. Grudge Studio does not guarantee accuracy,
+              completeness, or fitness for any particular purpose. AI outputs may be subject to
+              third-party AI provider terms (xAI, OpenAI, Meshy).
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">8. Intellectual Property</h2>
+            <p>
+              The Grudge Studio name, logos, game assets, UI designs, and all associated
+              intellectual property are owned by Grudge Studio. You may not reproduce, distribute,
+              or create derivative works without explicit permission.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">9. Termination</h2>
+            <p>
+              We may suspend or terminate your account at our discretion for violations of these
+              terms. You may delete your account at any time by contacting us. Upon termination,
+              your access to the Services will cease, but blockchain data will persist on-chain.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">10. Disclaimer of Warranties</h2>
+            <p>
+              The Services are provided "as is" and "as available" without warranties of any kind,
+              either express or implied. Grudge Studio does not guarantee uninterrupted or
+              error-free operation. Games are in active development and features may change.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">11. Limitation of Liability</h2>
+            <p>
+              To the maximum extent permitted by law, Grudge Studio shall not be liable for any
+              indirect, incidental, special, or consequential damages arising from your use of
+              the Services, including loss of virtual items, data, or cryptocurrency.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">12. Changes to Terms</h2>
+            <p>
+              We may update these Terms at any time. Material changes will be communicated through
+              the platform. Continued use after changes constitutes acceptance of the new Terms.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-100 mb-2">13. Contact</h2>
+            <p>
+              Questions about these Terms can be directed to Grudge Studio through our Discord
+              community or GitHub repository.
+            </p>
+          </section>
+        </div>
+
+        <div className="mt-10 pt-6 border-t border-stone-800 text-stone-600 text-xs text-center">
+          <Link href="/privacy" className="hover:text-stone-400">Privacy Policy</Link>
+          <span className="mx-2">·</span>
+          <Link href="/auth" className="hover:text-stone-400">Sign In</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
