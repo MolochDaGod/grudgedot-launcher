@@ -9,10 +9,13 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "Roboto", "sans-serif"],
-        serif: ["Cinzel", "Georgia", "serif"],
+        sans: ["Spectral SC", "Inter", "serif"],
+        serif: ["Cinzel Decorative", "Cinzel", "serif"],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
-        display: ["Cinzel", "Cinzel Decorative", "serif"],
+        display: ["Cinzel Decorative", "Cinzel", "serif"],
+        fell: ["IM Fell English SC", "serif"],
+        heading: ["Cinzel Decorative", "Cinzel", "serif"],
+        body: ["Spectral SC", "Inter", "serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
