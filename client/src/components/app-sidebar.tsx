@@ -3,7 +3,7 @@ import {
   Swords, Wand2, Users, User, Wallet, Trophy, Sword, Crown,
   Joystick, Puzzle, Zap, Rocket, Box, Plane, Shield, Target, Crosshair, Map,
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
-  Compass,
+  Compass, Package,
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,6 +57,12 @@ const mainMenuItems = [
     title: "Effects Playground",
     url: "/effects",
     icon: Wand2,
+  },
+  {
+    title: "ObjectStore Library",
+    url: "/asset-library",
+    icon: Package,
+    badge: "8K+",
   },
   {
     title: "Asset Gallery",

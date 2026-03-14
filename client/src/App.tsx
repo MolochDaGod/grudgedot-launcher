@@ -51,6 +51,7 @@ const FeaturedGames = lazy(() => import("@/pages/featured-games"));
 const GrudgeSwarm = lazy(() => import("@/pages/grudge-swarm"));
 const GrudaWars = lazy(() => import("@/pages/gruda-wars"));
 const OnboardingPage = lazy(() => import("@/pages/onboarding"));
+const AssetLibrary = lazy(() => import("@/pages/asset-library"));
 
 function PageLoader() {
   return (
@@ -103,6 +104,7 @@ function Router() {
         <Route path="/grudge-swarm" component={GrudgeSwarm} />
         <Route path="/gruda-wars" component={GrudaWars} />
         <Route path="/onboarding" component={OnboardingPage} />
+        <Route path="/asset-library" component={AssetLibrary} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -148,6 +150,7 @@ function Header() {
     if (location === "/mmo") return "MMO World";
     if (location === "/games") return "Featured Games";
     if (location === "/onboarding") return "Get Started";
+    if (location === "/asset-library") return "ObjectStore Library";
     return "Grudge Brawl";
   };
 
