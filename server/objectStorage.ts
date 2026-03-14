@@ -1,49 +1,20 @@
-// Referenced from javascript_object_storage integration blueprint
-import { Storage, File } from "@google-cloud/storage";
+/**
+ * Object Storage Service — Grudge Backend Asset Proxy
+ *
+ * Replaces the Replit GCS sidecar with calls to the Grudge backend
+ * asset-service at assets-api.grudge-studio.com.
+ *
+ * On Vercel (production), asset routes proxy to the backend.
+ * Static manifest (public/asset-manifest.json) provides offline fallback.
+ */
+
 import { Response } from "express";
 import { randomUUID } from "crypto";
 import * as fs from "fs";
 import * as nodePath from "path";
-import {
-  ObjectAclPolicy,
-  ObjectPermission,
-  canAccessObject,
-  getObjectAclPolicy,
-  setObjectAclPolicy,
-} from "./objectAcl";
 
-const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
-const IS_REPLIT = !!process.env.REPL_ID || !!process.env.REPLIT_DEPLOYMENT;
-
-// Only create the GCS client when running on Replit (sidecar available).
-// On Vercel the object-storage routes are unused — they'll return 503 gracefully.
-export const objectStorageClient: Storage | null = IS_REPLIT
-  ? new Storage({
-      credentials: {
-        audience: "replit",
-        subject_token_type: "access_token",
-        token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-        type: "external_account",
-        credential_source: {
-          url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-          format: {
-            type: "json",
-            subject_token_field_name: "access_token",
-          },
-        },
-        universe_domain: "googleapis.com",
-      },
-      projectId: "",
-    })
-  : null;
-
-/** Throws if called outside Replit (sidecar unavailable). */
-function requireClient(): Storage {
-  if (!objectStorageClient) {
-    throw new Error("Object storage unavailable (Replit sidecar not running)");
-  }
-  return objectStorageClient;
-}
+const ASSETS_API = process.env.ASSETS_API_URL || process.env.VITE_ASSETS_URL || "https://assets-api.grudge-studio.com";
+const OBJECTSTORE_BASE = process.env.VITE_OBJECTSTORE_URL || "https://molochdagod.github.io/ObjectStore";
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -53,360 +24,213 @@ export class ObjectNotFoundError extends Error {
   }
 }
 
+/**
+ * Indicates whether the backend asset-service is available.
+ * Always true on the server side — routes gracefully handle 502/503.
+ */
+export const objectStorageClient: object | null = { provider: "grudge-backend" };
+
 export class ObjectStorageService {
-  constructor() {}
+  private token?: string;
 
-  getPublicObjectSearchPaths(): Array<string> {
-    const pathsStr = process.env.PUBLIC_OBJECT_SEARCH_PATHS || "";
-    const paths = Array.from(
-      new Set(
-        pathsStr
-          .split(",")
-          .map((path) => path.trim())
-          .filter((path) => path.length > 0)
-      )
-    );
-    if (paths.length === 0) {
-      throw new Error(
-        "PUBLIC_OBJECT_SEARCH_PATHS not set. Create a bucket in 'Object Storage' " +
-          "tool and set PUBLIC_OBJECT_SEARCH_PATHS env var (comma-separated paths)."
-      );
-    }
-    return paths;
+  constructor(token?: string) {
+    this.token = token;
   }
 
-  getPrivateObjectDir(): string {
-    const dir = process.env.PRIVATE_OBJECT_DIR || "";
-    if (!dir) {
-      throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          "tool and set PRIVATE_OBJECT_DIR env var."
-      );
-    }
-    return dir;
+  // ── Internal fetch helper ────────────────────────────────────
+  private async backendFetch(path: string, init?: RequestInit): Promise<globalThis.Response> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(init?.headers as Record<string, string> || {}),
+    };
+    if (this.token) headers.Authorization = `Bearer ${this.token}`;
+
+    return fetch(`${ASSETS_API}${path}`, { ...init, headers });
   }
 
-  async searchPublicObject(filePath: string): Promise<File | null> {
-    for (const searchPath of this.getPublicObjectSearchPaths()) {
-      const fullPath = `${searchPath}/${filePath}`;
-      const { bucketName, objectName } = parseObjectPath(fullPath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-
-      const [exists] = await file.exists();
-      if (exists) {
-        return file;
+  // ── Public object search (used by /public-objects/:path) ─────
+  async searchPublicObject(filePath: string): Promise<{ name: string; streamUrl: string } | null> {
+    // First try the backend asset-service
+    try {
+      const res = await this.backendFetch(`/assets/public/${filePath}`, { method: "HEAD" });
+      if (res.ok) {
+        return { name: filePath, streamUrl: `${ASSETS_API}/assets/public/${filePath}` };
       }
+    } catch {
+      // Backend unreachable — fall through to ObjectStore CDN
+    }
+
+    // Fallback: try ObjectStore GitHub Pages CDN
+    try {
+      const cdnUrl = `${OBJECTSTORE_BASE}/${filePath}`;
+      const res = await fetch(cdnUrl, { method: "HEAD" });
+      if (res.ok) {
+        return { name: filePath, streamUrl: cdnUrl };
+      }
+    } catch {
+      // CDN also unreachable
     }
 
     return null;
   }
 
-  async downloadObject(file: File, res: Response, cacheTtlSec: number = 3600) {
+  // ── Download / stream a file to the Express response ─────────
+  async downloadObject(file: { name: string; streamUrl: string }, res: Response, cacheTtlSec: number = 3600) {
     try {
-      const [metadata] = await file.getMetadata();
-      const aclPolicy = await getObjectAclPolicy(file);
-      const isPublic = aclPolicy?.visibility === "public";
+      const upstream = await fetch(file.streamUrl);
+      if (!upstream.ok) {
+        if (!res.headersSent) res.status(upstream.status).json({ error: "Upstream fetch failed" });
+        return;
+      }
+
+      const contentType = upstream.headers.get("content-type") || "application/octet-stream";
+      const contentLength = upstream.headers.get("content-length");
 
       res.set({
-        "Content-Type": metadata.contentType || "application/octet-stream",
-        "Content-Length": metadata.size,
-        "Cache-Control": `${
-          isPublic ? "public" : "private"
-        }, max-age=${cacheTtlSec}`,
+        "Content-Type": contentType,
+        ...(contentLength && { "Content-Length": contentLength }),
+        "Cache-Control": `public, max-age=${cacheTtlSec}`,
       });
 
-      const stream = file.createReadStream();
-
-      stream.on("error", (err: Error) => {
-        console.error("Stream error:", err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: "Error streaming file" });
-        }
-      });
-
-      stream.pipe(res);
+      // Pipe the upstream body to the response
+      if (upstream.body) {
+        const reader = upstream.body.getReader();
+        const pump = async () => {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) { res.end(); break; }
+            res.write(value);
+          }
+        };
+        pump().catch((err) => {
+          console.error("Stream error:", err);
+          if (!res.headersSent) res.status(500).json({ error: "Error streaming file" });
+        });
+      } else {
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        res.send(buffer);
+      }
     } catch (error) {
       console.error("Error downloading file:", error);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Error downloading file" });
-      }
+      if (!res.headersSent) res.status(500).json({ error: "Error downloading file" });
     }
   }
 
+  // ── List files from backend ──────────────────────────────────
   async listFiles(prefix: string): Promise<Array<{ name: string; size?: number; updated?: string }>> {
-    const publicSearchPaths = this.getPublicObjectSearchPaths();
-    if (publicSearchPaths.length === 0) {
-      return [];
-    }
-    
-    const basePath = publicSearchPaths[0];
-    const { bucketName } = parseObjectPath(basePath);
-    const bucket = objectStorageClient.bucket(bucketName);
-    
-    const [files] = await bucket.getFiles({ prefix });
-    
-    return files.map(file => ({
-      name: file.name,
-      size: file.metadata?.size ? parseInt(String(file.metadata.size), 10) : undefined,
-      updated: file.metadata?.updated as string | undefined,
-    }));
+    try {
+      const res = await this.backendFetch(`/assets/list?prefix=${encodeURIComponent(prefix)}`);
+      if (res.ok) return res.json();
+    } catch { /* fallback below */ }
+    return [];
   }
 
+  // ── Upload URL generation (proxied to backend) ───────────────
   async getObjectEntityUploadURL(): Promise<string> {
-    const privateObjectDir = this.getPrivateObjectDir();
-    if (!privateObjectDir) {
-      throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          "tool and set PRIVATE_OBJECT_DIR env var."
-      );
-    }
-
-    const objectId = randomUUID();
-    const fullPath = `${privateObjectDir}/uploads/${objectId}`;
-
-    const { bucketName, objectName } = parseObjectPath(fullPath);
-
-    return signObjectURL({
-      bucketName,
-      objectName,
-      method: "PUT",
-      ttlSec: 900,
+    const res = await this.backendFetch("/assets/upload-url", {
+      method: "POST",
+      body: JSON.stringify({ type: "private", id: randomUUID() }),
     });
+    if (!res.ok) throw new Error(`Upload URL generation failed: ${res.status}`);
+    const data = await res.json();
+    return data.uploadURL || data.url;
   }
 
-  // Get upload URL for public asset files (images, models, shaders)
-  async getAssetUploadURL(fileName: string, contentType: string): Promise<{uploadURL: string, publicPath: string}> {
-    const publicSearchPaths = this.getPublicObjectSearchPaths();
-    if (publicSearchPaths.length === 0) {
-      throw new Error("PUBLIC_OBJECT_SEARCH_PATHS not set");
-    }
-
-    // Use first public search path for uploads
-    const basePath = publicSearchPaths[0];
-    const fileId = randomUUID();
-    const extension = fileName.split('.').pop() || '';
-    const sanitizedName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const publicPath = `assets/${fileId}_${sanitizedName}`;
-    const fullPath = `${basePath}/${publicPath}`;
-
-    const { bucketName, objectName } = parseObjectPath(fullPath);
-
-    const uploadURL = await signObjectURL({
-      bucketName,
-      objectName,
-      method: "PUT",
-      ttlSec: 900,
-      contentType,
+  async getAssetUploadURL(fileName: string, contentType: string): Promise<{ uploadURL: string; publicPath: string }> {
+    const res = await this.backendFetch("/assets/upload-url", {
+      method: "POST",
+      body: JSON.stringify({ fileName, contentType }),
     });
-
-    return { uploadURL, publicPath };
-  }
-
-  async getObjectEntityFile(objectPath: string): Promise<File> {
-    if (!objectPath.startsWith("/objects/")) {
-      throw new ObjectNotFoundError();
-    }
-
-    const parts = objectPath.slice(1).split("/");
-    if (parts.length < 2) {
-      throw new ObjectNotFoundError();
-    }
-
-    const entityId = parts.slice(1).join("/");
-    let entityDir = this.getPrivateObjectDir();
-    if (!entityDir.endsWith("/")) {
-      entityDir = `${entityDir}/`;
-    }
-    const objectEntityPath = `${entityDir}${entityId}`;
-    const { bucketName, objectName } = parseObjectPath(objectEntityPath);
-    const bucket = objectStorageClient.bucket(bucketName);
-    const objectFile = bucket.file(objectName);
-    const [exists] = await objectFile.exists();
-    if (!exists) {
-      throw new ObjectNotFoundError();
-    }
-    return objectFile;
-  }
-
-  normalizeObjectEntityPath(rawPath: string): string {
-    if (!rawPath.startsWith("https://storage.googleapis.com/")) {
-      return rawPath;
-    }
-
-    const url = new URL(rawPath);
-    const rawObjectPath = url.pathname;
-
-    let objectEntityDir = this.getPrivateObjectDir();
-    if (!objectEntityDir.endsWith("/")) {
-      objectEntityDir = `${objectEntityDir}/`;
-    }
-
-    if (!rawObjectPath.startsWith(objectEntityDir)) {
-      return rawObjectPath;
-    }
-
-    const entityId = rawObjectPath.slice(objectEntityDir.length);
-    return `/objects/${entityId}`;
-  }
-
-  async trySetObjectEntityAclPolicy(
-    rawPath: string,
-    aclPolicy: ObjectAclPolicy
-  ): Promise<string> {
-    const normalizedPath = this.normalizeObjectEntityPath(rawPath);
-    if (!normalizedPath.startsWith("/")) {
-      return normalizedPath;
-    }
-
-    const objectFile = await this.getObjectEntityFile(normalizedPath);
-    await setObjectAclPolicy(objectFile, aclPolicy);
-    return normalizedPath;
-  }
-
-  async canAccessObjectEntity({
-    userId,
-    objectFile,
-    requestedPermission,
-  }: {
-    userId?: string;
-    objectFile: File;
-    requestedPermission?: ObjectPermission;
-  }): Promise<boolean> {
-    return canAccessObject({
-      userId,
-      objectFile,
-      requestedPermission: requestedPermission ?? ObjectPermission.READ,
-    });
+    if (!res.ok) throw new Error(`Asset upload URL generation failed: ${res.status}`);
+    return res.json();
   }
 
   async getOrganizedAssetUploadURL(
-    fileName: string, 
-    contentType: string, 
+    fileName: string,
+    contentType: string,
     folder: string
-  ): Promise<{uploadURL: string, publicPath: string, fullStoragePath: string}> {
-    const publicSearchPaths = this.getPublicObjectSearchPaths();
-    if (publicSearchPaths.length === 0) {
-      throw new Error("PUBLIC_OBJECT_SEARCH_PATHS not set");
-    }
-
-    const basePath = publicSearchPaths[0];
-    const fileId = randomUUID().slice(0, 8);
-    const sanitizedName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const sanitizedFolder = folder.replace(/[^a-zA-Z0-9/-]/g, '_');
-    const publicPath = `game-assets/${sanitizedFolder}/${fileId}_${sanitizedName}`;
-    const fullPath = `${basePath}/${publicPath}`;
-
-    const { bucketName, objectName } = parseObjectPath(fullPath);
-
-    const uploadURL = await signObjectURL({
-      bucketName,
-      objectName,
-      method: "PUT",
-      ttlSec: 900,
-      contentType,
+  ): Promise<{ uploadURL: string; publicPath: string; fullStoragePath: string }> {
+    const res = await this.backendFetch("/assets/upload-url", {
+      method: "POST",
+      body: JSON.stringify({ fileName, contentType, folder }),
     });
-
-    return { uploadURL, publicPath, fullStoragePath: fullPath };
+    if (!res.ok) throw new Error(`Organized upload URL generation failed: ${res.status}`);
+    return res.json();
   }
 
+  // ── Upload from local file (proxied to backend) ──────────────
   async uploadFileToStorage(
     localPath: string,
     folder: string,
     fileName: string
-  ): Promise<{publicPath: string, fullStoragePath: string}> {
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    
-    const fileBuffer = await fs.readFile(localPath);
+  ): Promise<{ publicPath: string; fullStoragePath: string }> {
+    const fsP = await import("fs/promises");
+    const path = await import("path");
+
+    const fileBuffer = await fsP.readFile(localPath);
     const ext = path.extname(fileName).toLowerCase();
-    
+
     const contentTypeMap: Record<string, string> = {
-      '.glb': 'model/gltf-binary',
-      '.gltf': 'model/gltf+json',
-      '.fbx': 'application/octet-stream',
-      '.obj': 'model/obj',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.tga': 'image/x-tga',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
+      ".glb": "model/gltf-binary",
+      ".gltf": "model/gltf+json",
+      ".fbx": "application/octet-stream",
+      ".obj": "model/obj",
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".tga": "image/x-tga",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
     };
-    
-    const contentType = contentTypeMap[ext] || 'application/octet-stream';
-    
+    const contentType = contentTypeMap[ext] || "application/octet-stream";
+
     const { uploadURL, publicPath, fullStoragePath } = await this.getOrganizedAssetUploadURL(
       fileName,
       contentType,
       folder
     );
-    
+
     const uploadResponse = await fetch(uploadURL, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': contentType,
-      },
+      method: "PUT",
+      headers: { "Content-Type": contentType },
       body: fileBuffer,
     });
-    
+
     if (!uploadResponse.ok) {
       throw new Error(`Failed to upload ${fileName}: ${uploadResponse.status}`);
     }
-    
+
     return { publicPath, fullStoragePath };
   }
 
-  async listStorageAssets(folder?: string): Promise<Array<{name: string, path: string}>> {
-    const publicSearchPaths = this.getPublicObjectSearchPaths();
-    if (publicSearchPaths.length === 0) {
-      return [];
-    }
-
-    const basePath = publicSearchPaths[0];
-    const prefix = folder ? `game-assets/${folder}/` : 'game-assets/';
-    const { bucketName, objectName } = parseObjectPath(`${basePath}/${prefix}`);
-    
-    const bucket = objectStorageClient.bucket(bucketName);
-    const [files] = await bucket.getFiles({ prefix: objectName });
-    
-    return files.map(file => ({
-      name: file.name.split('/').pop() || file.name,
-      path: `/${bucketName}/${file.name}`,
-    }));
+  // ── List storage assets ──────────────────────────────────────
+  async listStorageAssets(folder?: string): Promise<Array<{ name: string; path: string }>> {
+    try {
+      const qs = folder ? `?folder=${encodeURIComponent(folder)}` : "";
+      const res = await this.backendFetch(`/assets/storage-list${qs}`);
+      if (res.ok) return res.json();
+    } catch { /* fallback */ }
+    return [];
   }
 
-  async listAllPublicAssets(prefix?: string): Promise<Array<{name: string, path: string, fullPath: string}>> {
-    // Fallback to static manifest when GCS is unavailable (Vercel)
-    if (!objectStorageClient) {
-      const assets = this.getStaticManifest();
-      let filtered = assets;
-      if (prefix) {
-        filtered = assets.filter(a => a.storagePath?.includes(prefix));
-      }
-      return filtered.map(a => ({
-        name: a.filename,
-        path: a.storagePath || a.url,
-        fullPath: a.url,
-      }));
-    }
+  async listAllPublicAssets(prefix?: string): Promise<Array<{ name: string; path: string; fullPath: string }>> {
+    // Try backend first
+    try {
+      const qs = prefix ? `?prefix=${encodeURIComponent(prefix)}` : "";
+      const res = await this.backendFetch(`/assets/public-list${qs}`);
+      if (res.ok) return res.json();
+    } catch { /* fallback to static manifest */ }
 
-    const publicSearchPaths = this.getPublicObjectSearchPaths();
-    if (publicSearchPaths.length === 0) {
-      return [];
+    // Fallback to static manifest
+    const assets = this.getStaticManifest();
+    let filtered = assets;
+    if (prefix) {
+      filtered = assets.filter((a) => a.storagePath?.includes(prefix));
     }
-
-    const basePath = publicSearchPaths[0];
-    const { bucketName, objectName } = parseObjectPath(basePath);
-    const searchPrefix = prefix ? `${objectName}/${prefix}` : objectName;
-    
-    const bucket = objectStorageClient.bucket(bucketName);
-    const [files] = await bucket.getFiles({ prefix: searchPrefix });
-    
-    return files.map(file => ({
-      name: file.name.split('/').pop() || file.name,
-      path: file.name.replace(objectName + '/', ''),
-      fullPath: `/${bucketName}/${file.name}`,
+    return filtered.map((a) => ({
+      name: a.filename,
+      path: a.storagePath || a.url,
+      fullPath: a.url,
     }));
   }
 
@@ -414,7 +238,7 @@ export class ObjectStorageService {
     return `/api/assets/public/${publicPath}`;
   }
 
-  // Read static asset manifest bundled in public/ (used as fallback when GCS unavailable)
+  // ── Static manifest fallback (bundled in public/) ────────────
   private getStaticManifest(filter?: { type?: string; folder?: string }): Array<{
     id: string;
     uuid: string;
@@ -432,19 +256,15 @@ export class ObjectStorageService {
       const raw = fs.readFileSync(manifestPath, "utf-8");
       const manifest = JSON.parse(raw);
       let assets: any[] = manifest.assets || [];
-      if (filter?.type) {
-        assets = assets.filter((a: any) => a.type === filter.type);
-      }
-      if (filter?.folder) {
-        assets = assets.filter((a: any) => a.folder?.includes(filter.folder!));
-      }
+      if (filter?.type) assets = assets.filter((a: any) => a.type === filter.type);
+      if (filter?.folder) assets = assets.filter((a: any) => a.folder?.includes(filter.folder!));
       return assets;
     } catch {
       return [];
     }
   }
 
-  // Enhanced asset registry with UUIDs and full metadata
+  // ── Asset registry (with UUIDs and metadata) ─────────────────
   async getAssetRegistry(filter?: { type?: string; folder?: string }): Promise<Array<{
     id: string;
     uuid: string;
@@ -458,182 +278,41 @@ export class ObjectStorageService {
     contentType?: string;
     createdAt?: string;
   }>> {
-    // Fallback to static manifest when GCS is unavailable (Vercel)
-    if (!objectStorageClient) {
-      return this.getStaticManifest(filter);
-    }
-
-    const publicSearchPaths = this.getPublicObjectSearchPaths();
-    if (publicSearchPaths.length === 0) {
-      return this.getStaticManifest(filter);
-    }
-
-    const basePath = publicSearchPaths[0];
-    const { bucketName, objectName } = parseObjectPath(basePath);
-    
-    const bucket = objectStorageClient.bucket(bucketName);
-    const [files] = await bucket.getFiles({ prefix: objectName });
-    
-    const assets = await Promise.all(files.map(async (file) => {
-      const filename = file.name.split('/').pop() || file.name;
-      const relativePath = file.name.replace(objectName + '/', '');
-      const pathParts = relativePath.split('/');
-      const folder = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : 'root';
-      
-      // Determine file type from extension
-      const ext = filename.split('.').pop()?.toLowerCase() || '';
-      const typeMap: Record<string, string> = {
-        'glb': 'model', 'gltf': 'model', 'fbx': 'model', 'obj': 'model',
-        'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'webp': 'image', 'gif': 'image',
-        'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio',
-        'json': 'data', 'xml': 'data',
-      };
-      const type = typeMap[ext] || 'other';
-      
-      // Generate a consistent UUID from the file path
-      const crypto = await import('crypto');
-      const uuid = crypto.createHash('md5').update(file.name).digest('hex');
-      const shortId = uuid.substring(0, 8);
-      
-      // Get metadata if available
-      let metadata: any = {};
-      try {
-        [metadata] = await file.getMetadata();
-      } catch (e) {
-        // Ignore metadata errors
+    // Try backend first
+    try {
+      const params = new URLSearchParams();
+      if (filter?.type) params.set("type", filter.type);
+      if (filter?.folder) params.set("folder", filter.folder);
+      const qs = params.toString() ? `?${params}` : "";
+      const res = await this.backendFetch(`/assets/registry${qs}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.assets || data;
       }
-      
-      return {
-        id: shortId,
-        uuid: uuid,
-        filename: filename,
-        type: type,
-        folder: folder,
-        url: `/public-objects/${relativePath}`,
-        directUrl: `/api/asset-registry/${shortId}`,
-        storagePath: `/${bucketName}/${file.name}`,
-        size: metadata.size ? parseInt(metadata.size) : undefined,
-        contentType: metadata.contentType,
-        createdAt: metadata.timeCreated,
-      };
-    }));
-    
-    // Apply filters
-    let filtered = assets;
-    if (filter?.type) {
-      filtered = filtered.filter(a => a.type === filter.type);
-    }
-    if (filter?.folder) {
-      filtered = filtered.filter(a => a.folder.includes(filter.folder!));
-    }
-    
-    return filtered;
+    } catch { /* fallback to static manifest */ }
+
+    return this.getStaticManifest(filter);
   }
 
-  // Find asset URL from static manifest by ID (used on Vercel for redirect)
+  // ── Find static asset URL by ID ──────────────────────────────
   getStaticAssetUrl(id: string): string | null {
     const assets = this.getStaticManifest();
-    const asset = assets.find(a => a.id === id || a.uuid === id);
+    const asset = assets.find((a) => a.id === id || a.uuid === id);
     return asset?.url || null;
   }
 
-  async getAssetById(id: string): Promise<{
-    file: File;
-    metadata: any;
-  } | null> {
-    if (!objectStorageClient) {
-      return null;
-    }
-
-    const publicSearchPaths = this.getPublicObjectSearchPaths();
-    if (publicSearchPaths.length === 0) {
-      return null;
-    }
-
-    const basePath = publicSearchPaths[0];
-    const { bucketName, objectName } = parseObjectPath(basePath);
-    
-    const bucket = objectStorageClient.bucket(bucketName);
-    const [files] = await bucket.getFiles({ prefix: objectName });
-    
-    const crypto = await import('crypto');
-    
-    for (const file of files) {
-      const uuid = crypto.createHash('md5').update(file.name).digest('hex');
-      const shortId = uuid.substring(0, 8);
-      
-      if (shortId === id || uuid === id) {
-        const [metadata] = await file.getMetadata();
-        return { file, metadata };
+  // ── Get asset by ID (from backend) ───────────────────────────
+  async getAssetById(id: string): Promise<{ streamUrl: string; metadata: any } | null> {
+    try {
+      const res = await this.backendFetch(`/assets/${id}/info`);
+      if (res.ok) {
+        const metadata = await res.json();
+        return {
+          streamUrl: `${ASSETS_API}/assets/${id}`,
+          metadata,
+        };
       }
-    }
-    
+    } catch { /* not found */ }
     return null;
   }
-}
-
-function parseObjectPath(path: string): {
-  bucketName: string;
-  objectName: string;
-} {
-  if (!path.startsWith("/")) {
-    path = `/${path}`;
-  }
-  const pathParts = path.split("/");
-  if (pathParts.length < 3) {
-    throw new Error("Invalid path: must contain at least a bucket name");
-  }
-
-  const bucketName = pathParts[1];
-  const objectName = pathParts.slice(2).join("/");
-
-  return {
-    bucketName,
-    objectName,
-  };
-}
-
-async function signObjectURL({
-  bucketName,
-  objectName,
-  method,
-  ttlSec,
-  contentType,
-}: {
-  bucketName: string;
-  objectName: string;
-  method: "GET" | "PUT" | "DELETE" | "HEAD";
-  ttlSec: number;
-  contentType?: string;
-}): Promise<string> {
-  const request: any = {
-    bucket_name: bucketName,
-    object_name: objectName,
-    method,
-    expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
-  };
-
-  if (contentType) {
-    request.content_type = contentType;
-  }
-
-  const response = await fetch(
-    `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-    }
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Failed to sign object URL, errorcode: ${response.status}, ` +
-        `make sure you're running on Replit`
-    );
-  }
-
-  const { signed_url: signedURL } = await response.json();
-  return signedURL;
 }
