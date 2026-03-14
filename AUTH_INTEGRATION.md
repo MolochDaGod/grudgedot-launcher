@@ -91,7 +91,7 @@ When the user clicks "Grudge Cloud" on the auth page, a full-screen Grudge-brand
 
 ## Auth Endpoints (Direct DB — `server/grudgeAuth.ts`)
 
-All auth flows hit the shared Neon `accounts` table directly. No external gateway proxy needed.
+All auth flows hit the shared Grudge MySQL `accounts` table directly. No external gateway proxy needed.
 
 **Core Auth:**
 - `POST /api/login` — Username/email/grudgeId + password

@@ -15,7 +15,7 @@ Characters and islands are owned on-chain as **Solana cNFTs via Crossmint**. The
 
 - **Frontend**: React 18, TypeScript, Vite, TailwindCSS, Radix UI, React Query
 - **Backend**: Node.js, Express, TypeScript — VPS game API at `api.grudge-studio.com` (Coolify/Docker + Traefik)
-- **Database**: PostgreSQL via Drizzle ORM (`@neondatabase/serverless`)
+- **Database**: MySQL via Drizzle ORM (`mysql2`) on Grudge VPS (`api.grudge-studio.com`)
 - **Auth**: Direct-DB auth with 8 login methods (see below), JWT-based
 - **Deployment**: Vercel (static frontend + serverless API routes)
 - **Real-time**: Socket.IO (development mode)
@@ -121,7 +121,7 @@ npm run db:push      # Push Drizzle schema changes to database
 ## Environment Variables
 
 ```env
-DATABASE_URL=postgresql://...       # Neon PostgreSQL connection string
+DATABASE_URL=mysql://grudge_admin:****@api.grudge-studio.com:3306/grudge_game  # Grudge MySQL
 SESSION_SECRET=your-secret          # Express session secret
 JWT_SECRET=your-jwt-secret          # JWT signing secret (shared with auth-gateway)
 ```

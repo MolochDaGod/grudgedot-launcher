@@ -1,33 +1,35 @@
 import "./env";
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/mysql2";
 import * as schema from "../shared/schema";
 
-neonConfig.webSocketConstructor = ws;
-
 // Schema-aware db type helper
-function _createDb(client: Pool) { return drizzle({ client, schema }); }
+function _createDb(client: mysql.Pool) { return drizzle({ client, schema, mode: "default" }); }
 type DbType = ReturnType<typeof _createDb>;
 
-let _pool: Pool | null = null;
+let _pool: mysql.Pool | null = null;
 let _db: DbType | null = null;
 
-function getPool(): Pool {
+function getPool(): mysql.Pool {
   if (!_pool) {
     if (!process.env.DATABASE_URL) {
       throw new Error(
         "DATABASE_URL must be set. Did you forget to provision a database?",
       );
     }
-    _pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    _pool = mysql.createPool({
+      uri: process.env.DATABASE_URL,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+    });
   }
   return _pool;
 }
 
 function getDb(): DbType {
   if (!_db) {
-    _db = drizzle({ client: getPool(), schema });
+    _db = drizzle({ client: getPool(), schema, mode: "default" });
   }
   return _db;
 }
@@ -38,7 +40,7 @@ export function isDatabaseConfigured(): boolean {
 }
 
 // Lazy proxies — only connect when first accessed
-export const pool = new Proxy({} as Pool, {
+export const pool = new Proxy({} as mysql.Pool, {
   get(_target, prop) {
     return Reflect.get(getPool(), prop);
   },

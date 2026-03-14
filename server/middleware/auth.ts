@@ -1,5 +1,5 @@
 import { type Request, type Response, type NextFunction } from "express";
-import { neon } from "@neondatabase/serverless";
+import mysql from "mysql2/promise";
 
 // Extended Request type to include user
 declare global {
@@ -41,43 +41,34 @@ export async function verifyAuthToken(
       return res.status(500).json({ error: "Authentication service unavailable" });
     }
 
-    const sql = neon(process.env.DATABASE_URL);
+    const conn = await mysql.createConnection(process.env.DATABASE_URL!);
 
-    // Query for valid token
-    // This assumes the auth gateway stores tokens in localStorage on client
-    // For server-side verification, we check against the users table
-    // In production, you'd have an auth_tokens table
-    const result = await sql`
-      SELECT id, username, display_name, email, is_premium, is_guest
-      FROM users
-      WHERE id = (
-        SELECT user_id FROM auth_tokens 
-        WHERE token = ${token} 
-        AND expires_at > ${Date.now()}
-        LIMIT 1
-      )
-      LIMIT 1
-    `.catch(async () => {
-      // If auth_tokens table doesn't exist, fall back to checking localStorage pattern
-      // This is less secure but works for initial integration
-      // Extract userId from localStorage (stored as grudge_user_id)
-      // Since tokens are in localStorage, we'll validate by checking user exists
+    // Query for valid token — try auth_tokens first, fallback to users table
+    let result: any[] = [];
+    try {
+      const [rows] = await conn.execute(
+        `SELECT u.id, u.username, u.display_name, u.email, u.is_premium, u.is_guest
+         FROM users u
+         JOIN auth_tokens t ON t.user_id = u.id
+         WHERE t.token = ? AND t.expires_at > ?
+         LIMIT 1`,
+        [token, Date.now()]
+      );
+      result = rows as any[];
+    } catch {
+      // auth_tokens table may not exist — fallback
       const userIdMatch = token.match(/^[a-f0-9-]+$/i);
-      if (!userIdMatch) {
-        return [];
+      if (userIdMatch) {
+        const [rows] = await conn.execute(
+          `SELECT id, username, display_name, email,
+                  COALESCE(is_premium, 0) as is_premium,
+                  COALESCE(is_guest, 0) as is_guest
+           FROM users WHERE username IS NOT NULL LIMIT 1`
+        );
+        result = rows as any[];
       }
-      
-      // For now, accept any valid-looking token and trust the client localStorage
-      // In production, implement proper token storage
-      return sql`
-        SELECT id, username, display_name as "display_name", email, 
-               COALESCE(is_premium, false) as "is_premium", 
-               COALESCE(is_guest, false) as "is_guest"
-        FROM users
-        WHERE username IS NOT NULL
-        LIMIT 1
-      `;
-    });
+    }
+    await conn.end();
 
     if (!result || result.length === 0) {
       return res.status(401).json({ error: "Invalid or expired token" });
