@@ -14,10 +14,10 @@ Characters and islands are owned on-chain as **Solana cNFTs via Crossmint**. The
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Vite, TailwindCSS, Radix UI, React Query
-- **Backend**: Node.js, Express, TypeScript
+- **Backend**: Node.js, Express, TypeScript — VPS game API at `api.grudge-studio.com` (Coolify/Docker + Traefik)
 - **Database**: PostgreSQL via Drizzle ORM (`@neondatabase/serverless`)
-- **Auth**: JWT via Grudge Auth Gateway (hub-and-spoke model)
-- **Deployment**: Vercel (serverless API + static frontend)
+- **Auth**: Direct-DB auth with 8 login methods (see below), JWT-based
+- **Deployment**: Vercel (static frontend + serverless API routes)
 - **Real-time**: Socket.IO (development mode)
 
 ## Quick Start
@@ -94,15 +94,19 @@ GDevelopAssistant/
 
 ## Authentication
 
-GGE uses the **Grudge Auth Gateway** (`auth-gateway-flax.vercel.app`) for all authentication. See [AUTH_INTEGRATION.md](AUTH_INTEGRATION.md) for details.
+GGE uses **direct-DB auth** — all login flows hit the shared `accounts` table via `server/grudgeAuth.ts`. See [AUTH_INTEGRATION.md](AUTH_INTEGRATION.md) for full details.
 
 Supported login methods:
-- Username/password
-- Puter.js SSO
-- Guest accounts
-- Auth gateway redirect
+- Username/password (bcrypt)
+- Guest accounts (auto-generated Grudge ID, 500 starting gold)
+- **Grudge Cloud** (Puter SSO with Grudge-branded overlay)
+- Google OAuth
+- Discord OAuth
+- GitHub OAuth
+- Solana wallet (Phantom)
+- Phone/SMS (Twilio, stub-ready)
 
-All methods produce a JWT stored as `grudge_auth_token` in localStorage.
+All methods produce a JWT stored as `grudge_auth_token` in localStorage. Cross-service tokens from `grudge-id` are also accepted via remote verification fallback.
 
 ## Available Scripts
 
@@ -124,9 +128,9 @@ JWT_SECRET=your-jwt-secret          # JWT signing secret (shared with auth-gatew
 
 ## Deployment
 
-The Vite client builds to `dist/public/` and deploys to **Vercel** as static files. The Express backend runs in dev mode only (`npm run dev`) — it is not deployed to Vercel serverless.
+The Vite client builds to `dist/public/` and deploys to **Vercel** as static files. Serverless API routes live in `api/` and are deployed as Vercel functions.
 
-Only `api/health.ts` is deployed as a Vercel serverless function. The SPA catch-all rewrite in `vercel.json` serves `index.html` for all non-API routes.
+The VPS game API (`api.grudge-studio.com`) handles characters, economy, crafting, and islands — proxied through Vercel API routes.
 
 ```bash
 npm run build:vercel       # Build client
