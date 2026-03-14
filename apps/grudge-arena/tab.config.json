@@ -1,0 +1,16 @@
+{
+  "slug": "grudge-arena",
+  "title": "Grudge Arena",
+  "version": "1.0.0",
+  "description": "PvP arena system for Grudge Warlords with matchmaking, leaderboards, and spectator mode.",
+  "routes": [{ "path": "/grudge-arena", "entry": "tabs/grudge-arena/index.tsx" }],
+  "assets": {
+    "sprites": "assets/grudge-arena/sprites/"
+  },
+  "features": [
+    "sprite-loader",
+    "combat",
+    "matchmaking"
+  ],
+  "externalUrl": "https://standalone-grudge.vercel.app/arena"
+}

@@ -119,6 +119,17 @@ export default function Decay() {
   const pickupTimerRef = useRef(0);
   const survivalTimerRef = useRef(0);
 
+  // Refs that mirror state for use inside the game loop (avoids stale closures & unnecessary re-renders)
+  const healthRef = useRef(health);
+  healthRef.current = health;
+  const armorRef = useRef(armor);
+  armorRef.current = armor;
+  const killsRef = useRef(kills);
+  killsRef.current = kills;
+  const waveRef = useRef(wave);
+  waveRef.current = wave;
+  const waveKillsRef = useRef(0);
+
   const loadModels = useCallback(async () => {
     if (modelsLoadingRef.current || loadedModelsRef.current.size > 0) return;
     modelsLoadingRef.current = true;
@@ -640,9 +651,10 @@ export default function Decay() {
             zombie.deathTime = now;
             zombie.state = "dead";
             
-            const scoreValue = { walker: 100, runner: 150, brute: 300 }[zombie.type];
+            const scoreValue = { walker: 100, runner: 150, brute: 300 }[zombie.type] ?? 100;
             setScore((s) => s + scoreValue);
             setKills((k) => k + 1);
+            waveKillsRef.current += 1;
             
             if (zombie.mixer && zombie.animations && zombie.animIndices) {
               playZombieAnimation(zombie, "death", false);
@@ -787,8 +799,8 @@ export default function Decay() {
         playZombieAnimation(zombie, "attack", false);
         zombie.lastAttack = now;
         
-        if (armor > 0) {
-          const remaining = zombie.damage - armor;
+      if (armorRef.current > 0) {
+          const remaining = zombie.damage - armorRef.current;
           setArmor((a) => Math.max(0, a - zombie.damage));
           if (remaining > 0) {
             setHealth((h) => {
@@ -814,11 +826,11 @@ export default function Decay() {
       
       const distance = camera.position.distanceTo(pickup.position);
       if (distance < 1.5) {
-        if (pickup.type === "health" && health < 100) {
+        if (pickup.type === "health" && healthRef.current < 100) {
           setHealth((h) => Math.min(100, h + pickup.value));
           if (sceneRef.current) sceneRef.current.remove(pickup.mesh);
           pickup.mesh.visible = false;
-        } else if (pickup.type === "armor" && armor < 100) {
+        } else if (pickup.type === "armor" && armorRef.current < 100) {
           setArmor((a) => Math.min(100, a + pickup.value));
           if (sceneRef.current) sceneRef.current.remove(pickup.mesh);
           pickup.mesh.visible = false;
@@ -831,8 +843,9 @@ export default function Decay() {
     });
     pickupsRef.current = pickupsRef.current.filter((p) => p.mesh.visible);
 
-    const killsNeeded = 10 + wave * 5;
-    if (kills >= killsNeeded * wave) {
+    const killsNeeded = 10 + waveRef.current * 5;
+    if (waveKillsRef.current >= killsNeeded) {
+      waveKillsRef.current = 0;
       setWave((w) => w + 1);
     }
 
@@ -855,9 +868,24 @@ export default function Decay() {
 
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     animationFrameRef.current = requestAnimationFrame(gameLoop);
-  }, [gameState, wave, spawnZombie, spawnPickup, health, armor, kills, playZombieAnimation]);
+  }, [gameState, spawnZombie, spawnPickup, playZombieAnimation]);
 
   const startGame = useCallback(() => {
+    // Clean up previous scene resources before re-initializing
+    if (rendererRef.current && containerRef.current) {
+      try {
+        containerRef.current.removeChild(rendererRef.current.domElement);
+      } catch { /* already removed */ }
+      rendererRef.current.dispose();
+      rendererRef.current = null;
+    }
+    if (controlsRef.current) {
+      controlsRef.current.dispose();
+      controlsRef.current = null;
+    }
+    sceneRef.current = null;
+    cameraRef.current = null;
+
     setGameState("playing");
     setHealth(100);
     setArmor(0);
@@ -870,9 +898,11 @@ export default function Decay() {
     
     zombiesRef.current = [];
     pickupsRef.current = [];
+    bloodSplatsRef.current = [];
     spawnTimerRef.current = 0;
     pickupTimerRef.current = 0;
     survivalTimerRef.current = 0;
+    waveKillsRef.current = 0;
     
     initScene();
     

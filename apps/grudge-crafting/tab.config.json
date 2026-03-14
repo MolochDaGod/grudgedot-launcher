@@ -1,0 +1,16 @@
+{
+  "slug": "grudge-crafting",
+  "title": "Grudge Crafting",
+  "version": "1.0.0",
+  "description": "Crafting and training system for the Grudge Warlords RPG. Forge weapons, brew potions, and train combat skills.",
+  "routes": [{ "path": "/grudge-crafting", "entry": "tabs/grudge-crafting/index.tsx" }],
+  "assets": {
+    "sprites": "assets/grudge-crafting/sprites/"
+  },
+  "features": [
+    "sprite-loader",
+    "crafting",
+    "equipment"
+  ],
+  "externalUrl": "https://standalone-grudge.vercel.app/crafting"
+}

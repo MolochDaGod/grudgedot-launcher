@@ -177,8 +177,8 @@ class MMOScene extends Phaser.Scene {
     this.generateBiomeMap();
     this.generateZoneMap();
     this.createWorld();
+    this.createPlayer();         // Must exist before createStartBuilding (it references this.player)
     this.createStartBuilding();
-    this.createPlayer();
     this.createCrosshair();
     this.createEnemies();
     this.createObstacles();
@@ -1620,7 +1620,7 @@ export default function MMOWorld() {
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current || gameRef.current) return;
+    if (!containerRef.current || gameRef.current || showHeroSelect) return;
 
     const scene = new MMOScene();
     sceneRef.current = scene;
@@ -1631,7 +1631,7 @@ export default function MMOWorld() {
     }
 
     scene.setCallbacks(
-      (newStats) => setStats(prev => ({
+      (newStats) => setStats(_prev => ({
         ...newStats,
         heroName: selectedHero?.name,
         classId: selectedHero?.classId,
@@ -1673,7 +1673,7 @@ export default function MMOWorld() {
         gameRef.current = null;
       }
     };
-  }, []);
+  }, [selectedHero, showHeroSelect]);
 
   const getSpellCooldownPercent = (spellId: string): number => {
     const spell = SPELLS.find(s => s.id === spellId);
@@ -1708,13 +1708,14 @@ export default function MMOWorld() {
   const zoneInfo = getZoneDisplay();
 
   const handleSelectHero = (hero: GrudaWarsHero) => {
-    setSelectedHero(hero);
-    setShowHeroSelect(false);
-    // Destroy existing game if any, it will re-init with the new hero
+    // Destroy existing game if any so the effect can re-create it with the new hero
     if (gameRef.current) {
       gameRef.current.destroy(true);
       gameRef.current = null;
     }
+    sceneRef.current = null;
+    setSelectedHero(hero);
+    setShowHeroSelect(false);
   };
 
   // Hero selection screen

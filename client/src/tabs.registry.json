@@ -4,5 +4,9 @@
   { "slug": "grudge-drive", "title": "Grudge Drive", "entry": "tabs/grudge-drive/index.tsx" },
   { "slug": "betta-warlords", "title": "Betta Warlords", "entry": "tabs/betta-warlords/index.tsx" },
   { "slug": "grudge-box", "title": "GrudgeBox", "entry": "tabs/grudge-box/index.tsx" },
-  { "slug": "crypt-crawlers", "title": "Crypt Crawlers", "entry": "tabs/crypt-crawlers/index.tsx" }
+  { "slug": "crypt-crawlers", "title": "Crypt Crawlers", "entry": "tabs/crypt-crawlers/index.tsx" },
+  { "slug": "reef-hunt", "title": "Reef Hunt", "entry": "tabs/reef-hunt/index.tsx" },
+  { "slug": "grudge-arena", "title": "Grudge Arena", "entry": "tabs/grudge-arena/index.tsx" },
+  { "slug": "grudge-factory", "title": "Grudge Factory", "entry": "tabs/grudge-factory/index.tsx" },
+  { "slug": "grudge-crafting", "title": "Grudge Crafting", "entry": "tabs/grudge-crafting/index.tsx" }
 ]

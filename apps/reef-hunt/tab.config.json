@@ -1,0 +1,17 @@
+{
+  "slug": "reef-hunt",
+  "title": "Reef Hunt",
+  "version": "1.0.0",
+  "description": "Underwater collection mini-game with predators, parallax scrolling, collision physics, and resource gathering. Canvas-based action mini-game.",
+  "routes": [{ "path": "/reef-hunt", "entry": "tabs/reef-hunt/index.tsx" }],
+  "assets": {
+    "sprites": "assets/reef-hunt/sprites/",
+    "backgrounds": "assets/reef-hunt/backgrounds/"
+  },
+  "features": [
+    "sprite-loader",
+    "collision-physics",
+    "resource-gathering"
+  ],
+  "externalUrl": "https://standalone-grudge.vercel.app/play"
+}

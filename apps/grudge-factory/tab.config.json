@@ -1,0 +1,18 @@
+{
+  "slug": "grudge-factory",
+  "title": "Grudge Factory",
+  "version": "1.0.0",
+  "description": "Game creation wizard and demo launcher. Create custom games with the Factory system and preview demo titles like Shadow Knights and Starbound Corsairs.",
+  "routes": [
+    { "path": "/grudge-factory", "entry": "tabs/grudge-factory/index.tsx" }
+  ],
+  "assets": {
+    "sprites": "assets/grudge-factory/sprites/"
+  },
+  "features": [
+    "sprite-loader",
+    "game-builder",
+    "demo-launcher"
+  ],
+  "externalUrl": "https://standalone-grudge.vercel.app/factory"
+}
