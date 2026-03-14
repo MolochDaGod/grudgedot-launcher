@@ -670,6 +670,9 @@ export const accounts = pgTable("accounts", {
   // Auth — Discord
   discordId: varchar("discord_id", { length: 255 }),
   discordUsername: varchar("discord_username", { length: 100 }),
+  // Auth — GitHub
+  githubId: varchar("github_id", { length: 255 }),
+  githubUsername: varchar("github_username", { length: 100 }),
   // Account status
   isPremium: boolean("is_premium").default(false),
   isGuest: boolean("is_guest").default(false),
@@ -690,6 +693,8 @@ export const accounts = pgTable("accounts", {
   grudgeIdIdx: index("accounts_grudge_id_idx").on(table.grudgeId),
   puterUuidIdx: index("accounts_puter_uuid_idx").on(table.puterUuid),
   walletIdx: index("accounts_wallet_idx").on(table.walletAddress),
+  discordIdx: index("accounts_discord_id_idx").on(table.discordId),
+  githubIdx: index("accounts_github_id_idx").on(table.githubId),
 }));
 
 export const insertAccountSchema = createInsertSchema(accounts).omit({ id: true, createdAt: true });

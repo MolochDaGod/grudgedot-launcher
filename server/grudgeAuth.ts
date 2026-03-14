@@ -619,6 +619,345 @@ export function setupGrudgeAuth(app: Express) {
     }
   });
 
+  // ════════════════════════════════════════════
+  // Discord OAuth — GET /api/auth/discord → redirect URL
+  // ════════════════════════════════════════════
+  app.get("/api/auth/discord", (req, res) => {
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    if (!clientId) {
+      return res.status(503).json({ error: "Discord OAuth not configured" });
+    }
+
+    const state = (req.query.state as string) || "/";
+    const redirectUri = `${getOrigin(req)}/api/auth/discord/callback`;
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "identify email",
+      state,
+    });
+
+    res.json({ url: `https://discord.com/api/oauth2/authorize?${params}` });
+  });
+
+  // ════════════════════════════════════════════
+  // Discord OAuth callback — GET /api/auth/discord/callback
+  // ════════════════════════════════════════════
+  app.get("/api/auth/discord/callback", async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      if (!code) return res.status(400).send("Missing authorization code");
+
+      const clientId = process.env.DISCORD_CLIENT_ID!;
+      const clientSecret = process.env.DISCORD_CLIENT_SECRET!;
+      const redirectUri = `${getOrigin(req)}/api/auth/discord/callback`;
+
+      // Exchange code for tokens
+      const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: "authorization_code",
+          code: code as string,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        console.error("Discord token exchange failed:", await tokenRes.text());
+        return res.redirect(`/auth?error=discord_token_failed`);
+      }
+
+      const tokens = await tokenRes.json();
+
+      // Fetch Discord user
+      const userRes = await fetch("https://discord.com/api/users/@me", {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      });
+
+      if (!userRes.ok) {
+        return res.redirect(`/auth?error=discord_userinfo_failed`);
+      }
+
+      const discordUser = await userRes.json();
+      const discordId = discordUser.id;
+      const discordUsername = discordUser.global_name || discordUser.username;
+      const discordEmail = discordUser.email;
+      const discordAvatar = discordUser.avatar
+        ? `https://cdn.discordapp.com/avatars/${discordId}/${discordUser.avatar}.png`
+        : null;
+
+      // Find existing account by discordId or email
+      let account = await db.query.accounts.findFirst({
+        where: eq(accounts.discordId, discordId),
+      });
+
+      if (!account && discordEmail) {
+        account = await db.query.accounts.findFirst({
+          where: eq(accounts.email, discordEmail),
+        });
+        // Link Discord ID to existing email account
+        if (account) {
+          await db.update(accounts)
+            .set({ discordId, discordUsername, avatarUrl: account.avatarUrl || discordAvatar })
+            .where(eq(accounts.id, account.id));
+        }
+      }
+
+      if (!account) {
+        // Create new account
+        const grudgeId = generateGrudgeId();
+        const baseUsername = discordUsername.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20) || `d_${discordId.slice(0, 8)}`;
+
+        const existingUsername = await db.query.accounts.findFirst({
+          where: eq(accounts.username, baseUsername),
+        });
+        const finalUsername = existingUsername
+          ? `${baseUsername}_${crypto.randomBytes(3).toString("hex")}`
+          : baseUsername;
+
+        let walletAddress: string | undefined;
+        let crossmintWalletId: string | undefined;
+        const wallet = await createCrossmintWallet(grudgeId, discordEmail);
+        if (wallet) {
+          walletAddress = wallet.walletAddress;
+          crossmintWalletId = wallet.walletId;
+        }
+
+        [account] = await db.insert(accounts).values({
+          grudgeId,
+          username: finalUsername,
+          displayName: discordUsername,
+          email: discordEmail || undefined,
+          avatarUrl: discordAvatar,
+          discordId,
+          discordUsername,
+          walletAddress,
+          walletType: walletAddress ? "crossmint-custodial" : undefined,
+          crossmintWalletId,
+          isPremium: false,
+          gold: 1000,
+          lastLoginAt: new Date(),
+          metadata: { authMethod: "discord" },
+        }).returning();
+
+        console.log(`✅ New Discord account: ${account.grudgeId} (${finalUsername})`);
+      } else {
+        await db.update(accounts)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(accounts.grudgeId, account.grudgeId));
+      }
+
+      const token = signToken(account);
+
+      const returnUrl = (state as string) || "/auth";
+      const separator = returnUrl.includes("?") ? "&" : "?";
+      const authParams = new URLSearchParams({
+        token,
+        grudgeId: account.grudgeId,
+        userId: account.id,
+        username: account.username || "",
+        displayName: account.displayName || "",
+        provider: "discord",
+      });
+
+      res.redirect(`${returnUrl}${separator}${authParams}`);
+    } catch (err: any) {
+      console.error("[GET /api/auth/discord/callback] error:", err.message, err.stack);
+      res.redirect(`/auth?error=discord_auth_failed`);
+    }
+  });
+
+  // ════════════════════════════════════════════
+  // GitHub OAuth — GET /api/auth/github → redirect URL
+  // ════════════════════════════════════════════
+  app.get("/api/auth/github", (req, res) => {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    if (!clientId) {
+      return res.status(503).json({ error: "GitHub OAuth not configured" });
+    }
+
+    const state = (req.query.state as string) || "/";
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: `${getOrigin(req)}/api/auth/github/callback`,
+      scope: "read:user user:email",
+      state,
+    });
+
+    res.json({ url: `https://github.com/login/oauth/authorize?${params}` });
+  });
+
+  // ════════════════════════════════════════════
+  // GitHub OAuth callback — GET /api/auth/github/callback
+  // ════════════════════════════════════════════
+  app.get("/api/auth/github/callback", async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      if (!code) return res.status(400).send("Missing authorization code");
+
+      const clientId = process.env.GITHUB_CLIENT_ID!;
+      const clientSecret = process.env.GITHUB_CLIENT_SECRET!;
+
+      // Exchange code for access token
+      const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code: code as string,
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        console.error("GitHub token exchange failed:", await tokenRes.text());
+        return res.redirect(`/auth?error=github_token_failed`);
+      }
+
+      const tokenData = await tokenRes.json();
+      if (tokenData.error) {
+        console.error("GitHub token error:", tokenData.error_description);
+        return res.redirect(`/auth?error=github_token_failed`);
+      }
+
+      const accessToken = tokenData.access_token;
+
+      // Fetch GitHub user
+      const userRes = await fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
+        },
+      });
+
+      if (!userRes.ok) {
+        return res.redirect(`/auth?error=github_userinfo_failed`);
+      }
+
+      const ghUser = await userRes.json();
+      const githubId = String(ghUser.id);
+      const githubUsername = ghUser.login;
+      const githubName = ghUser.name || githubUsername;
+      const githubAvatar = ghUser.avatar_url;
+
+      // Fetch email (may be private)
+      let githubEmail: string | undefined;
+      try {
+        const emailRes = await fetch("https://api.github.com/user/emails", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+          },
+        });
+        if (emailRes.ok) {
+          const emails = await emailRes.json();
+          const primary = emails.find((e: any) => e.primary && e.verified);
+          githubEmail = primary?.email || emails[0]?.email;
+        }
+      } catch { /* email fetch is best-effort */ }
+
+      // Find existing account by githubId or email
+      let account = await db.query.accounts.findFirst({
+        where: eq(accounts.githubId, githubId),
+      });
+
+      if (!account && githubEmail) {
+        account = await db.query.accounts.findFirst({
+          where: eq(accounts.email, githubEmail),
+        });
+        if (account) {
+          await db.update(accounts)
+            .set({ githubId, githubUsername, avatarUrl: account.avatarUrl || githubAvatar })
+            .where(eq(accounts.id, account.id));
+        }
+      }
+
+      if (!account) {
+        const grudgeId = generateGrudgeId();
+        const baseUsername = githubUsername.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20) || `gh_${githubId.slice(0, 8)}`;
+
+        const existingUsername = await db.query.accounts.findFirst({
+          where: eq(accounts.username, baseUsername),
+        });
+        const finalUsername = existingUsername
+          ? `${baseUsername}_${crypto.randomBytes(3).toString("hex")}`
+          : baseUsername;
+
+        let walletAddress: string | undefined;
+        let crossmintWalletId: string | undefined;
+        const wallet = await createCrossmintWallet(grudgeId, githubEmail);
+        if (wallet) {
+          walletAddress = wallet.walletAddress;
+          crossmintWalletId = wallet.walletId;
+        }
+
+        [account] = await db.insert(accounts).values({
+          grudgeId,
+          username: finalUsername,
+          displayName: githubName,
+          email: githubEmail || undefined,
+          avatarUrl: githubAvatar,
+          githubId,
+          githubUsername,
+          walletAddress,
+          walletType: walletAddress ? "crossmint-custodial" : undefined,
+          crossmintWalletId,
+          isPremium: false,
+          gold: 1000,
+          lastLoginAt: new Date(),
+          metadata: { authMethod: "github" },
+        }).returning();
+
+        console.log(`✅ New GitHub account: ${account.grudgeId} (${finalUsername})`);
+      } else {
+        await db.update(accounts)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(accounts.grudgeId, account.grudgeId));
+      }
+
+      const token = signToken(account);
+
+      const returnUrl = (state as string) || "/auth";
+      const separator = returnUrl.includes("?") ? "&" : "?";
+      const authParams = new URLSearchParams({
+        token,
+        grudgeId: account.grudgeId,
+        userId: account.id,
+        username: account.username || "",
+        displayName: account.displayName || "",
+        provider: "github",
+      });
+
+      res.redirect(`${returnUrl}${separator}${authParams}`);
+    } catch (err: any) {
+      console.error("[GET /api/auth/github/callback] error:", err.message, err.stack);
+      res.redirect(`/auth?error=github_auth_failed`);
+    }
+  });
+
+  // ════════════════════════════════════════════
+  // Phone/SMS — POST /api/auth/phone
+  // ════════════════════════════════════════════
+  app.post("/api/auth/phone", async (req, res) => {
+    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+      return res.status(503).json({
+        error: "Phone authentication not configured",
+        hint: "Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to enable SMS verification",
+      });
+    }
+    // TODO: Implement Twilio SMS send/verify when credentials are configured
+    res.status(501).json({ error: "Phone auth coming soon" });
+  });
+
   console.log("✅ Grudge Auth routes registered (direct DB mode)");
 }
 

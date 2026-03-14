@@ -78,41 +78,59 @@ const profile = await apiCall('user/profile');
 
 The Express middleware at `server/middleware/grudgeJwt.ts` verifies JWTs on protected routes. It decodes the token and attaches the user to `req.user`.
 
-## Auth Gateway Endpoints (proxied through GGE)
+## Auth Endpoints (Direct DB — `server/grudgeAuth.ts`)
 
-GGE proxies auth calls to `auth-gateway-flax.vercel.app` (configurable via `AUTH_GATEWAY_URL`).  
-See `server/grudgeAuth.ts` for the proxy implementation.
+All auth flows hit the shared Neon `accounts` table directly. No external gateway proxy needed.
 
-- `POST /api/login` — Username/password login
+**Core Auth:**
+- `POST /api/login` — Username/email/grudgeId + password
 - `POST /api/register` — Create account (auto-creates Crossmint wallet if `CROSSMINT_SERVER_API_KEY` is set)
-- `POST /api/guest` — Guest login (7-day token, 500 starting gold)
+- `POST /api/guest` — Guest login (500 starting gold)
+
+**OAuth Providers:**
+- `GET /api/auth/google` + `/api/auth/google/callback` — Google OAuth (requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
+- `GET /api/auth/discord` + `/api/auth/discord/callback` — Discord OAuth (requires `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`)
+- `GET /api/auth/github` + `/api/auth/github/callback` — GitHub OAuth (requires `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`)
+
+**Other Auth Methods:**
 - `POST /api/auth/puter` — Puter UUID → JWT bridge
-- `GET /api/auth/verify` — Verify token (returns full profile)
-- `GET /api/auth/discord` — Discord OAuth URL
-- `GET /api/auth/github` — GitHub OAuth URL
-- `GET /api/auth/google` — Google OAuth URL
-- `POST /api/auth/phone` — Send/verify phone code (Twilio)
 - `POST /api/auth/wallet` — Connect Solana wallet (login or link)
+- `POST /api/auth/phone` — SMS verification (requires `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`; returns 503 if not configured)
+
+**Token / Profile:**
+- `GET /api/auth/verify` — Verify token (returns full profile)
 - `GET /api/auth/user` — Current user (local JWT decode)
-- `GET /api/auth/me` — Full profile (remote verify)
+- `GET /api/auth/me` — Full profile
+- `POST /api/auth/link-puter` — Link Puter UUID to existing account (auth required)
 
 ## Required Environment Variables
 
 ```env
-# CRITICAL — must match auth-gateway deployment
+# CRITICAL — JWT signing key shared across all Grudge Studio apps
 SESSION_SECRET=your-shared-jwt-secret
 
-# Auth gateway URL (default: https://auth-gateway-flax.vercel.app)
-AUTH_GATEWAY_URL=https://auth-gateway-flax.vercel.app
+# Grudge backend grudge-id service (for cross-service token verification)
+GRUDGE_BACKEND_URL=https://id.grudge-studio.com
 
-# Discord OAuth (same Discord app as auth-gateway & WCS)
+# Discord OAuth
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
+# Redirect URI: https://gdevelop-assistant.vercel.app/api/auth/discord/callback
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+# Redirect URI: https://gdevelop-assistant.vercel.app/api/auth/github/callback
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Redirect URI: https://gdevelop-assistant.vercel.app/api/auth/google/callback
 ```
 
-`SESSION_SECRET` is the JWT signing key shared between auth-gateway and all Grudge apps.  
+`SESSION_SECRET` is the JWT signing key used by all Grudge apps sharing the same `accounts` table.  
 If it matches, `grudgeJwt.ts` verifies tokens locally (fast, no network).  
-If it doesn't match, it falls back to calling `AUTH_GATEWAY_URL/api/verify` (remote, 5s timeout).
+If local verification fails, it falls back to the grudge-backend `POST /auth/verify` endpoint (5s timeout). This allows tokens issued by `grudge-id` (with a different `JWT_SECRET`) to also work in GGE.
 
 ## JWT Verification Flow (server/middleware/grudgeJwt.ts)
 
@@ -125,10 +143,13 @@ Request arrives with Authorization: Bearer <token>
    ✔ Success → attach req.grudgeUser, done
    ✘ Fail → continue to step 3
     ↓
-3. Remote verify: GET AUTH_GATEWAY_URL/api/verify (5s timeout)
-   ✔ Success → attach req.grudgeUser (enriched with role, isPremium)
+3. Remote verify: POST GRUDGE_BACKEND_URL/auth/verify (5s timeout)
+   ✔ Success → attach req.grudgeUser (mapped from grudge-backend payload)
    ✘ Fail → 401 Unauthorized
 ```
+
+This dual-verify approach means users authenticated via `grudgewarlords.com` or other
+Grudge Studio apps can seamlessly use GGE without re-authenticating.
 
 ## Troubleshooting
 
@@ -136,5 +157,8 @@ Request arrives with Authorization: Bearer <token>
 - **401 Unauthorized**: `SESSION_SECRET` mismatch between GGE and auth-gateway. Check both deployments use the same value.
 - **Token not persisting**: Check localStorage isn't being cleared by other code.
 - **Slow API responses**: If every request takes 1-5s, `SESSION_SECRET` probably doesn't match the gateway and every request falls back to remote verification. Fix: sync the secret.
-- **Discord/GitHub/Google OAuth fails**: Make sure `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` match the same Discord app used by auth-gateway. The gateway handles the OAuth callback and redirects back with `?token=...` params.
-- **Guest login fails silently**: The auth page has a fallback — if the gateway is unreachable, it creates a `local-guest-*` token. These won't verify on the server. Check gateway connectivity.
+- **Discord OAuth fails**: Ensure `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` are set and the redirect URI `https://gdevelop-assistant.vercel.app/api/auth/discord/callback` is registered in the Discord developer portal.
+- **GitHub OAuth fails**: Ensure `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` are set and the callback URL `https://gdevelop-assistant.vercel.app/api/auth/github/callback` is registered in GitHub OAuth app settings.
+- **Google OAuth fails**: Same pattern — check `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and callback URL.
+- **Phone auth returns 503**: Twilio credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`) are not configured.
+- **Cross-service tokens rejected**: Ensure `GRUDGE_BACKEND_URL` points to the grudge-id service and it's reachable. Check that `gdevelop-assistant.vercel.app` is in the backend's `CORS_ORIGINS`.
