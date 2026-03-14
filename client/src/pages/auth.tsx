@@ -42,6 +42,7 @@ export default function AuthPage() {
   // Loading / error
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showGrudgeOverlay, setShowGrudgeOverlay] = useState(false);
 
   // ── Capture OAuth callback tokens on mount ──
   useEffect(() => {
@@ -137,8 +138,11 @@ export default function AuthPage() {
       if (!(window as any).puter) {
         return handleError("Grudge Cloud is not available — try another sign-in method");
       }
+      // Show Grudge-branded overlay before Puter popup opens
+      setShowGrudgeOverlay(true);
       await (window as any).puter.auth.signIn();
       const user = await (window as any).puter.auth.getUser();
+      setShowGrudgeOverlay(false);
       if (!user?.uuid) return handleError("Grudge Cloud sign-in failed");
       const res = await fetch("/api/auth/puter", {
         method: "POST",
@@ -152,6 +156,7 @@ export default function AuthPage() {
       }
       handleError(data.error || "Grudge Cloud authentication failed");
     } catch {
+      setShowGrudgeOverlay(false);
       handleError("Grudge Cloud sign-in failed — try another method");
     }
   };
@@ -228,6 +233,37 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 p-4">
+      {/* Grudge Cloud auth overlay — shows while Puter popup is open */}
+      {showGrudgeOverlay && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-950/95 backdrop-blur-sm"
+        >
+          <div className="text-center space-y-6">
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              <Shield className="h-16 w-16 text-red-500 mx-auto" />
+            </motion.div>
+            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800 font-serif">
+              GRUDGE CLOUD
+            </h2>
+            <p className="text-stone-400 text-sm max-w-xs mx-auto">
+              Complete sign-in in the popup window to connect your Grudge Cloud account.
+            </p>
+            <Loader2 className="h-6 w-6 animate-spin text-red-500 mx-auto" />
+            <button
+              onClick={() => { setShowGrudgeOverlay(false); setLoading(null); }}
+              className="text-stone-500 hover:text-stone-300 text-xs underline"
+            >
+              Cancel
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Grid overlay */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFhMWExYSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30 pointer-events-none" />
 
