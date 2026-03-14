@@ -247,5 +247,52 @@ export function registerGrudaLegionRoutes(app: Express) {
     });
   });
 
-  console.log("✅ GRUDA Legion proxy routes registered");
+  // ─── VPS Game API proxy routes ───
+  // These proxy to api.grudge-studio.com game-api endpoints with JWT forwarding
+
+  const gameApiProxy = (route: string) => async (req: any, res: any) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const authHeader = req.headers.authorization;
+    if (authHeader) headers["Authorization"] = authHeader;
+
+    const result = await proxyFetch(`${GAME_API_GRUDA}${route}`, {
+      method: req.method,
+      headers,
+      ...(req.method !== "GET" ? { body: JSON.stringify(req.body) } : {}),
+    });
+    res.status(result.status).json(result.data);
+  };
+
+  // Characters
+  app.get("/api/gruda-legion/characters", gameApiProxy("/characters"));
+  app.post("/api/gruda-legion/characters", gameApiProxy("/characters"));
+
+  // Economy
+  app.get("/api/gruda-legion/economy/balance", gameApiProxy("/economy/balance"));
+  app.post("/api/gruda-legion/economy/transfer", gameApiProxy("/economy/transfer"));
+
+  // Crafting
+  app.get("/api/gruda-legion/crafting/recipes", gameApiProxy("/crafting/recipes"));
+  app.post("/api/gruda-legion/crafting/craft", gameApiProxy("/crafting/craft"));
+
+  // Islands
+  app.get("/api/gruda-legion/islands", gameApiProxy("/islands"));
+
+  // Factions
+  app.get("/api/gruda-legion/factions", gameApiProxy("/factions"));
+
+  // Missions
+  app.get("/api/gruda-legion/missions", gameApiProxy("/missions"));
+
+  // Professions
+  app.get("/api/gruda-legion/professions/:characterId", (req: any, res: any) =>
+    gameApiProxy(`/professions/${req.params.characterId}`)(req, res)
+  );
+
+  // Inventory
+  app.get("/api/gruda-legion/inventory/:characterId", (req: any, res: any) =>
+    gameApiProxy(`/inventory/${req.params.characterId}`)(req, res)
+  );
+
+  console.log("✅ GRUDA Legion proxy routes registered (VPS game-api + AI)");
 }
