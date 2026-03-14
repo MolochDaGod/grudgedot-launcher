@@ -55,6 +55,9 @@ const FeaturedGames = lazy(() => import("@/pages/featured-games"));
 const GrudgeSwarm = lazy(() => import("@/pages/grudge-swarm"));
 const GrudaWars = lazy(() => import("@/pages/gruda-wars"));
 const OnboardingPage = lazy(() => import("@/pages/onboarding"));
+const BettaWarlords = lazy(() => import("@/pages/betta-warlords"));
+const GrudgeBoxPage = lazy(() => import("@/pages/grudge-box"));
+const CryptCrawlers = lazy(() => import("@/pages/crypt-crawlers"));
 
 function PageLoader() {
   return (
@@ -107,6 +110,9 @@ function Router() {
         <Route path="/grudge-swarm" component={GrudgeSwarm} />
         <Route path="/gruda-wars" component={GrudaWars} />
         <Route path="/onboarding" component={OnboardingPage} />
+        <Route path="/betta-warlords" component={BettaWarlords} />
+        <Route path="/grudge-box" component={GrudgeBoxPage} />
+        <Route path="/crypt-crawlers" component={CryptCrawlers} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -152,10 +158,13 @@ function Header() {
     if (location === "/mmo") return "MMO World";
     if (location === "/games") return "Featured Games";
     if (location === "/onboarding") return "Get Started";
+    if (location === "/betta-warlords") return "Betta Warlords";
+    if (location === "/grudge-box") return "GrudgeBox";
+    if (location === "/crypt-crawlers") return "Crypt Crawlers";
     return "Grudge Brawl";
   };
 
-  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-drive", "/decay", "/swarm-rts", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo"].some(
+  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-drive", "/decay", "/swarm-rts", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers"].some(
     path => location === path
   );
 

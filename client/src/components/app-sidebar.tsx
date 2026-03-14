@@ -3,7 +3,7 @@ import {
   Swords, Wand2, Users, User, Wallet, Trophy, Sword, Crown,
   Joystick, Puzzle, Zap, Rocket, Box, Plane, Shield, Target, Crosshair, Map,
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
-  Compass,
+  Compass, ExternalLink, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse,
 } from "lucide-react";
 import {
   Sidebar,
@@ -75,7 +75,70 @@ const mainMenuItems = [
   },
 ];
 
+const warlordSuiteItems = [
+  {
+    title: "Skill Tree",
+    url: "https://warlord-crafting-suite.vercel.app/skill-tree",
+    icon: TreeDeciduous,
+    badge: "WCS",
+    external: true,
+  },
+  {
+    title: "Arsenal",
+    url: "https://warlord-crafting-suite.vercel.app/arsenal",
+    icon: Shield,
+    badge: "Items",
+    external: true,
+  },
+  {
+    title: "Crafting",
+    url: "https://warlord-crafting-suite.vercel.app/crafting",
+    icon: Hammer,
+    badge: "WCS",
+    external: true,
+  },
+  {
+    title: "Weapon Skills",
+    url: "https://warlord-crafting-suite.vercel.app/weapon-skills",
+    icon: Sword,
+    badge: "WCS",
+    external: true,
+  },
+  {
+    title: "Class Skills",
+    url: "https://warlord-crafting-suite.vercel.app/class-skill",
+    icon: Crown,
+    badge: "WCS",
+    external: true,
+  },
+  {
+    title: "Character Builder",
+    url: "https://warlord-crafting-suite.vercel.app/character-builder",
+    icon: UserCog,
+    badge: "WCS",
+    external: true,
+  },
+];
+
 const featured3DGames = [
+  {
+    title: "Betta Warlords",
+    url: "/betta-warlords",
+    icon: Fish,
+    badge: "RPG",
+  },
+  {
+    title: "GrudgeBox",
+    url: "/grudge-box",
+    icon: Swords,
+    badge: "Fight",
+  },
+  {
+    title: "Crypt Crawlers",
+    url: "/crypt-crawlers",
+    icon: Compass,
+    badge: "Crawl",
+  },
   {
     title: "Overdrive",
     url: "/grudge-drive",
@@ -136,6 +199,17 @@ const featured3DGames = [
     icon: Sword,
     badge: "RPG",
   },
+  {
+    title: "Galactic Conquest",
+    url: "/swarm-galactic",
+    icon: Globe,
+    badge: "RTS",
+  },
+  {
+    title: "All Games",
+    url: "/games",
+    icon: Gamepad2,
+  },
 ];
 
 const arcadeGames = [
@@ -187,6 +261,16 @@ const gameSystemItems = [
     url: "/achievements",
     icon: Trophy,
   },
+  {
+    title: "Projects",
+    url: "/projects",
+    icon: FolderOpen,
+  },
+  {
+    title: "Admin Storage",
+    url: "/admin-storage",
+    icon: HardDrive,
+  },
 ];
 
 export function AppSidebar() {
@@ -227,6 +311,36 @@ export function AppSidebar() {
                         </Badge>
                       )}
                     </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground flex items-center gap-1">
+            <Warehouse className="h-3 w-3 text-cyan-500" />
+            Warlord Suite
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {warlordSuiteItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <a href={item.url} target="_blank" rel="noopener noreferrer">
+                      <item.icon className="h-4 w-4" />
+                      <span className="flex-1">{item.title}</span>
+                      <ExternalLink className="h-3 w-3 opacity-50" />
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-cyan-500/20 text-cyan-400 border-0">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
