@@ -844,12 +844,13 @@ export function getClassStartingAttributes(classId: string): CharacterAttributes
     case 'mage':
       // Magic focus: 10 INT, 10 WIS = 20 points
       return { strength: 0, vitality: 0, endurance: 0, intellect: 10, wisdom: 10, dexterity: 0, agility: 0, tactics: 0 };
-    case 'rogue':
+    case 'ranger':
       // Physical DPS focus: 6 STR, 7 DEX, 7 AGI = 20 points
       return { strength: 6, vitality: 0, endurance: 0, intellect: 0, wisdom: 0, dexterity: 7, agility: 7, tactics: 0 };
-    case 'cleric':
-      // Healer focus: 5 VIT, 5 INT, 10 WIS = 20 points
-      return { strength: 0, vitality: 5, endurance: 0, intellect: 5, wisdom: 10, dexterity: 0, agility: 0, tactics: 0 };
+    case 'worge':
+    case 'worg':
+      // Shapeshifter hybrid: 5 STR, 5 VIT, 5 AGI, 5 END = 20 points
+      return { strength: 5, vitality: 5, endurance: 5, intellect: 0, wisdom: 0, dexterity: 0, agility: 5, tactics: 0 };
     default:
       // Balanced hybrid: 5 STR, 5 VIT, 5 DEX, 5 TAC = 20 points
       return { strength: 5, vitality: 5, endurance: 0, intellect: 0, wisdom: 0, dexterity: 5, agility: 0, tactics: 5 };

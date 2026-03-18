@@ -151,8 +151,6 @@ export function wcsClassToGDAType(classId: string): string {
   const classMap: Record<string, string> = {
     warrior: "warrior",
     mage: "mage",
-    rogue: "ranger", // WCS rogue → GDA ranger archetype
-    cleric: "mage",  // WCS cleric → GDA mage (support caster)
     ranger: "ranger",
     worge: "warrior", // Worge forms → warrior archetype
   };

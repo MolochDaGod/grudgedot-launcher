@@ -119,29 +119,29 @@ const skillTemplates = {
       ]
     }
   ],
-  rogue: [
+  ranger: [
     {
-      id: "rogue-1",
-      title: "Shadow Step",
-      tooltip: { content: "Move silently and undetected" },
+      id: "ranger-1",
+      title: "Keen Eye",
+      tooltip: { content: "Increase ranged accuracy by 15%" },
       children: [
         {
-          id: "rogue-2",
-          title: "Backstab",
-          tooltip: { content: "Deal 200% damage from behind" },
+          id: "ranger-2",
+          title: "Precision Shot",
+          tooltip: { content: "Deal 200% damage with a aimed shot" },
           children: [
             {
-              id: "rogue-3",
-              title: "Assassinate",
-              tooltip: { content: "Instantly kill low-health enemies" },
+              id: "ranger-3",
+              title: "Volley",
+              tooltip: { content: "Fire a burst of arrows at multiple targets" },
               children: []
             }
           ]
         },
         {
-          id: "rogue-4",
-          title: "Poison Blade",
-          tooltip: { content: "Apply poison to weapon attacks" },
+          id: "ranger-4",
+          title: "Trap Mastery",
+          tooltip: { content: "Place traps that slow and damage enemies" },
           children: []
         }
       ]
@@ -596,8 +596,8 @@ export default function SkillTreeEditor() {
                     <Button size="sm" variant="outline" onClick={() => applyTemplate("mage")} data-testid="button-template-mage">
                       <Sparkles className="h-4 w-4 mr-1" /> Mage
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => applyTemplate("rogue")} data-testid="button-template-rogue">
-                      <Zap className="h-4 w-4 mr-1" /> Rogue
+                    <Button size="sm" variant="outline" onClick={() => applyTemplate("ranger")} data-testid="button-template-ranger">
+                      <Zap className="h-4 w-4 mr-1" /> Ranger
                     </Button>
                   </div>
                 </div>

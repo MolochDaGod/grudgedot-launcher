@@ -1738,7 +1738,7 @@ export default function MMOWorld() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="text-3xl">{hero.classId === "warrior" ? "⚔️" : hero.classId === "mage" ? "🔮" : hero.classId === "rogue" ? "🗡️" : "✨"}</div>
+                      <div className="text-3xl">{hero.classId === "warrior" ? "⚔️" : hero.classId === "mage" ? "🔮" : hero.classId === "ranger" ? "🏹" : "🐺"}</div>
                       <div className="flex-1">
                         <h3 className="font-bold text-lg">{hero.name}</h3>
                         <p className="text-xs text-muted-foreground mb-2">{hero.title} — {hero.raceId} {hero.classId} Lv.{hero.level}</p>

@@ -22,7 +22,7 @@ import {
   skeletonSprite,
   elfArcherSprite,
   scourgeWarriorSprite,
-  dwarfKnightSprite,
+  orcGuardianSprite,
   fireballSprite,
   explosionSprite,
   bossShipSprite,
@@ -173,10 +173,10 @@ const CARDS: GameCard[] = [
     description: 'Explodes on death dealing area damage'
   },
   { 
-    name: 'Dwarf Knight', type: 'Troop', sprite: 'dwarfKnight', elixirCost: 4, 
+    name: 'Orc Guardian', type: 'Troop', sprite: 'orcGuardian', elixirCost: 4, 
     health: 200, damage: 50, speed: 40, range: 60, attackRate: 1.0, 
     isTank: true, isRanged: false, rarity: 'rare', shieldAmount: 100,
-    description: 'Tanky knight with a shield that absorbs damage'
+    description: 'Tanky guardian with a shield that absorbs damage'
   },
   { 
     name: 'Phoenix', type: 'Troop', sprite: 'fireBall', elixirCost: 5, 
@@ -259,7 +259,7 @@ const CARDS: GameCard[] = [
   
   // === BUILDING CARDS (3) ===
   { 
-    name: 'Barracks', type: 'Building', sprite: 'dwarfKnight', 
+    name: 'Barracks', type: 'Building', sprite: 'orcGuardian', 
     elixirCost: 5, health: 600, damage: 0, rarity: 'rare', lifetime: 40,
     spawnsUnit: 'Skeleton Army', spawnInterval: 8,
     description: 'Spawns skeleton warriors every 8 seconds'
@@ -282,7 +282,7 @@ const SPRITE_IMAGES: Record<string, string> = {
   skeleton: skeletonSprite,
   elfArcher: elfArcherSprite,
   scourgeWarrior: scourgeWarriorSprite,
-  dwarfKnight: dwarfKnightSprite,
+  orcGuardian: orcGuardianSprite,
   fireBall: fireballSprite,
   explosion: explosionSprite,
   bossShip: bossShipSprite,

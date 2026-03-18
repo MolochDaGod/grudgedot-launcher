@@ -30,7 +30,7 @@ const TYPE_ICONS: Record<string, any> = {
   legendary: Heart,
 };
 
-const RACES = ['Human', 'Worge', 'Elf', 'Dwarf'] as const;
+const RACES = ['Human', 'Worge', 'Elf', 'Undead'] as const;
 const CLASSES = ['Warrior', 'Mage', 'Ranger', 'Worge'] as const;
 
 export default function CharactersPage() {
