@@ -11,7 +11,6 @@
  *
  * Excluded (serverless-incompatible):
  *  - Socket.IO / real-time multiplayer lobby
- *  - Replit Object Storage (sidecar not available)
  *  - Vite dev middleware
  *  - File-system upload/sync routes
  */

@@ -1,16 +1,17 @@
 // ============================================================
 // GRUDACHAIN Integration Config
-// Connects GDevelopAssistant (GGE) to Grudge Studio VPS backend
+// Connects GDevelopAssistant (GGE) to GRUDACHAIN AI nodes
 // and Warlord-Crafting-Suite (WCS) game systems
 // ============================================================
 
 // Deployment URLs (overridable via env)
-// Game API runs on VPS via Coolify/Docker + Traefik
+// GRUDA Legion production runs on the Grudge Studio VPS via Coolify/Traefik.
+// grudachain.grudgestudio.com is the GrudaChain *frontend* (Cloudflare Pages) — NOT the backend.
 export const GRUDACHAIN_URL = process.env.GRUDACHAIN_URL || "https://api.grudge-studio.com";
 export const WCS_URL = process.env.WCS_URL || "https://warlord-crafting-suite.vercel.app";
 
 // GAME_API_GRUDA is the canonical Grudge Studio API endpoint
-export const GAME_API_GRUDA = process.env.GAME_API_GRUDA || "https://api.grudge-studio.com";
+export const GAME_API_GRUDA = process.env.GAME_API_GRUDA || GRUDACHAIN_URL;
 
 // Vercel deployment (static landing page + serverless functions)
 export const GRUDACHAIN_VERCEL_URL = "https://grudachain.vercel.app";
@@ -28,36 +29,36 @@ export const WCS_PAGES = {
   dashboard: `${WCS_URL}/dashboard`,
 } as const;
 
-// VPS Game API endpoints
-// Source: https://github.com/MolochDaGod/grudge-studio-backend (main) → VPS Docker/Coolify
+// GRUDACHAIN API endpoints
+// Source: https://github.com/MolochDaGod/grudge-studio-backend → VPS auto-deploy via Coolify
 export const GRUDACHAIN_API = {
   health: `${GRUDACHAIN_URL}/health`,
-  status: `${GRUDACHAIN_URL}/health`,
-  chat: `${GRUDACHAIN_URL}/ai/chat`,
-  generateCode: `${GRUDACHAIN_URL}/ai/generate-code`,
-  analyzeFile: `${GRUDACHAIN_URL}/ai/analyze-file`,
-  networkDiscover: `${GRUDACHAIN_URL}/health`,
-  // AI features — proxied through game-api to internal ai-agent
-  vibeProviders: `${GRUDACHAIN_URL}/ai/providers`,
-  vibeChat: `${GRUDACHAIN_URL}/ai/chat`,
+  status: `${GRUDACHAIN_URL}/api/status`,
+  chat: `${GRUDACHAIN_URL}/api/chat`,
+  generateCode: `${GRUDACHAIN_URL}/api/generate-code`,
+  analyzeFile: `${GRUDACHAIN_URL}/api/analyze-file`,
+  networkDiscover: `${GRUDACHAIN_URL}/api/network/discover`,
+  // Vibe AI — served from Grudge Studio VPS
+  vibeProviders: `${GRUDACHAIN_URL}/api/vibe/providers`,
+  vibeChat: `${GRUDACHAIN_URL}/api/vibe/chat`,
   // SDK & Storage
-  sdkInfo: `${GRUDACHAIN_URL}/health`,
-  storageInfo: `${GRUDACHAIN_URL}/health`,
-  storageList: `${GRUDACHAIN_URL}/health`,
+  sdkInfo: `${GRUDACHAIN_URL}/api/sdk/info`,
+  storageInfo: `${GRUDACHAIN_URL}/api/storage/info`,
+  storageList: `${GRUDACHAIN_URL}/api/storage/list`,
   // Grudge Studio integration
-  grudgeStudioConfig: `${GRUDACHAIN_URL}/health`,
-  grudgeStudioLinks: `${GRUDACHAIN_URL}/health`,
+  grudgeStudioConfig: `${GRUDACHAIN_URL}/api/grudge-studio/config`,
+  grudgeStudioLinks: `${GRUDACHAIN_URL}/api/grudge-studio/links`,
   // Admin
-  adminStats: `${GRUDACHAIN_URL}/health`,
-  adminEcosystem: `${GRUDACHAIN_URL}/health`,
-  // WebSocket: connect via Socket.IO at ws.grudge-studio.com
+  adminStats: `${GRUDACHAIN_URL}/api/admin/stats`,
+  adminEcosystem: `${GRUDACHAIN_URL}/api/admin/ecosystem`,
+  // WebSocket: connect via Socket.IO at GRUDACHAIN_URL root for real-time AI chat
 } as const;
 
 // Source repository for the VPS deployment
 export const GRUDACHAIN_SOURCE = {
   repo: "MolochDaGod/grudge-studio-backend",
   branch: "main",
-  deployment: "VPS Coolify/Docker",
+  service: "game-api",
   github: "https://github.com/MolochDaGod/grudge-studio-backend",
 } as const;
 
@@ -151,6 +152,8 @@ export function wcsClassToGDAType(classId: string): string {
   const classMap: Record<string, string> = {
     warrior: "warrior",
     mage: "mage",
+    rogue: "ranger", // WCS rogue → GDA ranger archetype
+    cleric: "mage",  // WCS cleric → GDA mage (support caster)
     ranger: "ranger",
     worge: "warrior", // Worge forms → warrior archetype
   };

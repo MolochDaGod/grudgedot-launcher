@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { mysqlTable, text, varchar, timestamp, json, int, boolean, index } from "drizzle-orm/mysql-core";
+import { pgTable, text, varchar, timestamp, jsonb, integer, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema as _createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -14,26 +14,26 @@ type _OmittableZod = z.ZodType<any> & {
 const createInsertSchema: (...args: Parameters<typeof _createInsertSchema>) => _OmittableZod =
   _createInsertSchema as any;
 
-// Session storage table for Replit Auth
-export const sessions = mysqlTable(
+// Session storage table for Grudge ID Auth
+export const sessions = pgTable(
   "sessions",
   {
-    sid: varchar("sid", { length: 255 }).primaryKey(),
-    sess: json("sess").notNull(),
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
     expire: timestamp("expire").notNull(),
   },
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for Replit Auth
-export const users = mysqlTable("users", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  email: varchar("email", { length: 255 }).unique(),
+// User storage table for Grudge ID Auth
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
   username: text("username").notNull(),
   password: text("password").notNull().default(""),
-  firstName: varchar("first_name", { length: 255 }),
-  lastName: varchar("last_name", { length: 255 }),
-  profileImageUrl: varchar("profile_image_url", { length: 255 }),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -42,214 +42,214 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
 // Player profile with game stats
-export const playerProfiles = mysqlTable("player_profiles", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull().unique(),
-  displayName: varchar("display_name", { length: 255 }).notNull(),
-  level: int("level").notNull().default(1),
-  xp: int("xp").notNull().default(0),
-  totalGamesPlayed: int("total_games_played").notNull().default(0),
-  totalWins: int("total_wins").notNull().default(0),
+export const playerProfiles = pgTable("player_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull().unique(),
+  displayName: varchar("display_name").notNull(),
+  level: integer("level").notNull().default(1),
+  xp: integer("xp").notNull().default(0),
+  totalGamesPlayed: integer("total_games_played").notNull().default(0),
+  totalWins: integer("total_wins").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Game characters/heroes
-export const characters = mysqlTable("characters", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
-  type: varchar("type", { length: 255 }).notNull(), // warrior, mage, archer, etc.
-  rarity: varchar("rarity", { length: 255 }).notNull().default("common"), // common, rare, epic, legendary
-  baseStats: json("base_stats").notNull(), // { health, attack, defense, speed }
-  abilities: json("abilities").notNull(), // array of ability objects
-  modelAssetUrl: varchar("model_asset_url", { length: 255 }),
-  portraitUrl: varchar("portrait_url", { length: 255 }),
-  unlockLevel: int("unlock_level").notNull().default(1),
-  unlockCost: json("unlock_cost"), // { gold: 0, gems: 0 }
+export const characters = pgTable("characters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  type: varchar("type").notNull(), // warrior, mage, archer, etc.
+  rarity: varchar("rarity").notNull().default("common"), // common, rare, epic, legendary
+  baseStats: jsonb("base_stats").notNull(), // { health, attack, defense, speed }
+  abilities: jsonb("abilities").notNull(), // array of ability objects
+  modelAssetUrl: varchar("model_asset_url"),
+  portraitUrl: varchar("portrait_url"),
+  unlockLevel: integer("unlock_level").notNull().default(1),
+  unlockCost: jsonb("unlock_cost"), // { gold: 0, gems: 0 }
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Player owned characters
-export const playerCharacters = mysqlTable("player_characters", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  playerId: varchar("player_id", { length: 255 }).references(() => playerProfiles.id).notNull(),
-  characterId: varchar("character_id", { length: 255 }).references(() => characters.id).notNull(),
-  level: int("level").notNull().default(1),
-  xp: int("xp").notNull().default(0),
-  equipment: json("equipment"), // equipped items
-  customization: json("customization"), // skins, colors, etc.
+export const playerCharacters = pgTable("player_characters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").references(() => playerProfiles.id).notNull(),
+  characterId: varchar("character_id").references(() => characters.id).notNull(),
+  level: integer("level").notNull().default(1),
+  xp: integer("xp").notNull().default(0),
+  equipment: jsonb("equipment"), // equipped items
+  customization: jsonb("customization"), // skins, colors, etc.
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Currency types
-export const currencies = mysqlTable("currencies", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  code: varchar("code", { length: 255 }).notNull().unique(), // GOLD, GEMS, TOKENS
-  name: varchar("name", { length: 255 }).notNull(),
-  iconUrl: varchar("icon_url", { length: 255 }),
+export const currencies = pgTable("currencies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(), // GOLD, GEMS, TOKENS
+  name: varchar("name").notNull(),
+  iconUrl: varchar("icon_url"),
   isPremium: boolean("is_premium").notNull().default(false),
 });
 
 // Player wallets
-export const playerWallets = mysqlTable("player_wallets", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  playerId: varchar("player_id", { length: 255 }).references(() => playerProfiles.id).notNull(),
-  currencyId: varchar("currency_id", { length: 255 }).references(() => currencies.id).notNull(),
-  balance: int("balance").notNull().default(0),
+export const playerWallets = pgTable("player_wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").references(() => playerProfiles.id).notNull(),
+  currencyId: varchar("currency_id").references(() => currencies.id).notNull(),
+  balance: integer("balance").notNull().default(0),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Wallet transactions
-export const walletTransactions = mysqlTable("wallet_transactions", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  walletId: varchar("wallet_id", { length: 255 }).references(() => playerWallets.id).notNull(),
-  amount: int("amount").notNull(), // positive for credit, negative for debit
-  reason: varchar("reason", { length: 255 }).notNull(), // purchase, reward, refund, etc.
-  referenceId: varchar("reference_id", { length: 255 }), // related item/match id
+export const walletTransactions = pgTable("wallet_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id").references(() => playerWallets.id).notNull(),
+  amount: integer("amount").notNull(), // positive for credit, negative for debit
+  reason: varchar("reason").notNull(), // purchase, reward, refund, etc.
+  referenceId: varchar("reference_id"), // related item/match id
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Store items
-export const storeItems = mysqlTable("store_items", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const storeItems = pgTable("store_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   description: text("description"),
-  category: varchar("category", { length: 255 }).notNull(), // character, skin, boost, currency
-  itemType: varchar("item_type", { length: 255 }).notNull(),
-  itemId: varchar("item_id", { length: 255 }), // reference to character, skin, etc.
-  price: json("price").notNull(), // { gold: 100, gems: 0 }
-  iconUrl: varchar("icon_url", { length: 255 }),
+  category: varchar("category").notNull(), // character, skin, boost, currency
+  itemType: varchar("item_type").notNull(),
+  itemId: varchar("item_id"), // reference to character, skin, etc.
+  price: jsonb("price").notNull(), // { gold: 100, gems: 0 }
+  iconUrl: varchar("icon_url"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Achievements
-export const achievements = mysqlTable("achievements", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const achievements = pgTable("achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   description: text("description").notNull(),
-  iconUrl: varchar("icon_url", { length: 255 }),
-  category: varchar("category", { length: 255 }).notNull(), // combat, collection, progression
-  requirement: json("requirement").notNull(), // { type: "wins", count: 10 }
-  reward: json("reward").notNull(), // { gold: 100, xp: 50 }
+  iconUrl: varchar("icon_url"),
+  category: varchar("category").notNull(), // combat, collection, progression
+  requirement: jsonb("requirement").notNull(), // { type: "wins", count: 10 }
+  reward: jsonb("reward").notNull(), // { gold: 100, xp: 50 }
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Player achievements
-export const playerAchievements = mysqlTable("player_achievements", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  playerId: varchar("player_id", { length: 255 }).references(() => playerProfiles.id).notNull(),
-  achievementId: varchar("achievement_id", { length: 255 }).references(() => achievements.id).notNull(),
-  progress: int("progress").notNull().default(0),
+export const playerAchievements = pgTable("player_achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").references(() => playerProfiles.id).notNull(),
+  achievementId: varchar("achievement_id").references(() => achievements.id).notNull(),
+  progress: integer("progress").notNull().default(0),
   completedAt: timestamp("completed_at"),
   claimedAt: timestamp("claimed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Game lobbies
-export const gameLobbies = mysqlTable("game_lobbies", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
-  hostId: varchar("host_id", { length: 255 }).references(() => playerProfiles.id).notNull(),
-  gameMode: varchar("game_mode", { length: 255 }).notNull().default("pvp"), // pvp, coop, campaign
-  maxPlayers: int("max_players").notNull().default(4),
+export const gameLobbies = pgTable("game_lobbies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  hostId: varchar("host_id").references(() => playerProfiles.id).notNull(),
+  gameMode: varchar("game_mode").notNull().default("pvp"), // pvp, coop, campaign
+  maxPlayers: integer("max_players").notNull().default(4),
   isPrivate: boolean("is_private").notNull().default(false),
-  password: varchar("password", { length: 255 }),
-  status: varchar("status", { length: 255 }).notNull().default("waiting"), // waiting, starting, in_game, finished
-  settings: json("settings").notNull(), // game-specific settings
-  rtsProjectId: varchar("rts_project_id", { length: 255 }).references(() => rtsProjects.id),
+  password: varchar("password"),
+  status: varchar("status").notNull().default("waiting"), // waiting, starting, in_game, finished
+  settings: jsonb("settings").notNull(), // game-specific settings
+  rtsProjectId: varchar("rts_project_id").references(() => rtsProjects.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Lobby players
-export const lobbyPlayers = mysqlTable("lobby_players", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  lobbyId: varchar("lobby_id", { length: 255 }).references(() => gameLobbies.id).notNull(),
-  playerId: varchar("player_id", { length: 255 }).references(() => playerProfiles.id).notNull(),
-  characterId: varchar("character_id", { length: 255 }).references(() => characters.id),
-  team: int("team").notNull().default(1),
+export const lobbyPlayers = pgTable("lobby_players", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  lobbyId: varchar("lobby_id").references(() => gameLobbies.id).notNull(),
+  playerId: varchar("player_id").references(() => playerProfiles.id).notNull(),
+  characterId: varchar("character_id").references(() => characters.id),
+  team: integer("team").notNull().default(1),
   isReady: boolean("is_ready").notNull().default(false),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 });
 
 // Game sessions (active matches)
-export const gameSessions = mysqlTable("game_sessions", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  lobbyId: varchar("lobby_id", { length: 255 }).references(() => gameLobbies.id).notNull(),
-  status: varchar("status", { length: 255 }).notNull().default("active"), // active, paused, finished
-  gameState: json("game_state").notNull(), // current game state
+export const gameSessions = pgTable("game_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  lobbyId: varchar("lobby_id").references(() => gameLobbies.id).notNull(),
+  status: varchar("status").notNull().default("active"), // active, paused, finished
+  gameState: jsonb("game_state").notNull(), // current game state
   startedAt: timestamp("started_at").defaultNow().notNull(),
   endedAt: timestamp("ended_at"),
-  winnerId: varchar("winner_id", { length: 255 }).references(() => playerProfiles.id),
-  results: json("results"), // match results and stats
+  winnerId: varchar("winner_id").references(() => playerProfiles.id),
+  results: jsonb("results"), // match results and stats
 });
 
 // AI behavior profiles
-export const aiBehaviors = mysqlTable("ai_behaviors", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
-  difficulty: varchar("difficulty", { length: 255 }).notNull(), // easy, medium, hard, expert
+export const aiBehaviors = pgTable("ai_behaviors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  difficulty: varchar("difficulty").notNull(), // easy, medium, hard, expert
   description: text("description"),
-  aggressiveness: int("aggressiveness").notNull().default(50), // 0-100
-  defensiveness: int("defensiveness").notNull().default(50), // 0-100
-  economyFocus: int("economy_focus").notNull().default(50), // 0-100
-  expansionRate: int("expansion_rate").notNull().default(50), // 0-100
-  unitPreferences: json("unit_preferences"), // preferred unit types
-  buildOrder: json("build_order"), // scripted build sequence
-  decisionTree: json("decision_tree"), // AI decision logic
+  aggressiveness: integer("aggressiveness").notNull().default(50), // 0-100
+  defensiveness: integer("defensiveness").notNull().default(50), // 0-100
+  economyFocus: integer("economy_focus").notNull().default(50), // 0-100
+  expansionRate: integer("expansion_rate").notNull().default(50), // 0-100
+  unitPreferences: jsonb("unit_preferences"), // preferred unit types
+  buildOrder: jsonb("build_order"), // scripted build sequence
+  decisionTree: jsonb("decision_tree"), // AI decision logic
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // User settings
-export const userSettings = mysqlTable("user_settings", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull().unique(),
-  audioSettings: json("audio_settings"), // { masterVolume, musicVolume, sfxVolume }
-  graphicsSettings: json("graphics_settings"), // { quality, shadows, particles }
-  gameplaySettings: json("gameplay_settings"), // { cameraSpeed, keybindings }
-  notificationSettings: json("notification_settings"),
+export const userSettings = pgTable("user_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull().unique(),
+  audioSettings: jsonb("audio_settings"), // { masterVolume, musicVolume, sfxVolume }
+  graphicsSettings: jsonb("graphics_settings"), // { quality, shadows, particles }
+  gameplaySettings: jsonb("gameplay_settings"), // { cameraSpeed, keybindings }
+  notificationSettings: jsonb("notification_settings"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Level requirements
-export const levelRequirements = mysqlTable("level_requirements", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  level: int("level").notNull().unique(),
-  xpRequired: int("xp_required").notNull(),
-  rewards: json("rewards").notNull(), // { gold, gems, unlocks }
+export const levelRequirements = pgTable("level_requirements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  level: integer("level").notNull().unique(),
+  xpRequired: integer("xp_required").notNull(),
+  rewards: jsonb("rewards").notNull(), // { gold, gems, unlocks }
 });
 
 // Existing tables
-export const gameProjects = mysqlTable("game_projects", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const gameProjects = pgTable("game_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
   gameType: text("game_type").notNull(),
-  specifications: json("specifications").notNull(),
+  specifications: jsonb("specifications").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const chatConversations = mysqlTable("chat_conversations", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => gameProjects.id),
+export const chatConversations = pgTable("chat_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => gameProjects.id),
   title: text("title").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const chatMessages = mysqlTable("chat_messages", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  conversationId: varchar("conversation_id", { length: 255 }).references(() => chatConversations.id).notNull(),
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").references(() => chatConversations.id).notNull(),
   role: text("role").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const gdevelopAssets = mysqlTable("gdevelop_assets", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const gdevelopAssets = pgTable("gdevelop_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   type: text("type").notNull(),
   category: text("category").notNull(),
@@ -260,8 +260,8 @@ export const gdevelopAssets = mysqlTable("gdevelop_assets", {
   objectKey: text("object_key"),
   bucketId: text("bucket_id"),
   contentType: text("content_type"),
-  fileSize: int("file_size"),
-  tags: json("tags").notNull(),
+  fileSize: integer("file_size"),
+  tags: text("tags").array().notNull(),
   description: text("description"),
   uploadedAt: timestamp("uploaded_at"),
 });
@@ -297,61 +297,61 @@ export const gdevelopToolsSchema = z.object({
 
 export type GDevelopTools = z.infer<typeof gdevelopToolsSchema>;
 
-export const rtsProjects = mysqlTable("rts_projects", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const rtsProjects = pgTable("rts_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
   thumbnailUrl: text("thumbnail_url"),
   gameMode: text("game_mode").notNull().default("pvp"),
-  mapData: json("map_data").notNull(),
-  gameSettings: json("game_settings").notNull(),
-  campaignData: json("campaign_data"),
-  gdevelopTools: json("gdevelop_tools").notNull().default(sql`(CAST('{"behaviors":[],"extensions":[],"templates":[]}' AS JSON))`),
+  mapData: jsonb("map_data").notNull(),
+  gameSettings: jsonb("game_settings").notNull(),
+  campaignData: jsonb("campaign_data"),
+  gdevelopTools: jsonb("gdevelop_tools").notNull().default(sql`'{"behaviors":[],"extensions":[],"templates":[]}'::jsonb`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const rtsAssets = mysqlTable("rts_assets", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const rtsAssets = pgTable("rts_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   type: text("type").notNull(),
   category: text("category").notNull(),
   fileUrl: text("file_url").notNull(),
   previewUrl: text("preview_url"),
-  metadata: json("metadata").notNull(),
-  tags: json("tags").notNull(),
+  metadata: jsonb("metadata").notNull(),
+  tags: text("tags").array().notNull(),
   source: text("source").notNull().default("user_upload"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const rtsUnitTemplates = mysqlTable("rts_unit_templates", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id).notNull(),
+export const rtsUnitTemplates = pgTable("rts_unit_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id).notNull(),
   name: text("name").notNull(),
-  modelAssetId: varchar("model_asset_id", { length: 255 }).references(() => rtsAssets.id),
-  stats: json("stats").notNull(),
-  cost: json("cost").notNull(),
-  abilities: json("abilities").notNull(),
+  modelAssetId: varchar("model_asset_id").references(() => rtsAssets.id),
+  stats: jsonb("stats").notNull(),
+  cost: jsonb("cost").notNull(),
+  abilities: jsonb("abilities").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const rtsBuildingTemplates = mysqlTable("rts_building_templates", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id).notNull(),
+export const rtsBuildingTemplates = pgTable("rts_building_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id).notNull(),
   name: text("name").notNull(),
-  modelAssetId: varchar("model_asset_id", { length: 255 }).references(() => rtsAssets.id),
-  stats: json("stats").notNull(),
-  cost: json("cost").notNull(),
-  produces: json("produces"),
+  modelAssetId: varchar("model_asset_id").references(() => rtsAssets.id),
+  stats: jsonb("stats").notNull(),
+  cost: jsonb("cost").notNull(),
+  produces: jsonb("produces"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // ============= OpenRTS Engine Tables =============
 
 // OpenRTS Movers - pathfinding and movement modes
-export const openrtsMover = mysqlTable("openrts_movers", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsMover = pgTable("openrts_movers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   pathfindingMode: text("pathfinding_mode").notNull().default("Walk"), // Walk, Fly
   heightmap: text("heightmap").notNull().default("Ground"), // Ground, Sky, Air
@@ -360,28 +360,28 @@ export const openrtsMover = mysqlTable("openrts_movers", {
 });
 
 // OpenRTS Weapons - combat systems
-export const openrtsWeapons = mysqlTable("openrts_weapons", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsWeapons = pgTable("openrts_weapons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   uiName: text("ui_name").notNull(),
   effectLink: text("effect_link"), // references effect
   range: text("range").notNull().default("5"), // attack range
   scanRange: text("scan_range").notNull().default("7"), // detection range
   period: text("period").notNull().default("4"), // attack cooldown
-  damage: int("damage").notNull().default(10),
+  damage: integer("damage").notNull().default(10),
   damageType: text("damage_type").notNull().default("physical"), // physical, magic, fire, etc.
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // OpenRTS Effects - visual/damage effects
-export const openrtsEffects = mysqlTable("openrts_effects", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsEffects = pgTable("openrts_effects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   uiName: text("ui_name"),
   effectType: text("effect_type").notNull().default("damage"), // damage, heal, buff, debuff, projectile
-  damage: int("damage").default(0),
+  damage: integer("damage").default(0),
   radius: text("radius"), // for AOE effects
   duration: text("duration"), // for buffs/debuffs
   projectileLink: text("projectile_link"), // for projectile-based effects
@@ -391,9 +391,9 @@ export const openrtsEffects = mysqlTable("openrts_effects", {
 });
 
 // OpenRTS Projectiles - flying objects
-export const openrtsProjectiles = mysqlTable("openrts_projectiles", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsProjectiles = pgTable("openrts_projectiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   speed: text("speed").notNull().default("10"),
   modelPath: text("model_path"),
@@ -403,21 +403,21 @@ export const openrtsProjectiles = mysqlTable("openrts_projectiles", {
 });
 
 // OpenRTS Actors - visual representation
-export const openrtsActors = mysqlTable("openrts_actors", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsActors = pgTable("openrts_actors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   modelPath: text("model_path").notNull(),
   scale: text("scale").default("1"),
-  animations: json("animations").default(sql`(CAST('{}' AS JSON))`), // { idle, walk, attack, death }
-  sounds: json("sounds").default(sql`(CAST('{}' AS JSON))`), // { select, move, attack, death }
+  animations: jsonb("animations").default(sql`'{}'::jsonb`), // { idle, walk, attack, death }
+  sounds: jsonb("sounds").default(sql`'{}'::jsonb`), // { select, move, attack, death }
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // OpenRTS Units - complete unit definitions
-export const openrtsUnits = mysqlTable("openrts_units", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsUnits = pgTable("openrts_units", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   uiName: text("ui_name").notNull(),
   race: text("race").notNull().default("human"), // human, alien, undead, etc.
@@ -425,21 +425,21 @@ export const openrtsUnits = mysqlTable("openrts_units", {
   separationRadius: text("separation_radius").notNull().default("0.25"),
   speed: text("speed").notNull().default("2.5"),
   mass: text("mass").notNull().default("1.0"),
-  maxHealth: int("max_health").notNull().default(100),
+  maxHealth: integer("max_health").notNull().default(100),
   sight: text("sight").notNull().default("7"), // vision range
   moverLink: text("mover_link"), // references mover
-  weaponLinks: json("weapon_links"), // references weapons
+  weaponLinks: text("weapon_links").array(), // references weapons
   actorLink: text("actor_link"), // references actor
   modelPath: text("model_path"), // direct model path
-  cost: json("cost").default(sql`(CAST('{"gold":100}' AS JSON))`),
-  buildTime: int("build_time").default(10),
+  cost: jsonb("cost").default(sql`'{"gold":100}'::jsonb`),
+  buildTime: integer("build_time").default(10),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // OpenRTS Map Styles
-export const openrtsMapStyles = mysqlTable("openrts_map_styles", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsMapStyles = pgTable("openrts_map_styles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   groundTexture: text("ground_texture"),
   cliffTexture: text("cliff_texture"),
@@ -450,9 +450,9 @@ export const openrtsMapStyles = mysqlTable("openrts_map_styles", {
 });
 
 // OpenRTS Trinkets (map decorations)
-export const openrtsTrinkets = mysqlTable("openrts_trinkets", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  projectId: varchar("project_id", { length: 255 }).references(() => rtsProjects.id),
+export const openrtsTrinkets = pgTable("openrts_trinkets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => rtsProjects.id),
   name: text("name").notNull(),
   modelPath: text("model_path").notNull(),
   isBlocking: boolean("is_blocking").default(false),
@@ -463,8 +463,8 @@ export const openrtsTrinkets = mysqlTable("openrts_trinkets", {
 });
 
 // Viewport Assets - centralized 3D/2D asset storage with rendering config
-export const viewportAssets = mysqlTable("viewport_assets", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const viewportAssets = pgTable("viewport_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   sourceType: text("source_type").notNull().default("internal"), // internal, gdevelop, rts, external
@@ -473,12 +473,12 @@ export const viewportAssets = mysqlTable("viewport_assets", {
   subcategory: text("subcategory"), // orcs/elves/humans/skeletons/etc
   filePath: text("file_path").notNull(), // relative path under attached_assets
   previewImageUrl: text("preview_image_url"), // generated thumbnail
-  texturePaths: json("texture_paths"), // associated texture files
-  metadata: json("metadata").notNull().default(sql`(CAST('{}' AS JSON))`), // scale, pivot, animations, LOD
-  viewportConfig: json("viewport_config").notNull().default(sql`(CAST('{}' AS JSON))`), // camera, lighting config
-  tags: json("tags").notNull().default(sql`(CAST('[]' AS JSON))`),
+  texturePaths: text("texture_paths").array(), // associated texture files
+  metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`), // scale, pivot, animations, LOD
+  viewportConfig: jsonb("viewport_config").notNull().default(sql`'{}'::jsonb`), // camera, lighting config
+  tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
   isAnimated: boolean("is_animated").notNull().default(false),
-  fileSize: int("file_size"), // bytes
+  fileSize: integer("file_size"), // bytes
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -502,7 +502,7 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
 });
 
 
-// Custom RTS Project insert schema (avoiding drizzle-zod issues with complex json)
+// Custom RTS Project insert schema (avoiding drizzle-zod issues with complex jsonb)
 export const insertRtsProjectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z.string().optional().nullable(),
@@ -657,8 +657,8 @@ export const insertLevelRequirementSchema = createInsertSchema(levelRequirements
 // Matches WCS accounts schema. Every login method produces a row here.
 // Grudge ID = Puter ID. Crossmint wallet auto-created on registration.
 // ============================================
-export const accounts = mysqlTable("accounts", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const accounts = pgTable("accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   grudgeId: varchar("grudge_id", { length: 64 }).notNull().unique(),
   username: varchar("username", { length: 50 }).notNull(),
   displayName: varchar("display_name", { length: 100 }),
@@ -688,18 +688,18 @@ export const accounts = mysqlTable("accounts", {
   isPremium: boolean("is_premium").default(false),
   isGuest: boolean("is_guest").default(false),
   // Balances
-  gold: int("gold").default(0),
-  gbuxBalance: int("gbux_balance").default(0),
+  gold: integer("gold").default(0),
+  gbuxBalance: integer("gbux_balance").default(0),
   // Game counts
-  totalCharacters: int("total_characters").default(0),
-  totalIslands: int("total_islands").default(0),
+  totalCharacters: integer("total_characters").default(0),
+  totalIslands: integer("total_islands").default(0),
   homeIslandId: varchar("home_island_id", { length: 255 }),
   hasCompletedTutorial: boolean("has_completed_tutorial").default(false),
   // Timestamps
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
   lastLoginAt: timestamp("last_login_at"),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  metadata: json("metadata").default(sql`(CAST('{}' AS JSON))`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
 }, (table) => [
   index("accounts_grudge_id_idx").on(table.grudgeId),
   index("accounts_puter_uuid_idx").on(table.puterUuid),
@@ -717,34 +717,34 @@ export type Account = typeof accounts.$inferSelect;
 // Linked to accounts.id. Full 8 WCS stats, equipment, professions, NFT fields.
 // Same schema as WCS characters table for cross-game portability.
 // ============================================
-export const grudgeCharacters = mysqlTable("grudge_characters", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  accountId: varchar("account_id", { length: 255 }).references(() => accounts.id).notNull(),
+export const grudgeCharacters = pgTable("grudge_characters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accountId: varchar("account_id").references(() => accounts.id).notNull(),
   grudgeId: varchar("grudge_id", { length: 64 }),
   name: text("name").notNull(),
   classId: text("class_id"), // warrior, mage, ranger, shapeshifter
   raceId: text("race_id"), // human, orc, elf, dwarf, barbarian, undead
   profession: text("profession"),
   faction: text("faction"),
-  level: int("level").notNull().default(1),
-  experience: int("experience").notNull().default(0),
-  gold: int("gold").notNull().default(1000),
-  skillPoints: int("skill_points").notNull().default(5),
-  attributePoints: int("attribute_points").notNull().default(0),
+  level: integer("level").notNull().default(1),
+  experience: integer("experience").notNull().default(0),
+  gold: integer("gold").notNull().default(1000),
+  skillPoints: integer("skill_points").notNull().default(5),
+  attributePoints: integer("attribute_points").notNull().default(0),
   // WCS 8-stat attributes
-  attributes: json("attributes").default(sql`(CAST('{"Strength":0,"Vitality":0,"Endurance":0,"Intellect":0,"Wisdom":0,"Dexterity":0,"Agility":0,"Tactics":0}' AS JSON))`),
+  attributes: jsonb("attributes").default(sql`'{"Strength":0,"Vitality":0,"Endurance":0,"Intellect":0,"Wisdom":0,"Dexterity":0,"Agility":0,"Tactics":0}'::jsonb`),
   // 10-slot equipment
-  equipment: json("equipment").default(sql`(CAST('{"head":null,"chest":null,"legs":null,"feet":null,"hands":null,"shoulders":null,"mainHand":null,"offHand":null,"accessory1":null,"accessory2":null}' AS JSON))`),
+  equipment: jsonb("equipment").default(sql`'{"head":null,"chest":null,"legs":null,"feet":null,"hands":null,"shoulders":null,"mainHand":null,"offHand":null,"accessory1":null,"accessory2":null}'::jsonb`),
   // 5 profession progressions
-  professionProgression: json("profession_progression").default(sql`(CAST('{"Miner":{"level":1,"xp":0,"pointsSpent":0},"Forester":{"level":1,"xp":0,"pointsSpent":0},"Mystic":{"level":1,"xp":0,"pointsSpent":0},"Chef":{"level":1,"xp":0,"pointsSpent":0},"Engineer":{"level":1,"xp":0,"pointsSpent":0}}' AS JSON))`),
+  professionProgression: jsonb("profession_progression").default(sql`'{"Miner":{"level":1,"xp":0,"pointsSpent":0},"Forester":{"level":1,"xp":0,"pointsSpent":0},"Mystic":{"level":1,"xp":0,"pointsSpent":0},"Chef":{"level":1,"xp":0,"pointsSpent":0},"Engineer":{"level":1,"xp":0,"pointsSpent":0}}'::jsonb`),
   // Inventory
-  inventory: json("inventory").default(sql`(CAST('[]' AS JSON))`),
+  inventory: jsonb("inventory").default(sql`'[]'::jsonb`),
   // Combat
-  abilities: json("abilities").default(sql`(CAST('[]' AS JSON))`),
-  skillTree: json("skill_tree").default(sql`(CAST('{}' AS JSON))`),
-  currentHealth: int("current_health"),
-  currentMana: int("current_mana"),
-  currentStamina: int("current_stamina"),
+  abilities: jsonb("abilities").default(sql`'[]'::jsonb`),
+  skillTree: jsonb("skill_tree").default(sql`'{}'::jsonb`),
+  currentHealth: integer("current_health"),
+  currentMana: integer("current_mana"),
+  currentStamina: integer("current_stamina"),
   avatarUrl: text("avatar_url"),
   // NFT fields
   isNft: boolean("is_nft").default(false),
@@ -753,10 +753,10 @@ export const grudgeCharacters = mysqlTable("grudge_characters", {
   nftMintedAt: timestamp("nft_minted_at"),
   // State
   isActive: boolean("is_active").default(true),
-  slotIndex: int("slot_index").default(0),
+  slotIndex: integer("slot_index").default(0),
   isGuest: boolean("is_guest").default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
 }, (table) => [
   index("grudge_chars_account_id_idx").on(table.accountId),
   index("grudge_chars_grudge_id_idx").on(table.grudgeId),
@@ -767,13 +767,13 @@ export type InsertGrudgeCharacter = z.infer<typeof insertGrudgeCharacterSchema>;
 export type GrudgeCharacter = typeof grudgeCharacters.$inferSelect;
 
 // Saved custom characters from character creator (MMO-style)
-export const savedCharacters = mysqlTable("saved_characters", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
-  name: varchar("name", { length: 255 }).notNull(),
-  presetId: varchar("preset_id", { length: 255 }).notNull(),
-  customization: json("customization").notNull(),
-  colors: json("colors"),
+export const savedCharacters = pgTable("saved_characters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  name: varchar("name").notNull(),
+  presetId: varchar("preset_id").notNull(),
+  customization: jsonb("customization").notNull(),
+  colors: jsonb("colors"),
   isActive: boolean("is_active").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -885,22 +885,22 @@ export type InsertSavedCharacter = z.infer<typeof insertSavedCharacterSchema>;
 export type SavedCharacter = typeof savedCharacters.$inferSelect;
 
 // Asset metadata for 3D model parsing (meshes, materials, animations)
-export const assetMetadata = mysqlTable("asset_metadata", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const assetMetadata = pgTable("asset_metadata", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   storagePath: text("storage_path").notNull().unique(),
   filename: text("filename").notNull(),
   fileType: text("file_type").notNull(), // glb, gltf, fbx, obj, png, jpg, etc.
-  fileSize: int("file_size"),
+  fileSize: integer("file_size"),
   
   // Parsed 3D data
-  meshes: json("meshes").notNull().default(sql`(CAST('[]' AS JSON))`), // [{name, vertexCount, faceCount}]
-  materials: json("materials").notNull().default(sql`(CAST('[]' AS JSON))`), // [{name, type, color, textures}]
-  animations: json("animations").notNull().default(sql`(CAST('[]' AS JSON))`), // [{name, duration, keyframes}]
-  textures: json("textures").notNull().default(sql`(CAST('[]' AS JSON))`), // [{name, size, format}]
+  meshes: jsonb("meshes").notNull().default(sql`'[]'::jsonb`), // [{name, vertexCount, faceCount}]
+  materials: jsonb("materials").notNull().default(sql`'[]'::jsonb`), // [{name, type, color, textures}]
+  animations: jsonb("animations").notNull().default(sql`'[]'::jsonb`), // [{name, duration, keyframes}]
+  textures: jsonb("textures").notNull().default(sql`'[]'::jsonb`), // [{name, size, format}]
   
   // Bounding box and scene info
-  boundingBox: json("bounding_box"), // {min: {x,y,z}, max: {x,y,z}, center, size}
-  sceneInfo: json("scene_info"), // {nodeCount, totalVertices, totalFaces}
+  boundingBox: jsonb("bounding_box"), // {min: {x,y,z}, max: {x,y,z}, center, size}
+  sceneInfo: jsonb("scene_info"), // {nodeCount, totalVertices, totalFaces}
   
   // Thumbnail
   thumbnailUrl: text("thumbnail_url"),
@@ -909,7 +909,7 @@ export const assetMetadata = mysqlTable("asset_metadata", {
   folder: text("folder").notNull().default("/"),
   category: text("category").notNull().default("misc"), // models, textures, audio, animations, maps
   subcategory: text("subcategory"), // characters, buildings, terrain, ui, etc.
-  tags: json("tags").notNull().default(sql`(CAST('[]' AS JSON))`),
+  tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
   
   // Provenance & licensing
   source: text("source"), // kenney, kaykit, imgur, user-upload, etc.
@@ -938,8 +938,8 @@ export type AssetMetadata = typeof assetMetadata.$inferSelect;
 // Consolidates gdevelopAssets, rtsAssets, viewportAssets into one system
 // ============================================
 
-export const unifiedAssets = mysqlTable("unified_assets", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
+export const unifiedAssets = pgTable("unified_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   filename: text("filename").notNull(),
   
@@ -952,14 +952,14 @@ export const unifiedAssets = mysqlTable("unified_assets", {
   storagePath: text("storage_path").notNull(), // full object storage path
   fileUrl: text("file_url").notNull(), // public URL to access file
   previewUrl: text("preview_url"), // thumbnail/preview image URL
-  fileSize: int("file_size"),
+  fileSize: integer("file_size"),
   contentType: text("content_type"),
   contentHash: text("content_hash"), // SHA256 for deduplication
   
   // Metadata
-  tags: json("tags").notNull().default(sql`(CAST('[]' AS JSON))`),
+  tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
   description: text("description"),
-  metadata: json("metadata").notNull().default(sql`(CAST('{}' AS JSON))`), // flexible additional data (meshes, animations, etc.)
+  metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`), // flexible additional data (meshes, animations, etc.)
   
   // Source tracking
   source: text("source").notNull().default("user-upload"), // user-upload, kenney, kaykit, opengameart, ai-generated
@@ -967,7 +967,7 @@ export const unifiedAssets = mysqlTable("unified_assets", {
   license: text("license").notNull().default("unknown"), // cc0, cc-by, cc-by-sa, cc-by-nc, personal, commercial
   
   // Ownership & scoping
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  userId: varchar("user_id").references(() => users.id),
   scope: text("scope").notNull().default("user"), // public, team, user
   
   // Versioning
@@ -991,177 +991,177 @@ export type UnifiedAsset = typeof unifiedAssets.$inferSelect;
 // ============================================
 
 // Stat blocks for entities (reusable templates)
-export const warlordStatBlocks = mysqlTable("warlord_stat_blocks", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const warlordStatBlocks = pgTable("warlord_stat_blocks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   description: text("description"),
   
   // Base stats
-  strength: int("strength").notNull().default(10),
-  agility: int("agility").notNull().default(10),
-  intelligence: int("intelligence").notNull().default(10),
-  constitution: int("constitution").notNull().default(10),
-  wisdom: int("wisdom").notNull().default(10),
-  charisma: int("charisma").notNull().default(10),
+  strength: integer("strength").notNull().default(10),
+  agility: integer("agility").notNull().default(10),
+  intelligence: integer("intelligence").notNull().default(10),
+  constitution: integer("constitution").notNull().default(10),
+  wisdom: integer("wisdom").notNull().default(10),
+  charisma: integer("charisma").notNull().default(10),
   
   // Combat stats
-  attackPower: int("attack_power").notNull().default(10),
-  defense: int("defense").notNull().default(5),
-  critChance: int("crit_chance").notNull().default(5), // percentage
-  critDamage: int("crit_damage").notNull().default(150), // percentage
-  attackSpeed: int("attack_speed").notNull().default(100), // percentage
-  moveSpeed: int("move_speed").notNull().default(100), // percentage
+  attackPower: integer("attack_power").notNull().default(10),
+  defense: integer("defense").notNull().default(5),
+  critChance: integer("crit_chance").notNull().default(5), // percentage
+  critDamage: integer("crit_damage").notNull().default(150), // percentage
+  attackSpeed: integer("attack_speed").notNull().default(100), // percentage
+  moveSpeed: integer("move_speed").notNull().default(100), // percentage
   
   // Resistances (percentage)
-  physicalResist: int("physical_resist").notNull().default(0),
-  magicResist: int("magic_resist").notNull().default(0),
-  fireResist: int("fire_resist").notNull().default(0),
-  iceResist: int("ice_resist").notNull().default(0),
+  physicalResist: integer("physical_resist").notNull().default(0),
+  magicResist: integer("magic_resist").notNull().default(0),
+  fireResist: integer("fire_resist").notNull().default(0),
+  iceResist: integer("ice_resist").notNull().default(0),
   
   // Growth curves (JSON for level-based scaling)
-  growthCurves: json("growth_curves").notNull().default(sql`(CAST('{}' AS JSON))`),
+  growthCurves: jsonb("growth_curves").notNull().default(sql`'{}'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Energy pools (health, mana, stamina, etc.)
-export const warlordEnergies = mysqlTable("warlord_energies", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const warlordEnergies = pgTable("warlord_energies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   description: text("description"),
   
   // Energy definitions
-  maxHealth: int("max_health").notNull().default(100),
-  healthRegen: int("health_regen").notNull().default(1), // per second
-  maxMana: int("max_mana").notNull().default(50),
-  manaRegen: int("mana_regen").notNull().default(1),
-  maxStamina: int("max_stamina").notNull().default(100),
-  staminaRegen: int("stamina_regen").notNull().default(5),
+  maxHealth: integer("max_health").notNull().default(100),
+  healthRegen: integer("health_regen").notNull().default(1), // per second
+  maxMana: integer("max_mana").notNull().default(50),
+  manaRegen: integer("mana_regen").notNull().default(1),
+  maxStamina: integer("max_stamina").notNull().default(100),
+  staminaRegen: integer("stamina_regen").notNull().default(5),
   
   // Optional custom energies (rage, focus, etc.)
-  customEnergies: json("custom_energies").notNull().default(sql`(CAST('[]' AS JSON))`),
+  customEnergies: jsonb("custom_energies").notNull().default(sql`'[]'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Skills and spells templates
-export const warlordSkills = mysqlTable("warlord_skills", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const warlordSkills = pgTable("warlord_skills", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   description: text("description"),
-  skillType: varchar("skill_type", { length: 255 }).notNull().default("active"), // active, passive, toggle, aura
+  skillType: varchar("skill_type").notNull().default("active"), // active, passive, toggle, aura
   
   // Cost and cooldown
-  manaCost: int("mana_cost").notNull().default(0),
-  staminaCost: int("stamina_cost").notNull().default(0),
-  healthCost: int("health_cost").notNull().default(0),
-  cooldown: int("cooldown").notNull().default(0), // milliseconds
-  castTime: int("cast_time").notNull().default(0), // milliseconds
+  manaCost: integer("mana_cost").notNull().default(0),
+  staminaCost: integer("stamina_cost").notNull().default(0),
+  healthCost: integer("health_cost").notNull().default(0),
+  cooldown: integer("cooldown").notNull().default(0), // milliseconds
+  castTime: integer("cast_time").notNull().default(0), // milliseconds
   
   // Effects and damage
-  damageType: varchar("damage_type", { length: 255 }).default("physical"), // physical, magic, fire, ice, etc.
-  baseDamage: int("base_damage").notNull().default(0),
-  damageScaling: json("damage_scaling").notNull().default(sql`(CAST('{}' AS JSON))`), // stat scaling
-  effects: json("effects").notNull().default(sql`(CAST('[]' AS JSON))`), // buffs, debuffs, etc.
+  damageType: varchar("damage_type").default("physical"), // physical, magic, fire, ice, etc.
+  baseDamage: integer("base_damage").notNull().default(0),
+  damageScaling: jsonb("damage_scaling").notNull().default(sql`'{}'::jsonb`), // stat scaling
+  effects: jsonb("effects").notNull().default(sql`'[]'::jsonb`), // buffs, debuffs, etc.
   
   // Visual/animation
-  animationName: varchar("animation_name", { length: 255 }),
-  animationSpeed: int("animation_speed").notNull().default(100), // percentage
-  vfxId: varchar("vfx_id", { length: 255 }),
-  iconUrl: varchar("icon_url", { length: 255 }),
+  animationName: varchar("animation_name"),
+  animationSpeed: integer("animation_speed").notNull().default(100), // percentage
+  vfxId: varchar("vfx_id"),
+  iconUrl: varchar("icon_url"),
   
   // Requirements
-  levelRequired: int("level_required").notNull().default(1),
-  prerequisites: json("prerequisites").notNull().default(sql`(CAST('[]' AS JSON))`),
+  levelRequired: integer("level_required").notNull().default(1),
+  prerequisites: jsonb("prerequisites").notNull().default(sql`'[]'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Harvesting and crafting profiles
-export const warlordCraftingProfiles = mysqlTable("warlord_crafting_profiles", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const warlordCraftingProfiles = pgTable("warlord_crafting_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   
   // Gathering skills
-  miningLevel: int("mining_level").notNull().default(0),
-  harvestingLevel: int("harvesting_level").notNull().default(0),
-  loggingLevel: int("logging_level").notNull().default(0),
-  fishingLevel: int("fishing_level").notNull().default(0),
+  miningLevel: integer("mining_level").notNull().default(0),
+  harvestingLevel: integer("harvesting_level").notNull().default(0),
+  loggingLevel: integer("logging_level").notNull().default(0),
+  fishingLevel: integer("fishing_level").notNull().default(0),
   
   // Crafting skills
-  smithingLevel: int("smithing_level").notNull().default(0),
-  tailoringLevel: int("tailoring_level").notNull().default(0),
-  alchemyLevel: int("alchemy_level").notNull().default(0),
-  enchantingLevel: int("enchanting_level").notNull().default(0),
-  cookingLevel: int("cooking_level").notNull().default(0),
+  smithingLevel: integer("smithing_level").notNull().default(0),
+  tailoringLevel: integer("tailoring_level").notNull().default(0),
+  alchemyLevel: integer("alchemy_level").notNull().default(0),
+  enchantingLevel: integer("enchanting_level").notNull().default(0),
+  cookingLevel: integer("cooking_level").notNull().default(0),
   
   // Known recipes (array of recipe IDs)
-  knownRecipes: json("known_recipes").notNull().default(sql`(CAST('[]' AS JSON))`),
+  knownRecipes: jsonb("known_recipes").notNull().default(sql`'[]'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Animation sets for entities
-export const warlordAnimationSets = mysqlTable("warlord_animation_sets", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const warlordAnimationSets = pgTable("warlord_animation_sets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   description: text("description"),
   
   // Animation mappings (key: animation name, value: config)
-  idle: json("idle").notNull().default(sql`(CAST('{"name":"idle","speed":1,"loop":true}' AS JSON))`),
-  walk: json("walk").notNull().default(sql`(CAST('{"name":"walk","speed":1,"loop":true}' AS JSON))`),
-  run: json("run").notNull().default(sql`(CAST('{"name":"run","speed":1,"loop":true}' AS JSON))`),
-  attack: json("attack").notNull().default(sql`(CAST('{"name":"attack","speed":1,"loop":false}' AS JSON))`),
-  death: json("death").notNull().default(sql`(CAST('{"name":"death","speed":1,"loop":false}' AS JSON))`),
+  idle: jsonb("idle").notNull().default(sql`'{"name":"idle","speed":1,"loop":true}'::jsonb`),
+  walk: jsonb("walk").notNull().default(sql`'{"name":"walk","speed":1,"loop":true}'::jsonb`),
+  run: jsonb("run").notNull().default(sql`'{"name":"run","speed":1,"loop":true}'::jsonb`),
+  attack: jsonb("attack").notNull().default(sql`'{"name":"attack","speed":1,"loop":false}'::jsonb`),
+  death: jsonb("death").notNull().default(sql`'{"name":"death","speed":1,"loop":false}'::jsonb`),
   
   // Additional custom animations
-  customAnimations: json("custom_animations").notNull().default(sql`(CAST('{}' AS JSON))`),
+  customAnimations: jsonb("custom_animations").notNull().default(sql`'{}'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Entity prefabs (player, NPC, monster, ally)
-export const warlordEntityPrefabs = mysqlTable("warlord_entity_prefabs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+export const warlordEntityPrefabs = pgTable("warlord_entity_prefabs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
   
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name").notNull(),
   description: text("description"),
-  entityType: varchar("entity_type", { length: 255 }).notNull(), // player, npc, monster, ally
-  scope: varchar("scope", { length: 255 }).notNull().default("user"), // public, team, user
+  entityType: varchar("entity_type").notNull(), // player, npc, monster, ally
+  scope: varchar("scope").notNull().default("user"), // public, team, user
   
   // 3D asset references
-  modelAssetId: varchar("model_asset_id", { length: 255 }).references(() => viewportAssets.id),
+  modelAssetId: varchar("model_asset_id").references(() => viewportAssets.id),
   modelUrl: text("model_url"), // direct URL fallback
   thumbnailUrl: text("thumbnail_url"),
   
   // Stats and abilities
-  statBlockId: varchar("stat_block_id", { length: 255 }).references(() => warlordStatBlocks.id),
-  energiesId: varchar("energies_id", { length: 255 }).references(() => warlordEnergies.id),
-  animationSetId: varchar("animation_set_id", { length: 255 }).references(() => warlordAnimationSets.id),
-  craftingProfileId: varchar("crafting_profile_id", { length: 255 }).references(() => warlordCraftingProfiles.id),
+  statBlockId: varchar("stat_block_id").references(() => warlordStatBlocks.id),
+  energiesId: varchar("energies_id").references(() => warlordEnergies.id),
+  animationSetId: varchar("animation_set_id").references(() => warlordAnimationSets.id),
+  craftingProfileId: varchar("crafting_profile_id").references(() => warlordCraftingProfiles.id),
   
   // Skills (array of skill IDs)
-  skillIds: json("skill_ids").notNull().default(sql`(CAST('[]' AS JSON))`),
+  skillIds: jsonb("skill_ids").notNull().default(sql`'[]'::jsonb`),
   
   // AI behavior (for NPCs/monsters)
-  aiBehaviorId: varchar("ai_behavior_id", { length: 255 }).references(() => aiBehaviors.id),
+  aiBehaviorId: varchar("ai_behavior_id").references(() => aiBehaviors.id),
   
   // Physical properties
-  scale: json("scale").notNull().default(sql`(CAST('{"x":1,"y":1,"z":1}' AS JSON))`),
-  colliderType: varchar("collider_type", { length: 255 }).notNull().default("capsule"), // capsule, box, sphere
-  colliderSize: json("collider_size").notNull().default(sql`(CAST('{"radius":0.5,"height":2}' AS JSON))`),
+  scale: jsonb("scale").notNull().default(sql`'{"x":1,"y":1,"z":1}'::jsonb`),
+  colliderType: varchar("collider_type").notNull().default("capsule"), // capsule, box, sphere
+  colliderSize: jsonb("collider_size").notNull().default(sql`'{"radius":0.5,"height":2}'::jsonb`),
   
   // Loot table (for monsters)
-  lootTable: json("loot_table").notNull().default(sql`(CAST('[]' AS JSON))`),
+  lootTable: jsonb("loot_table").notNull().default(sql`'[]'::jsonb`),
   
   // Dialogue (for NPCs)
-  dialogueTree: json("dialogue_tree"),
+  dialogueTree: jsonb("dialogue_tree"),
   
   // Shop inventory (for vendor NPCs)
-  shopInventory: json("shop_inventory"),
+  shopInventory: jsonb("shop_inventory"),
   
-  tags: json("tags").notNull().default(sql`(CAST('[]' AS JSON))`),
+  tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
   isTemplate: boolean("is_template").notNull().default(false),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1169,124 +1169,124 @@ export const warlordEntityPrefabs = mysqlTable("warlord_entity_prefabs", {
 });
 
 // Weapon prefabs
-export const warlordWeaponPrefabs = mysqlTable("warlord_weapon_prefabs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+export const warlordWeaponPrefabs = pgTable("warlord_weapon_prefabs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
   
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name").notNull(),
   description: text("description"),
-  weaponType: varchar("weapon_type", { length: 255 }).notNull(), // sword, axe, bow, staff, etc.
-  scope: varchar("scope", { length: 255 }).notNull().default("user"),
+  weaponType: varchar("weapon_type").notNull(), // sword, axe, bow, staff, etc.
+  scope: varchar("scope").notNull().default("user"),
   
   // 3D asset
-  modelAssetId: varchar("model_asset_id", { length: 255 }).references(() => viewportAssets.id),
+  modelAssetId: varchar("model_asset_id").references(() => viewportAssets.id),
   modelUrl: text("model_url"),
   thumbnailUrl: text("thumbnail_url"),
   
   // Stats
-  baseDamage: int("base_damage").notNull().default(10),
-  attackSpeed: int("attack_speed").notNull().default(100), // percentage
-  critChance: int("crit_chance").notNull().default(5),
-  range: int("range").notNull().default(2), // attack range in units
+  baseDamage: integer("base_damage").notNull().default(10),
+  attackSpeed: integer("attack_speed").notNull().default(100), // percentage
+  critChance: integer("crit_chance").notNull().default(5),
+  range: integer("range").notNull().default(2), // attack range in units
   
   // Bonuses
-  statBonuses: json("stat_bonuses").notNull().default(sql`(CAST('{}' AS JSON))`),
+  statBonuses: jsonb("stat_bonuses").notNull().default(sql`'{}'::jsonb`),
   
   // Special abilities attached to weapon
-  skillIds: json("skill_ids").notNull().default(sql`(CAST('[]' AS JSON))`),
+  skillIds: jsonb("skill_ids").notNull().default(sql`'[]'::jsonb`),
   
   // Requirements
-  levelRequired: int("level_required").notNull().default(1),
-  classRestrictions: json("class_restrictions").notNull().default(sql`(CAST('[]' AS JSON))`),
+  levelRequired: integer("level_required").notNull().default(1),
+  classRestrictions: jsonb("class_restrictions").notNull().default(sql`'[]'::jsonb`),
   
   // Rarity and value
-  rarity: varchar("rarity", { length: 255 }).notNull().default("common"),
-  sellPrice: int("sell_price").notNull().default(10),
+  rarity: varchar("rarity").notNull().default("common"),
+  sellPrice: integer("sell_price").notNull().default(10),
   
   // Attachment points (for equipping on character)
-  attachBone: varchar("attach_bone", { length: 255 }).default("RightHand"),
-  attachOffset: json("attach_offset").notNull().default(sql`(CAST('{"x":0,"y":0,"z":0}' AS JSON))`),
-  attachRotation: json("attach_rotation").notNull().default(sql`(CAST('{"x":0,"y":0,"z":0}' AS JSON))`),
+  attachBone: varchar("attach_bone").default("RightHand"),
+  attachOffset: jsonb("attach_offset").notNull().default(sql`'{"x":0,"y":0,"z":0}'::jsonb`),
+  attachRotation: jsonb("attach_rotation").notNull().default(sql`'{"x":0,"y":0,"z":0}'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Scene prefabs (environments, maps)
-export const warlordScenePrefabs = mysqlTable("warlord_scene_prefabs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+export const warlordScenePrefabs = pgTable("warlord_scene_prefabs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
   
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name").notNull(),
   description: text("description"),
-  sceneType: varchar("scene_type", { length: 255 }).notNull(), // outdoor, dungeon, town, arena, etc.
-  scope: varchar("scope", { length: 255 }).notNull().default("user"),
+  sceneType: varchar("scene_type").notNull(), // outdoor, dungeon, town, arena, etc.
+  scope: varchar("scope").notNull().default("user"),
   thumbnailUrl: text("thumbnail_url"),
   
   // Terrain configuration
-  terrainConfig: json("terrain_config").notNull().default(sql`(CAST('{
+  terrainConfig: jsonb("terrain_config").notNull().default(sql`'{
     "size": "medium",
     "biome": "grassland",
     "terrainType": "flat"
-  }' AS JSON))`),
+  }'::jsonb`),
   
   // Lighting configuration
-  lightingConfig: json("lighting_config").notNull().default(sql`(CAST('{
+  lightingConfig: jsonb("lighting_config").notNull().default(sql`'{
     "ambientColor": [0.3, 0.3, 0.3],
     "sunColor": [1, 1, 1],
     "sunIntensity": 1.5
-  }' AS JSON))`),
+  }'::jsonb`),
   
   // Environment settings
-  environmentConfig: json("environment_config").notNull().default(sql`(CAST('{
+  environmentConfig: jsonb("environment_config").notNull().default(sql`'{
     "fogEnabled": true,
     "skyboxType": "procedural",
     "timeOfDay": 12
-  }' AS JSON))`),
+  }'::jsonb`),
   
   // Placed objects (buildings, props, vegetation)
-  placedObjects: json("placed_objects").notNull().default(sql`(CAST('[]' AS JSON))`),
+  placedObjects: jsonb("placed_objects").notNull().default(sql`'[]'::jsonb`),
   
   // Spawn points
-  spawnPoints: json("spawn_points").notNull().default(sql`(CAST('[]' AS JSON))`),
+  spawnPoints: jsonb("spawn_points").notNull().default(sql`'[]'::jsonb`),
   
   // Placed entities (NPCs, monsters)
-  placedEntities: json("placed_entities").notNull().default(sql`(CAST('[]' AS JSON))`),
+  placedEntities: jsonb("placed_entities").notNull().default(sql`'[]'::jsonb`),
   
   // Navigation mesh data
-  navMeshData: json("nav_mesh_data"),
+  navMeshData: jsonb("nav_mesh_data"),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Shop prefabs (for vendor NPCs or world shops)
-export const warlordShopPrefabs = mysqlTable("warlord_shop_prefabs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+export const warlordShopPrefabs = pgTable("warlord_shop_prefabs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
   
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name").notNull(),
   description: text("description"),
-  shopType: varchar("shop_type", { length: 255 }).notNull(), // weapons, armor, general, magic, etc.
-  scope: varchar("scope", { length: 255 }).notNull().default("user"),
+  shopType: varchar("shop_type").notNull(), // weapons, armor, general, magic, etc.
+  scope: varchar("scope").notNull().default("user"),
   thumbnailUrl: text("thumbnail_url"),
   
   // Inventory (items for sale)
-  inventory: json("inventory").notNull().default(sql`(CAST('[]' AS JSON))`),
+  inventory: jsonb("inventory").notNull().default(sql`'[]'::jsonb`),
   
   // Buy/sell rates
-  buyRate: int("buy_rate").notNull().default(100), // percentage of base price
-  sellRate: int("sell_rate").notNull().default(50), // percentage of base price
+  buyRate: integer("buy_rate").notNull().default(100), // percentage of base price
+  sellRate: integer("sell_rate").notNull().default(50), // percentage of base price
   
   // Currency accepted
-  acceptedCurrencies: json("accepted_currencies").notNull().default(sql`(CAST('["gold"]' AS JSON))`),
+  acceptedCurrencies: jsonb("accepted_currencies").notNull().default(sql`'["gold"]'::jsonb`),
   
   // Requirements to access
-  levelRequired: int("level_required").notNull().default(1),
-  reputationRequired: json("reputation_required"),
+  levelRequired: integer("level_required").notNull().default(1),
+  reputationRequired: jsonb("reputation_required"),
   
   // Restocking
-  restockInterval: int("restock_interval").default(3600), // seconds
+  restockInterval: integer("restock_interval").default(3600), // seconds
   restockOnPurchase: boolean("restock_on_purchase").notNull().default(false),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1374,14 +1374,14 @@ export type WarlordShopPrefab = typeof warlordShopPrefabs.$inferSelect;
 // ============= Skill Trees =============
 
 // Skill tree definitions for RPG-style progression systems
-export const skillTrees = mysqlTable("skill_trees", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id),
-  name: varchar("name", { length: 255 }).notNull(),
+export const skillTrees = pgTable("skill_trees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  name: varchar("name").notNull(),
   description: text("description"),
-  category: varchar("category", { length: 255 }).notNull().default("general"),
-  treeData: json("tree_data").notNull().default(sql`(CAST('[]' AS JSON))`),
-  savedState: json("saved_state"),
+  category: varchar("category").notNull().default("general"),
+  treeData: jsonb("tree_data").notNull().default(sql`'[]'::jsonb`),
+  savedState: jsonb("saved_state"),
   isPublic: boolean("is_public").notNull().default(false),
   thumbnailUrl: text("thumbnail_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1400,70 +1400,70 @@ export type SkillTree = typeof skillTrees.$inferSelect;
 // ============= MMO World System =============
 
 // MMO World definitions - persistent game worlds
-export const mmoWorlds = mysqlTable("mmo_worlds", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  name: varchar("name", { length: 255 }).notNull(),
+export const mmoWorlds = pgTable("mmo_worlds", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
   description: text("description"),
-  mapWidth: int("map_width").notNull().default(100),
-  mapHeight: int("map_height").notNull().default(100),
-  maxPlayers: int("max_players").notNull().default(100),
-  spawnX: int("spawn_x").notNull().default(50),
-  spawnY: int("spawn_y").notNull().default(50),
+  mapWidth: integer("map_width").notNull().default(100),
+  mapHeight: integer("map_height").notNull().default(100),
+  maxPlayers: integer("max_players").notNull().default(100),
+  spawnX: integer("spawn_x").notNull().default(50),
+  spawnY: integer("spawn_y").notNull().default(50),
   isActive: boolean("is_active").notNull().default(true),
-  settings: json("settings").default(sql`(CAST('{}' AS JSON))`),
+  settings: jsonb("settings").default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // MMO Characters - player avatars in the MMO world
-export const mmoCharacters = mysqlTable("mmo_characters", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
-  worldId: varchar("world_id", { length: 255 }).references(() => mmoWorlds.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  characterClass: varchar("character_class", { length: 255 }).notNull().default("warrior"),
-  level: int("level").notNull().default(1),
-  xp: int("xp").notNull().default(0),
-  health: int("health").notNull().default(100),
-  maxHealth: int("max_health").notNull().default(100),
-  mana: int("mana").notNull().default(50),
-  maxMana: int("max_mana").notNull().default(50),
-  posX: int("pos_x").notNull().default(50),
-  posY: int("pos_y").notNull().default(50),
-  gold: int("gold").notNull().default(100),
-  stats: json("stats").default(sql`(CAST('{"strength":10,"dexterity":10,"intelligence":10,"vitality":10}' AS JSON))`),
-  inventory: json("inventory").default(sql`(CAST('[]' AS JSON))`),
-  equipment: json("equipment").default(sql`(CAST('{}' AS JSON))`),
+export const mmoCharacters = pgTable("mmo_characters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  worldId: varchar("world_id").references(() => mmoWorlds.id).notNull(),
+  name: varchar("name").notNull(),
+  characterClass: varchar("character_class").notNull().default("warrior"),
+  level: integer("level").notNull().default(1),
+  xp: integer("xp").notNull().default(0),
+  health: integer("health").notNull().default(100),
+  maxHealth: integer("max_health").notNull().default(100),
+  mana: integer("mana").notNull().default(50),
+  maxMana: integer("max_mana").notNull().default(50),
+  posX: integer("pos_x").notNull().default(50),
+  posY: integer("pos_y").notNull().default(50),
+  gold: integer("gold").notNull().default(100),
+  stats: jsonb("stats").default(sql`'{"strength":10,"dexterity":10,"intelligence":10,"vitality":10}'::jsonb`),
+  inventory: jsonb("inventory").default(sql`'[]'::jsonb`),
+  equipment: jsonb("equipment").default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastOnline: timestamp("last_online").defaultNow().notNull(),
 });
 
 // MMO NPCs - non-player characters in the world
-export const mmoNpcs = mysqlTable("mmo_npcs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  worldId: varchar("world_id", { length: 255 }).references(() => mmoWorlds.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  npcType: varchar("npc_type", { length: 255 }).notNull().default("monster"), // monster, merchant, quest_giver
-  level: int("level").notNull().default(1),
-  health: int("health").notNull().default(100),
-  maxHealth: int("max_health").notNull().default(100),
-  posX: int("pos_x").notNull().default(0),
-  posY: int("pos_y").notNull().default(0),
-  spawnX: int("spawn_x").notNull().default(0),
-  spawnY: int("spawn_y").notNull().default(0),
+export const mmoNpcs = pgTable("mmo_npcs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  worldId: varchar("world_id").references(() => mmoWorlds.id).notNull(),
+  name: varchar("name").notNull(),
+  npcType: varchar("npc_type").notNull().default("monster"), // monster, merchant, quest_giver
+  level: integer("level").notNull().default(1),
+  health: integer("health").notNull().default(100),
+  maxHealth: integer("max_health").notNull().default(100),
+  posX: integer("pos_x").notNull().default(0),
+  posY: integer("pos_y").notNull().default(0),
+  spawnX: integer("spawn_x").notNull().default(0),
+  spawnY: integer("spawn_y").notNull().default(0),
   isHostile: boolean("is_hostile").notNull().default(true),
-  respawnTime: int("respawn_time").notNull().default(30),
-  lootTable: json("loot_table").default(sql`(CAST('[]' AS JSON))`),
-  stats: json("stats").default(sql`(CAST('{"attack":5,"defense":5}' AS JSON))`),
-  dialogues: json("dialogues").default(sql`(CAST('[]' AS JSON))`),
+  respawnTime: integer("respawn_time").notNull().default(30),
+  lootTable: jsonb("loot_table").default(sql`'[]'::jsonb`),
+  stats: jsonb("stats").default(sql`'{"attack":5,"defense":5}'::jsonb`),
+  dialogues: jsonb("dialogues").default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // MMO Chat messages
-export const mmoChatMessages = mysqlTable("mmo_chat_messages", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  worldId: varchar("world_id", { length: 255 }).references(() => mmoWorlds.id).notNull(),
-  characterId: varchar("character_id", { length: 255 }).references(() => mmoCharacters.id).notNull(),
-  channel: varchar("channel", { length: 255 }).notNull().default("global"), // global, local, party, guild
+export const mmoChatMessages = pgTable("mmo_chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  worldId: varchar("world_id").references(() => mmoWorlds.id).notNull(),
+  characterId: varchar("character_id").references(() => mmoCharacters.id).notNull(),
+  channel: varchar("channel").notNull().default("global"), // global, local, party, guild
   message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -1508,17 +1508,17 @@ export type MmoChatMessage = typeof mmoChatMessages.$inferSelect;
 // ============================================
 
 // User objects metadata table
-export const userObjects = mysqlTable("user_objects", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
-  objectKey: varchar("object_key", { length: 255 }).notNull(), // full path in bucket
-  namespace: varchar("namespace", { length: 255 }).notNull().default("assets"), // projects, assets, backups, runtime, app-storage
-  filename: varchar("filename", { length: 255 }).notNull(),
-  contentType: varchar("content_type", { length: 255 }),
-  fileSize: int("file_size").notNull().default(0),
-  checksum: varchar("checksum", { length: 255 }),
-  tags: json("tags").default(sql`(CAST('[]' AS JSON))`),
-  metadata: json("metadata").default(sql`(CAST('{}' AS JSON))`),
+export const userObjects = pgTable("user_objects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  objectKey: varchar("object_key").notNull(), // full path in bucket
+  namespace: varchar("namespace").notNull().default("assets"), // projects, assets, backups, runtime, app-storage
+  filename: varchar("filename").notNull(),
+  contentType: varchar("content_type"),
+  fileSize: integer("file_size").notNull().default(0),
+  checksum: varchar("checksum"),
+  tags: text("tags").array().default(sql`'{}'::text[]`),
+  metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
   isPublic: boolean("is_public").notNull().default(false),
   lastAccessedAt: timestamp("last_accessed_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1530,16 +1530,16 @@ export const userObjects = mysqlTable("user_objects", {
 ]);
 
 // Storage audit logs for tracking operations
-export const storageAuditLogs = mysqlTable("storage_audit_logs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
-  operation: varchar("operation", { length: 255 }).notNull(), // upload, download, delete, copy, list
-  objectKey: varchar("object_key", { length: 255 }),
-  targetKey: varchar("target_key", { length: 255 }), // for copy operations
-  fileSize: int("file_size"),
+export const storageAuditLogs = pgTable("storage_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  operation: varchar("operation").notNull(), // upload, download, delete, copy, list
+  objectKey: varchar("object_key"),
+  targetKey: varchar("target_key"), // for copy operations
+  fileSize: integer("file_size"),
   success: boolean("success").notNull().default(true),
   errorMessage: text("error_message"),
-  ipAddress: varchar("ip_address", { length: 255 }),
+  ipAddress: varchar("ip_address"),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
@@ -1549,12 +1549,12 @@ export const storageAuditLogs = mysqlTable("storage_audit_logs", {
 ]);
 
 // User storage quotas
-export const userStorageQuotas = mysqlTable("user_storage_quotas", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull().unique(),
-  maxStorageBytes: int("max_storage_bytes").notNull().default(1073741824), // 1GB default
-  usedStorageBytes: int("used_storage_bytes").notNull().default(0),
-  objectCount: int("object_count").notNull().default(0),
+export const userStorageQuotas = pgTable("user_storage_quotas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull().unique(),
+  maxStorageBytes: integer("max_storage_bytes").notNull().default(1073741824), // 1GB default
+  usedStorageBytes: integer("used_storage_bytes").notNull().default(0),
+  objectCount: integer("object_count").notNull().default(0),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 

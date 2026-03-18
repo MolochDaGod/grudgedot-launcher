@@ -2,29 +2,26 @@
 
 ## Overview
 
-GGE authenticates via **Grudge ID** at `https://id.grudge-studio.com`. All auth flows produce a **JWT** stored in localStorage as `grudge_auth_token`. The Grudge backend is the source of truth for the shared `accounts` table across all Grudge Studio apps.
+GGE authenticates via the **Grudge Auth Gateway** at `https://id.grudge-studio.com`. All auth flows produce a **JWT** stored in localStorage as `grudge_auth_token`. The auth gateway is the source of truth for the shared `accounts` table across all Grudge Studio apps.
 
 ## Authentication Flow
 
 ```
-User visits GGE → /auth page
+User visits GGE
     ↓
 AuthGuard checks localStorage for JWT
     ↓
-No token? → Show Grudge auth page (/auth)
+No token? → Redirect to id.grudge-studio.com?return=GGE_URL
     ↓
-User picks a login method:
-  • Username/password, Guest, Wallet → direct API call
-  • Google/Discord/GitHub → OAuth redirect → /api/auth/{provider}/callback → redirect back with ?token=
-  • Grudge Cloud → Grudge-branded overlay appears → Puter popup opens behind it → auto-dismisses on completion
+User logs in (password, Puter, guest, or wallet)
     ↓
-Auth route issues JWT, client stores in localStorage:
+Auth gateway issues JWT, stores in localStorage:
   - grudge_auth_token  (JWT)
   - grudge_id          (Grudge ID, e.g. GRUDGE_LQXM8K_...)
   - grudge_user_id     (numeric user ID)
   - grudge_username    (display name)
     ↓
-Redirect to returnUrl → User authenticated ✅
+Redirect back to GGE → User authenticated ✅
 ```
 
 ## Key Files
@@ -39,14 +36,10 @@ Redirect to returnUrl → User authenticated ✅
 |---|---|
 | `getAuthData()` | Returns current auth data (token, grudgeId, username) or `null` |
 | `checkAuth()` | Same as `getAuthData()` but redirects to login if not authenticated |
-| `loginWithPassword(user, pass)` | Login via `/api/login` |
-| `registerAccount(user, pass, email?)` | Register via `/api/register` |
-| `loginAsGuest(deviceId?)` | Guest login via `/api/guest` |
-| `loginWithGoogle(callbackUrl)` | Redirect to Google OAuth flow |
-| `loginWithDiscord(callbackUrl)` | Redirect to Discord OAuth flow |
-| `loginWithGitHub(callbackUrl)` | Redirect to GitHub OAuth flow |
-| `loginWithWallet(address)` | Solana wallet → JWT bridge |
-| `captureAuthCallback()` | Capture `?token=` from OAuth redirect |
+| `loginWithPassword(user, pass)` | Login via auth-gateway `/api/login` |
+| `registerAccount(user, pass, email?)` | Register via auth-gateway `/api/register` |
+| `loginWithPuter(uuid, username)` | Bridge Puter.js auth to Grudge JWT |
+| `loginAsGuest(deviceId?)` | Guest login via auth-gateway `/api/guest` |
 | `verifyToken()` | Verify current JWT with server |
 | `apiCall(endpoint, options)` | Fetch wrapper that auto-attaches `Authorization: Bearer` header |
 | `logout()` | Clear all auth data and redirect to login |
@@ -85,13 +78,9 @@ const profile = await apiCall('user/profile');
 
 The Express middleware at `server/middleware/grudgeJwt.ts` verifies JWTs on protected routes. It decodes the token and attaches the user to `req.user`.
 
-## Grudge Cloud Overlay
-
-When the user clicks "Grudge Cloud" on the auth page, a full-screen Grudge-branded overlay appears (dark backdrop, animated shield icon, "GRUDGE CLOUD" header, spinner) while the Puter auth popup opens behind it. The overlay auto-dismisses on success or failure, and includes a Cancel button. This keeps the user experience fully Grudge-branded even though Puter handles the underlying auth.
-
 ## Auth Endpoints (Direct DB — `server/grudgeAuth.ts`)
 
-All auth flows hit the shared Grudge MySQL `accounts` table directly. No external gateway proxy needed.
+All auth flows hit the shared Neon `accounts` table directly. No external gateway proxy needed.
 
 **Core Auth:**
 - `POST /api/login` — Username/email/grudgeId + password

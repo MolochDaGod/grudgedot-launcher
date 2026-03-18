@@ -13,9 +13,8 @@
  * - Integration with existing asset pipeline
  */
 
-// Object storage client — @replit/object-storage removed; use S3/R2 via StorageProvider instead.
-// ALE_HERMES currently operates in DB-metadata-only mode when no storage backend is configured.
-let ReplitClient: any = null;
+// Storage client — uses VPS asset service (assets-api.grudge-studio.com)
+const ASSET_SERVICE_URL = process.env.GRUDGE_ASSET_SERVICE_URL || "https://assets-api.grudge-studio.com";
 import { db } from "../db";
 import { 
   userObjects, 
@@ -53,16 +52,12 @@ export interface AuditContext {
 }
 
 export class AleHermesService {
-  private client: any;
   private agentName = "ALE_HERMES";
+  private assetServiceUrl: string;
 
   constructor() {
-    if (!ReplitClient) {
-      console.warn(`[${this.agentName}] No storage backend configured — storage ops will no-op`);
-      this.client = null;
-    } else {
-      this.client = new ReplitClient();
-    }
+    this.assetServiceUrl = ASSET_SERVICE_URL;
+    console.log(`[${this.agentName}] Using VPS asset service at ${this.assetServiceUrl}`);
   }
 
   private buildObjectKey(userId: string, namespace: StorageNamespace, filename: string): string {
@@ -169,11 +164,17 @@ export class AleHermesService {
     }
 
     try {
-      const result = await this.client.uploadFromText(objectKey, content);
-      
-      if (!result.ok) {
-        await this.logAudit(userId, "upload", objectKey, false, context, result.error?.message, fileSize);
-        return { ok: false, error: result.error?.message };
+      // Upload via VPS asset service
+      const uploadRes = await fetch(`${this.assetServiceUrl}/api/storage/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ objectKey, content, contentType: options.contentType || "text/plain" }),
+      });
+
+      if (!uploadRes.ok) {
+        const errBody = await uploadRes.text();
+        await this.logAudit(userId, "upload", objectKey, false, context, errBody, fileSize);
+        return { ok: false, error: errBody };
       }
 
       const checksum = this.calculateChecksum(content);
@@ -224,11 +225,17 @@ export class AleHermesService {
     }
 
     try {
-      const result = await this.client.uploadFromBytes(objectKey, content);
-      
-      if (!result.ok) {
-        await this.logAudit(userId, "upload", objectKey, false, context, result.error?.message, fileSize);
-        return { ok: false, error: result.error?.message };
+      // Upload via VPS asset service
+      const uploadRes = await fetch(`${this.assetServiceUrl}/api/storage/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream", "X-Object-Key": objectKey },
+        body: content,
+      });
+
+      if (!uploadRes.ok) {
+        const errBody = await uploadRes.text();
+        await this.logAudit(userId, "upload", objectKey, false, context, errBody, fileSize);
+        return { ok: false, error: errBody };
       }
 
       const checksum = this.calculateChecksum(content);
@@ -272,7 +279,12 @@ export class AleHermesService {
     const objectKey = this.buildObjectKey(userId, namespace, filename);
 
     try {
-      await this.client.uploadFromStream(objectKey, stream);
+      // Stream upload via VPS asset service
+      await fetch(`${this.assetServiceUrl}/api/storage/upload-stream`, {
+        method: "POST",
+        headers: { "X-Object-Key": objectKey },
+        body: stream as any,
+      });
 
       const objectRecord: InsertUserObject = {
         userId,

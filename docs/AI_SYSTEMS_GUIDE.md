@@ -13,12 +13,12 @@ GGE has three AI layers:
 - **Session model**: Each browser tab gets a session ID. Sessions expire after 30min inactivity.
 - **Best practice**: Build context from recent logs + current URL + viewport before prompting. Keep prompts under 500 tokens for fast responses.
 
-### GRUDA Legion (VPS Proxy)
+### GRUDA Legion (Railway Proxy)
 - **Location**: `server/services/grudaLegion.ts` + `shared/grudachain.ts`
 - **Production URL**: `https://api.grudge-studio.com`
 - **Endpoints**: `/api/chat`, `/api/generate-code`, `/api/analyze-file`, `/api/vibe/chat`
-- **Role**: Server-side AI proxy — keeps API keys off the client. Proxies to VPS-deployed GRUDA Legion node system.
-- **Best practice**: Always proxy through server routes (`/api/gruda-legion/*`), never call the VPS directly from client.
+- **Role**: Server-side AI proxy — keeps API keys off the client. Proxies to Railway-deployed GRUDA Legion node system.
+- **Best practice**: Always proxy through server routes (`/api/gruda-legion/*`), never call Railway directly from client.
 
 ### AI Agent Server (Socket.IO)
 - **Location**: `src/ai-agents/index.js`
@@ -114,7 +114,7 @@ Move Speed  = 200 + agility × 4 + dexterity × 2
 ## 5. Object Storage
 
 ### Architecture
-- **Backend**: `server/objectStorage.ts` — wraps Google Cloud Storage (legacy, migrating to R2/S3 on Grudge VPS)
+- **Backend**: `server/objectStorage.ts` — wraps Google Cloud Storage via Replit sidecar
 - **Public paths**: Configured via `PUBLIC_OBJECT_SEARCH_PATHS` env var
 - **Private uploads**: Via signed URLs from `getAssetUploadURL()`
 
@@ -202,10 +202,10 @@ Follow the tab system in `docs/TABS_AND_APPS.md`:
 ### Game State Persistence
 - `server/services/gameStatePersistence.ts` — save/load game state per user
 - Use `mmoApi.saveCharacterState()` for MMO character data
-- Database: Drizzle ORM → MySQL on Grudge VPS (`api.grudge-studio.com`)
+- Database: Drizzle ORM → Neon PostgreSQL
 
 ### Authentication
-- JWT via Grudge ID (`id.grudge-studio.com`)
+- JWT via Grudge Auth Gateway (`id.grudge-studio.com`)
 - Token stored as `grudge_auth_token` in localStorage
 - All API routes verify via `server/middleware/grudgeJwt.ts`
 
