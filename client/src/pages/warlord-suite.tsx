@@ -9,7 +9,6 @@ import {
   Shield,
   Hammer,
   Sword,
-  Crown,
   UserCog,
   Home,
   Warehouse,
@@ -21,7 +20,6 @@ const SkillTreePage = lazy(() => import("./warlord-suite/SkillTreePage"));
 const ArsenalPage = lazy(() => import("./warlord-suite/ArsenalPage"));
 const CraftingPage = lazy(() => import("./warlord-suite/CraftingPage"));
 const WeaponSkillsPage = lazy(() => import("./warlord-suite/WeaponSkillsPage"));
-const ClassSkillsPage = lazy(() => import("./warlord-suite/ClassSkillsPage"));
 const CharacterBuilderPage = lazy(() => import("./warlord-suite/CharacterBuilderPage"));
 
 const WCS_PAGES = [
@@ -29,7 +27,6 @@ const WCS_PAGES = [
   { slug: "arsenal", label: "Arsenal", icon: Shield },
   { slug: "crafting", label: "Crafting", icon: Hammer },
   { slug: "weapon-skills", label: "Weapon Skills", icon: Sword },
-  { slug: "class-skill", label: "Class Skills", icon: Crown },
   { slug: "character-builder", label: "Character Builder", icon: UserCog },
 ] as const;
 
@@ -38,7 +35,6 @@ const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<() => JSX.Elemen
   arsenal: ArsenalPage,
   crafting: CraftingPage,
   "weapon-skills": WeaponSkillsPage,
-  "class-skill": ClassSkillsPage,
   "character-builder": CharacterBuilderPage,
 };
 

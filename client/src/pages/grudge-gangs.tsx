@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sword, Shield, Zap, Heart, Coins, Users, Target, Star, Play, RotateCcw, Crosshair, Skull } from 'lucide-react';
 import * as THREE from 'three';
-import { ParticleManager, ParticleEffectPresets, SpellEffectsManager } from '@/lib/game-effects';
+import { ParticleManager, ParticleEffectPresets, SpellEffectsManager, SpriteEffects2DManager } from '@/lib/game-effects';
 
 // Champion definitions
 interface Champion {
@@ -237,6 +237,7 @@ export default function GrudgeGangs() {
   const gameTickRef = useRef<number>(0);
   const particleManagerRef = useRef<ParticleManager | null>(null);
   const spellManagerRef = useRef<SpellEffectsManager | null>(null);
+  const spriteEffects2DRef = useRef<SpriteEffects2DManager | null>(null);
   
   const [gameState, setGameState] = useState<GameState>({
     phase: 'champion-select',
@@ -595,6 +596,17 @@ export default function GrudgeGangs() {
       if (particleManagerRef.current) {
         particleManagerRef.current.spawnExplosion(targetPos, tower.team === 'blue' ? '#4488ff' : '#ff4444', 0.5);
       }
+      // 2D sprite lightning + impact overlay
+      if (spriteEffects2DRef.current && cameraRef.current && containerRef.current) {
+        const screenPos = spriteEffects2DRef.current.projectToScreen(
+          target.position.x, 1.5, target.position.z,
+          cameraRef.current, containerRef.current.clientWidth, containerRef.current.clientHeight
+        );
+        if (screenPos) {
+          spriteEffects2DRef.current.spawnAt('lightning', screenPos.x, screenPos.y, tower.team === 'blue' ? '#4488ff' : '#ff4444', { scale: 0.8, screenShake: true });
+          spriteEffects2DRef.current.spawnAt('impact', screenPos.x, screenPos.y, '#ffffff', { scale: 0.6 });
+        }
+      }
 
       if (target.isPlayer) {
         setGameState(prev => ({ ...prev, currentHealth: target!.health }));
@@ -666,6 +678,16 @@ export default function GrudgeGangs() {
             const hitPos = player.position.clone();
             hitPos.y = 1;
             particleManagerRef.current.spawnDamage(hitPos, 'physical');
+          }
+          // 2D sprite slash overlay for hero basic attack
+          if (spriteEffects2DRef.current && cameraRef.current && containerRef.current) {
+            const screenPos = spriteEffects2DRef.current.projectToScreen(
+              player.position.x, 1, player.position.z,
+              cameraRef.current, containerRef.current.clientWidth, containerRef.current.clientHeight
+            );
+            if (screenPos) {
+              spriteEffects2DRef.current.spawnAt('slash', screenPos.x, screenPos.y, `#${champion.color.toString(16).padStart(6, '0')}`, { scale: 0.7, rotation: Math.random() * Math.PI });
+            }
           }
 
           // Use abilities
@@ -764,6 +786,16 @@ export default function GrudgeGangs() {
           const hitPos = enemy.position.clone();
           hitPos.y = 1;
           particleManagerRef.current.spawnDamage(hitPos, 'physical');
+        }
+        // 2D sprite impact for minion attacks
+        if (spriteEffects2DRef.current && cameraRef.current && containerRef.current) {
+          const screenPos = spriteEffects2DRef.current.projectToScreen(
+            enemy.position.x, 1, enemy.position.z,
+            cameraRef.current, containerRef.current.clientWidth, containerRef.current.clientHeight
+          );
+          if (screenPos) {
+            spriteEffects2DRef.current.spawnAt('spark', screenPos.x, screenPos.y, minion.team === 'blue' ? '#4488ff' : '#ff4444', { scale: 0.4 });
+          }
         }
 
         if (enemy.isPlayer) {
@@ -894,18 +926,26 @@ export default function GrudgeGangs() {
     effectPosition.y = 1.5;
 
     // Determine effect type based on color
+    // Determine 2D sprite overlay type
+    let spriteType: 'fire' | 'frost' | 'lightning' | 'magic' | 'heal' | 'impact' | 'shockwave' | 'slash' = 'impact';
+    let spriteColor = `#${color.toString(16).padStart(6, '0')}`;
+
     if (color === 0xff0000 || color === 0xff6600) {
       // Fire/Attack effect
       particleManagerRef.current.spawnDamage(effectPosition, 'fire');
       if (scale > 2 && spellManagerRef.current) {
         spellManagerRef.current.spawnFireball(effectPosition, scale * 0.5, 1.5);
       }
+      spriteType = 'fire';
+      spriteColor = '#ff6600';
     } else if (color === 0x88ccff || color === 0x4488ff) {
       // Ice/Frost effect
       particleManagerRef.current.spawnEffect(ParticleEffectPresets.frost(), effectPosition, 1.5, 30);
       if (scale > 2 && spellManagerRef.current) {
         spellManagerRef.current.spawnFrost(effectPosition, scale * 0.5, 1.5);
       }
+      spriteType = 'frost';
+      spriteColor = '#88ccff';
     } else if (color === 0xffff00 || color === 0xaaddff) {
       // Ultimate/Lightning effect
       particleManagerRef.current.spawnExplosion(effectPosition, '#ffff00', scale);
@@ -913,24 +953,52 @@ export default function GrudgeGangs() {
         const targetPos = effectPosition.clone().add(new THREE.Vector3(0, 5, 0));
         spellManagerRef.current.spawnLightning(targetPos, effectPosition, 0.8);
       }
+      spriteType = 'lightning';
+      spriteColor = '#ffff00';
     } else if (color === 0x00ff88) {
       // Heal effect
       particleManagerRef.current.spawnHeal(effectPosition);
       if (spellManagerRef.current) {
         spellManagerRef.current.spawnHealingAura(effectPosition, scale, 2);
       }
+      spriteType = 'heal';
+      spriteColor = '#00ff88';
     } else if (color === 0x9933ff || color === 0xff00ff) {
       // Magic/Dark effect
       particleManagerRef.current.spawnDamage(effectPosition, 'magic');
       if (scale > 1) {
         particleManagerRef.current.spawnExplosion(effectPosition, '#9933ff', scale * 0.5);
       }
+      spriteType = 'magic';
+      spriteColor = '#9933ff';
     } else if (color === 0x00ffff) {
       // Cyan/Electric effect
       particleManagerRef.current.spawnExplosion(effectPosition, '#00ffff', scale);
+      spriteType = 'lightning';
+      spriteColor = '#00ffff';
     } else {
       // Default explosion effect
       particleManagerRef.current.spawnExplosion(effectPosition, `#${color.toString(16).padStart(6, '0')}`, scale);
+    }
+
+    // Spawn 2D sprite effect overlay
+    if (spriteEffects2DRef.current && cameraRef.current && containerRef.current) {
+      const screenPos = spriteEffects2DRef.current.projectToScreen(
+        effectPosition.x, effectPosition.y, effectPosition.z,
+        cameraRef.current, containerRef.current.clientWidth, containerRef.current.clientHeight
+      );
+      if (screenPos) {
+        const isUltimate = color === 0xffff00 || color === 0xaaddff;
+        spriteEffects2DRef.current.spawnAt(spriteType, screenPos.x, screenPos.y, spriteColor, {
+          scale: scale * 0.8,
+          screenShake: isUltimate || scale > 2,
+          colorSecondary: '#ffffff',
+        });
+        // Add shockwave ring on ultimates
+        if (isUltimate) {
+          spriteEffects2DRef.current.spawnAt('shockwave', screenPos.x, screenPos.y, spriteColor, { scale: scale * 1.2 });
+        }
+      }
     }
   };
 
@@ -975,6 +1043,10 @@ export default function GrudgeGangs() {
     // Initialize particle and spell effects managers
     particleManagerRef.current = new ParticleManager(scene);
     spellManagerRef.current = new SpellEffectsManager(scene);
+    // Initialize 2D sprite effects overlay
+    if (containerRef.current) {
+      spriteEffects2DRef.current = new SpriteEffects2DManager(containerRef.current);
+    }
 
     // Enhanced MMORPG Lighting System
     const ambientLight = new THREE.AmbientLight(0x202040, 0.4);
@@ -1434,6 +1506,10 @@ export default function GrudgeGangs() {
       if (spellManagerRef.current) {
         spellManagerRef.current.dispose();
         spellManagerRef.current = null;
+      }
+      if (spriteEffects2DRef.current) {
+        spriteEffects2DRef.current.dispose();
+        spriteEffects2DRef.current = null;
       }
       renderer.dispose();
       if (containerRef.current && renderer.domElement.parentNode === containerRef.current) {

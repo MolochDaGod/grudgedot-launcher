@@ -101,12 +101,6 @@ const warlordSuiteItems = [
     badge: "WCS",
   },
   {
-    title: "Class Skills",
-    url: "/warlord-suite/class-skill",
-    icon: Crown,
-    badge: "WCS",
-  },
-  {
     title: "Character Builder",
     url: "/warlord-suite/character-builder",
     icon: UserCog,

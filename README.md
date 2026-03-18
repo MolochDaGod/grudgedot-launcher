@@ -151,11 +151,10 @@ The Warlord Suite tabs at `/warlord-suite/:page` are fully native React pages us
 
 All pages connect to the Grudge backend via React Query hooks for live character/inventory/profession sync.
 
-- **Skill Tree** (`/warlord-suite/skill-tree`) — 4 class skill trees (warrior/mage/ranger/worge), 6 tiers each, pick-one-per-tier with special abilities. Ornate-frame headers, class-colored gem-glow indicators.
+- **Skill Tree** (`/warlord-suite/skill-tree`) — Unified class skill builder with collapsible class overview (description, playstyle, allowed weapons/armor, 8-attribute grid), interactive tier-by-tier skill selection, special ability panel, and build summary. 4 classes (warrior/mage/ranger/worge), 6 tiers each, pick-one-per-tier.
 - **Arsenal** (`/warlord-suite/arsenal`) — 144 equipment items (cloth/leather/metal), filterable by material/set/slot. Stone-panel item cards with stat breakdowns and tooltip lore.
 - **Crafting** (`/warlord-suite/crafting`) — Backend-synced recipe browser + crafting queue, 10 canonical professions (5 gathering + 5 crafting) with XP progress. Parchment-panel recipes, gilded craft buttons.
 - **Weapon Skills** (`/warlord-suite/weapon-skills`) — 10 weapon skill trees (SWORD/AXE/BOW/STAFF/DAGGER/MACE/HAMMER/SPEAR/WAND/SCYTHE), 4 slots each with upgrade paths showing damage/cooldown scaling. Skill icons from canonical data.
-- **Class Skills** (`/warlord-suite/class-skill`) — Class overview with allowed weapons/armor from `classWeaponRestrictions.ts`, full skill tree preview, 8-attribute reference grid. Only 4 canonical classes.
 - **Character Builder** (`/warlord-suite/character-builder`) — Full WCS attribute allocator (8 attrs, 18 secondary stats, diminishing returns), 4 races (orc/elf/human/undead), 4 classes, derived combat stats via `calculateStats()`. Ornate-frame attribute sliders with DR indicators.
 
 Source: `client/src/pages/warlord-suite/`
