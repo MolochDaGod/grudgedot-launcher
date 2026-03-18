@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { randomUUID } from "node:crypto";
 import { db } from "../db";
 import { characters } from "../../shared/schema";
 import { eq } from "drizzle-orm";
@@ -67,12 +68,12 @@ export function registerGrudaWarsRoutes(app: Express) {
           results.push({ hero: hero.name, action: "updated", id: existing[0].id });
         } else {
           // Insert new
-          const [created] = await db
+          const newId = randomUUID();
+          await db
             .insert(characters)
-            .values(insertData)
-            .returning();
+            .values({ ...insertData, id: newId });
 
-          results.push({ hero: hero.name, action: "created", id: created.id });
+          results.push({ hero: hero.name, action: "created", id: newId });
         }
       }
 

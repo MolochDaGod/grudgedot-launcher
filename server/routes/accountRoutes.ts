@@ -5,6 +5,7 @@
  */
 
 import type { Express } from "express";
+import { randomUUID } from "node:crypto";
 import { requireAuth } from "../middleware/grudgeJwt";
 import { db } from "../db";
 import { accounts, grudgeCharacters } from "../../shared/schema";
@@ -97,9 +98,11 @@ export function registerAccountRoutes(app: Express) {
         .from(grudgeCharacters)
         .where(eq(grudgeCharacters.accountId, acct.id));
 
-      const [newChar] = await db
+      const newCharId = randomUUID();
+      await db
         .insert(grudgeCharacters)
         .values({
+          id: newCharId,
           accountId: acct.id,
           grudgeId,
           name,
@@ -108,8 +111,13 @@ export function registerAccountRoutes(app: Express) {
           faction: faction || acct.faction || null,
           slotIndex: existing.length,
           isGuest: acct.isGuest ?? false,
-        })
-        .returning();
+        });
+
+      const [newChar] = await db
+        .select()
+        .from(grudgeCharacters)
+        .where(eq(grudgeCharacters.id, newCharId))
+        .limit(1);
 
       // Bump totalCharacters on account
       await db

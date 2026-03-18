@@ -5,6 +5,7 @@
  */
 
 import type { Express } from "express";
+import { randomUUID } from "node:crypto";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
 import {
@@ -138,7 +139,9 @@ export function registerOpenRTSRoutes(app: Express) {
 
   app.post("/api/openrts/units", async (req, res) => {
     try {
-      const [unit] = await db.insert(openrtsUnits).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsUnits).values({ ...req.body, id: newId });
+      const [unit] = await db.select().from(openrtsUnits).where(eq(openrtsUnits.id, newId)).limit(1);
       res.status(201).json(unit);
     } catch (error) {
       console.error("Error creating OpenRTS unit:", error);
@@ -168,7 +171,9 @@ export function registerOpenRTSRoutes(app: Express) {
 
   app.post("/api/openrts/weapons", async (req, res) => {
     try {
-      const [weapon] = await db.insert(openrtsWeapons).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsWeapons).values({ ...req.body, id: newId });
+      const [weapon] = await db.select().from(openrtsWeapons).where(eq(openrtsWeapons.id, newId)).limit(1);
       res.status(201).json(weapon);
     } catch (error) {
       res.status(400).json({ error: "Failed to create weapon" });
@@ -197,7 +202,9 @@ export function registerOpenRTSRoutes(app: Express) {
 
   app.post("/api/openrts/movers", async (req, res) => {
     try {
-      const [mover] = await db.insert(openrtsMover).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsMover).values({ ...req.body, id: newId });
+      const [mover] = await db.select().from(openrtsMover).where(eq(openrtsMover.id, newId)).limit(1);
       res.status(201).json(mover);
     } catch (error) {
       res.status(400).json({ error: "Failed to create mover" });
@@ -217,7 +224,9 @@ export function registerOpenRTSRoutes(app: Express) {
 
   app.post("/api/openrts/effects", async (req, res) => {
     try {
-      const [effect] = await db.insert(openrtsEffects).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsEffects).values({ ...req.body, id: newId });
+      const [effect] = await db.select().from(openrtsEffects).where(eq(openrtsEffects.id, newId)).limit(1);
       res.status(201).json(effect);
     } catch (error) {
       res.status(400).json({ error: "Failed to create effect" });

@@ -31,9 +31,9 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 255 }).unique(),
   username: text("username").notNull(),
   password: text("password").notNull().default(""),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  profileImageUrl: varchar("profile_image_url", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -62,8 +62,8 @@ export const characters = mysqlTable("characters", {
   rarity: varchar("rarity", { length: 255 }).notNull().default("common"), // common, rare, epic, legendary
   baseStats: json("base_stats").notNull(), // { health, attack, defense, speed }
   abilities: json("abilities").notNull(), // array of ability objects
-  modelAssetUrl: varchar("model_asset_url"),
-  portraitUrl: varchar("portrait_url"),
+  modelAssetUrl: varchar("model_asset_url", { length: 255 }),
+  portraitUrl: varchar("portrait_url", { length: 255 }),
   unlockLevel: int("unlock_level").notNull().default(1),
   unlockCost: json("unlock_cost"), // { gold: 0, gems: 0 }
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -87,7 +87,7 @@ export const currencies = mysqlTable("currencies", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
   code: varchar("code", { length: 255 }).notNull().unique(), // GOLD, GEMS, TOKENS
   name: varchar("name", { length: 255 }).notNull(),
-  iconUrl: varchar("icon_url"),
+  iconUrl: varchar("icon_url", { length: 255 }),
   isPremium: boolean("is_premium").notNull().default(false),
 });
 
@@ -106,7 +106,7 @@ export const walletTransactions = mysqlTable("wallet_transactions", {
   walletId: varchar("wallet_id", { length: 255 }).references(() => playerWallets.id).notNull(),
   amount: int("amount").notNull(), // positive for credit, negative for debit
   reason: varchar("reason", { length: 255 }).notNull(), // purchase, reward, refund, etc.
-  referenceId: varchar("reference_id"), // related item/match id
+  referenceId: varchar("reference_id", { length: 255 }), // related item/match id
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -117,9 +117,9 @@ export const storeItems = mysqlTable("store_items", {
   description: text("description"),
   category: varchar("category", { length: 255 }).notNull(), // character, skin, boost, currency
   itemType: varchar("item_type", { length: 255 }).notNull(),
-  itemId: varchar("item_id"), // reference to character, skin, etc.
+  itemId: varchar("item_id", { length: 255 }), // reference to character, skin, etc.
   price: json("price").notNull(), // { gold: 100, gems: 0 }
-  iconUrl: varchar("icon_url"),
+  iconUrl: varchar("icon_url", { length: 255 }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -129,7 +129,7 @@ export const achievements = mysqlTable("achievements", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
-  iconUrl: varchar("icon_url"),
+  iconUrl: varchar("icon_url", { length: 255 }),
   category: varchar("category", { length: 255 }).notNull(), // combat, collection, progression
   requirement: json("requirement").notNull(), // { type: "wins", count: 10 }
   reward: json("reward").notNull(), // { gold: 100, xp: 50 }
@@ -155,7 +155,7 @@ export const gameLobbies = mysqlTable("game_lobbies", {
   gameMode: varchar("game_mode", { length: 255 }).notNull().default("pvp"), // pvp, coop, campaign
   maxPlayers: int("max_players").notNull().default(4),
   isPrivate: boolean("is_private").notNull().default(false),
-  password: varchar("password"),
+  password: varchar("password", { length: 255 }),
   status: varchar("status", { length: 255 }).notNull().default("waiting"), // waiting, starting, in_game, finished
   settings: json("settings").notNull(), // game-specific settings
   rtsProjectId: varchar("rts_project_id", { length: 255 }).references(() => rtsProjects.id),
@@ -1065,10 +1065,10 @@ export const warlordSkills = mysqlTable("warlord_skills", {
   effects: json("effects").notNull().default(sql`(CAST('[]' AS JSON))`), // buffs, debuffs, etc.
   
   // Visual/animation
-  animationName: varchar("animation_name"),
+  animationName: varchar("animation_name", { length: 255 }),
   animationSpeed: int("animation_speed").notNull().default(100), // percentage
-  vfxId: varchar("vfx_id"),
-  iconUrl: varchar("icon_url"),
+  vfxId: varchar("vfx_id", { length: 255 }),
+  iconUrl: varchar("icon_url", { length: 255 }),
   
   // Requirements
   levelRequired: int("level_required").notNull().default(1),
@@ -1514,9 +1514,9 @@ export const userObjects = mysqlTable("user_objects", {
   objectKey: varchar("object_key", { length: 255 }).notNull(), // full path in bucket
   namespace: varchar("namespace", { length: 255 }).notNull().default("assets"), // projects, assets, backups, runtime, app-storage
   filename: varchar("filename", { length: 255 }).notNull(),
-  contentType: varchar("content_type"),
+  contentType: varchar("content_type", { length: 255 }),
   fileSize: int("file_size").notNull().default(0),
-  checksum: varchar("checksum"),
+  checksum: varchar("checksum", { length: 255 }),
   tags: json("tags").default(sql`(CAST('[]' AS JSON))`),
   metadata: json("metadata").default(sql`(CAST('{}' AS JSON))`),
   isPublic: boolean("is_public").notNull().default(false),
@@ -1534,12 +1534,12 @@ export const storageAuditLogs = mysqlTable("storage_audit_logs", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`(UUID())`),
   userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
   operation: varchar("operation", { length: 255 }).notNull(), // upload, download, delete, copy, list
-  objectKey: varchar("object_key"),
-  targetKey: varchar("target_key"), // for copy operations
+  objectKey: varchar("object_key", { length: 255 }),
+  targetKey: varchar("target_key", { length: 255 }), // for copy operations
   fileSize: int("file_size"),
   success: boolean("success").notNull().default(true),
   errorMessage: text("error_message"),
-  ipAddress: varchar("ip_address"),
+  ipAddress: varchar("ip_address", { length: 255 }),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [

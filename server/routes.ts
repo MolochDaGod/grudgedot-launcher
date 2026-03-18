@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { randomUUID } from "node:crypto";
 import express from "express";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -323,16 +324,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (fileSize) updateData.fileSize = fileSize;
       if (objectKey) updateData.uploadedAt = new Date();
 
-      const updatedAsset = await db.update(gdevelopAssets)
+      await db.update(gdevelopAssets)
         .set(updateData)
-        .where(eq(gdevelopAssets.id, id))
-        .returning();
+        .where(eq(gdevelopAssets.id, id));
 
-      if (updatedAsset.length === 0) {
+      const [updatedAsset] = await db.select().from(gdevelopAssets).where(eq(gdevelopAssets.id, id)).limit(1);
+      if (!updatedAsset) {
         return res.status(404).json({ error: "Asset not found" });
       }
 
-      res.json(updatedAsset[0]);
+      res.json(updatedAsset);
     } catch (error) {
       console.error("Error updating asset:", error);
       return res.status(500).json({ error: "Internal server error" });
@@ -1340,8 +1341,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Units
   app.get("/api/openrts/units", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsUnits.findMany();
+      const result = await db.select().from(openrtsUnits);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS units:", error);
@@ -1351,7 +1351,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/openrts/units", async (req, res) => {
     try {
-      const [unit] = await db.insert(openrtsUnits).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsUnits).values({ ...req.body, id: newId });
+      const [unit] = await db.select().from(openrtsUnits).where(eq(openrtsUnits.id, newId)).limit(1);
       res.status(201).json(unit);
     } catch (error) {
       console.error("Error creating OpenRTS unit:", error);
@@ -1372,8 +1374,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Weapons
   app.get("/api/openrts/weapons", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsWeapons.findMany();
+      const result = await db.select().from(openrtsWeapons);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS weapons:", error);
@@ -1383,7 +1384,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/openrts/weapons", async (req, res) => {
     try {
-      const [weapon] = await db.insert(openrtsWeapons).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsWeapons).values({ ...req.body, id: newId });
+      const [weapon] = await db.select().from(openrtsWeapons).where(eq(openrtsWeapons.id, newId)).limit(1);
       res.status(201).json(weapon);
     } catch (error) {
       console.error("Error creating OpenRTS weapon:", error);
@@ -1404,8 +1407,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Movers
   app.get("/api/openrts/movers", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsMover.findMany();
+      const result = await db.select().from(openrtsMover);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS movers:", error);
@@ -1416,8 +1418,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Effects
   app.get("/api/openrts/effects", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsEffects.findMany();
+      const result = await db.select().from(openrtsEffects);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS effects:", error);
@@ -1427,7 +1428,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/openrts/effects", async (req, res) => {
     try {
-      const [effect] = await db.insert(openrtsEffects).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsEffects).values({ ...req.body, id: newId });
+      const [effect] = await db.select().from(openrtsEffects).where(eq(openrtsEffects.id, newId)).limit(1);
       res.status(201).json(effect);
     } catch (error) {
       console.error("Error creating OpenRTS effect:", error);
@@ -1448,8 +1451,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Actors
   app.get("/api/openrts/actors", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsActors.findMany();
+      const result = await db.select().from(openrtsActors);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS actors:", error);
@@ -1460,8 +1462,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Projectiles
   app.get("/api/openrts/projectiles", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsProjectiles.findMany();
+      const result = await db.select().from(openrtsProjectiles);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS projectiles:", error);
@@ -1472,8 +1473,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Trinkets
   app.get("/api/openrts/trinkets", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsTrinkets.findMany();
+      const result = await db.select().from(openrtsTrinkets);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS trinkets:", error);
@@ -1484,8 +1484,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Map Styles
   app.get("/api/openrts/map-styles", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsMapStyles.findMany();
+      const result = await db.select().from(openrtsMapStyles);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS map styles:", error);
@@ -3325,7 +3324,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   app.post("/api/skill-trees", async (req, res) => {
     try {
       const data = insertSkillTreeSchema.parse(req.body);
-      const [tree] = await db.insert(skillTrees).values(data).returning();
+      const newId = randomUUID();
+      await db.insert(skillTrees).values({ ...data, id: newId });
+      const [tree] = await db.select().from(skillTrees).where(eq(skillTrees.id, newId)).limit(1);
       res.status(201).json(tree);
     } catch (error) {
       console.error("Error creating skill tree:", error);
@@ -3338,10 +3339,10 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
     try {
       const { id } = req.params;
       const data = req.body;
-      const [tree] = await db.update(skillTrees)
+      await db.update(skillTrees)
         .set({ ...data, updatedAt: new Date() })
-        .where(eq(skillTrees.id, id))
-        .returning();
+        .where(eq(skillTrees.id, id));
+      const [tree] = await db.select().from(skillTrees).where(eq(skillTrees.id, id)).limit(1);
       if (!tree) {
         return res.status(404).json({ error: "Skill tree not found" });
       }
@@ -3356,10 +3357,11 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   app.delete("/api/skill-trees/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const [tree] = await db.delete(skillTrees).where(eq(skillTrees.id, id)).returning();
+      const [tree] = await db.select().from(skillTrees).where(eq(skillTrees.id, id)).limit(1);
       if (!tree) {
         return res.status(404).json({ error: "Skill tree not found" });
       }
+      await db.delete(skillTrees).where(eq(skillTrees.id, id));
       res.json({ success: true });
     } catch (error) {
       console.error("Error deleting skill tree:", error);
@@ -3418,15 +3420,17 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       
       if (existing && existing.worldId === data.worldId) {
         // Update last online
-        const [updated] = await db.update(mmoCharacters)
+        await db.update(mmoCharacters)
           .set({ lastOnline: new Date() })
-          .where(eq(mmoCharacters.id, existing.id))
-          .returning();
+          .where(eq(mmoCharacters.id, existing.id));
+        const [updated] = await db.select().from(mmoCharacters).where(eq(mmoCharacters.id, existing.id)).limit(1);
         return res.json(updated);
       }
 
       // Create new character
-      const [character] = await db.insert(mmoCharacters).values(data).returning();
+      const newCharId = randomUUID();
+      await db.insert(mmoCharacters).values({ ...data, id: newCharId });
+      const [character] = await db.select().from(mmoCharacters).where(eq(mmoCharacters.id, newCharId)).limit(1);
       res.status(201).json(character);
     } catch (error) {
       console.error("Error creating MMO character:", error);
@@ -3467,10 +3471,10 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
     try {
       const { id } = req.params;
       const { posX, posY } = req.body;
-      const [character] = await db.update(mmoCharacters)
+      await db.update(mmoCharacters)
         .set({ posX, posY, lastOnline: new Date() })
-        .where(eq(mmoCharacters.id, id))
-        .returning();
+        .where(eq(mmoCharacters.id, id));
+      const [character] = await db.select().from(mmoCharacters).where(eq(mmoCharacters.id, id)).limit(1);
       if (!character) {
         return res.status(404).json({ error: "Character not found" });
       }
