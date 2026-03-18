@@ -151,14 +151,39 @@ Request arrives with Authorization: Bearer <token>
 This dual-verify approach means users authenticated via `grudgewarlords.com` or other
 Grudge Studio apps can seamlessly use GGE without re-authenticating.
 
+## Dynamic OAuth Redirect Domains
+
+The `buildAuthRedirect()` function in `server/grudgeAuth.ts` dynamically constructs OAuth
+callback URLs from the incoming request's `Host` header. This eliminates hardcoded redirect
+domains and ensures OAuth works automatically on:
+
+- **Vercel production**: `gdevelop-assistant.vercel.app`
+- **Vercel preview branches**: `gdevelop-assistant-git-*.vercel.app`
+- **Grudge Studio subdomains**: `*.grudge-studio.com`
+- **Legacy domains**: `*.grudgestudio.com`
+- **Local development**: `localhost:5000`
+
+When registering OAuth apps with providers (Google, Discord, GitHub), add **all** expected
+callback URLs. For Vercel, the pattern is:
+- `https://gdevelop-assistant.vercel.app/api/auth/{provider}/callback`
+- `http://localhost:5000/api/auth/{provider}/callback` (for local dev)
+
+## Backend Connectivity
+
+Auth routes depend on the Grudge backend proxy being properly registered. See
+[docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the full
+backend connection architecture, including the critical dual-registration pattern
+and domain convention.
+
 ## Troubleshooting
 
 - **Infinite redirect loop**: Token not being stored after login. Check browser console for storeAuth() call.
 - **401 Unauthorized**: `SESSION_SECRET` mismatch between GGE and auth-gateway. Check both deployments use the same value.
 - **Token not persisting**: Check localStorage isn't being cleared by other code.
 - **Slow API responses**: If every request takes 1-5s, `SESSION_SECRET` probably doesn't match the gateway and every request falls back to remote verification. Fix: sync the secret.
-- **Discord OAuth fails**: Ensure `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` are set and the redirect URI `https://gdevelop-assistant.vercel.app/api/auth/discord/callback` is registered in the Discord developer portal.
-- **GitHub OAuth fails**: Ensure `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` are set and the callback URL `https://gdevelop-assistant.vercel.app/api/auth/github/callback` is registered in GitHub OAuth app settings.
+- **Discord OAuth fails**: Ensure `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` are set and the redirect URI includes your deployment domain (dynamic — see above).
+- **GitHub OAuth fails**: Ensure `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` are set and the callback URL is registered for your deployment domain.
 - **Google OAuth fails**: Same pattern — check `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and callback URL.
 - **Phone auth returns 503**: Twilio credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`) are not configured.
-- **Cross-service tokens rejected**: Ensure `GRUDGE_BACKEND_URL` points to the grudge-id service and it's reachable. Check that `gdevelop-assistant.vercel.app` is in the backend's `CORS_ORIGINS`.
+- **Cross-service tokens rejected**: Ensure `GRUDGE_BACKEND_URL` points to the grudge-id service and it's reachable. Check that your deployment domain is in the backend's `CORS_ORIGINS`.
+- **OAuth redirects to wrong domain**: The `buildAuthRedirect()` function reads the `Host` header. If behind a reverse proxy, ensure `X-Forwarded-Host` is passed through.

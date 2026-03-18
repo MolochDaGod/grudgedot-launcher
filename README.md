@@ -42,6 +42,12 @@ All tabs are listed in `client/src/tabs.registry.json`. See [TABS_AND_APPS.md](d
 | `mmo` | MMO World | Phaser 3 MMO with shared WCS heroes, souls-like indicators, crafting/professions |
 | `grudge-drive` | Grudge Drive | Asset management and sprite deployment tool |
 
+**Platform Pages:**
+
+| Path | Title | Description |
+|------|-------|-------------|
+| `/connections` | Connections | Live backend health probes, account/wallet tools, AI launchers |
+
 ## Shared Hero System & CNFT Ownership
 
 All games draw from the same hero identity:
@@ -133,12 +139,41 @@ npm run build:vercel       # Build client
 vercel --prod --yes        # Deploy to production
 ```
 
+> **CRITICAL**: Both `server/routes.ts` (dev) and `server/vercelApp.ts` (Vercel) **must** call
+> `setupGrudgeProxy(app)` or all `/api/grudge/*` backend calls will 404 on the deployed site.
+> See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the full architecture.
+
+After deploying, verify backend connectivity by visiting `/connections` on the live URL.
+
+## Warlord Suite (Native Pages)
+
+The Warlord Suite tabs at `/warlord-suite/:page` are fully native React pages using **canonical WCS data** from `shared/wcs/` and **WCS fantasy MMO styling** (gold-bordered panels, dark fantasy theme, Cinzel Decorative/MedievalSharp fonts, skill node icons, gem-glow animations).
+
+All pages connect to the Grudge backend via React Query hooks for live character/inventory/profession sync.
+
+- **Skill Tree** (`/warlord-suite/skill-tree`) — 4 class skill trees (warrior/mage/ranger/worge), 6 tiers each, pick-one-per-tier with special abilities. Ornate-frame headers, class-colored gem-glow indicators.
+- **Arsenal** (`/warlord-suite/arsenal`) — 144 equipment items (cloth/leather/metal), filterable by material/set/slot. Stone-panel item cards with stat breakdowns and tooltip lore.
+- **Crafting** (`/warlord-suite/crafting`) — Backend-synced recipe browser + crafting queue, 10 canonical professions (5 gathering + 5 crafting) with XP progress. Parchment-panel recipes, gilded craft buttons.
+- **Weapon Skills** (`/warlord-suite/weapon-skills`) — 10 weapon skill trees (SWORD/AXE/BOW/STAFF/DAGGER/MACE/HAMMER/SPEAR/WAND/SCYTHE), 4 slots each with upgrade paths showing damage/cooldown scaling. Skill icons from canonical data.
+- **Class Skills** (`/warlord-suite/class-skill`) — Class overview with allowed weapons/armor from `classWeaponRestrictions.ts`, full skill tree preview, 8-attribute reference grid. Only 4 canonical classes.
+- **Character Builder** (`/warlord-suite/character-builder`) — Full WCS attribute allocator (8 attrs, 18 secondary stats, diminishing returns), 4 races (orc/elf/human/undead), 4 classes, derived combat stats via `calculateStats()`. Ornate-frame attribute sliders with DR indicators.
+
+Source: `client/src/pages/warlord-suite/`
 ## Key Modules
 
 - `client/src/lib/mmo-systems.ts` — Combat formulas, equipment tiers, crafting recipes, gathering professions (all built on WCS stats)
 - `client/src/lib/mmo-indicators.ts` — Souls-like attack telegraph system for Phaser 3 (6 indicator types, dodge windows)
 - `shared/grudachain.ts` — Universal WCS hero attribute definitions and conversion functions
 - `shared/grudaWarsHeroes.ts` — Hero roster with per-hero stats, abilities, and equipment IDs
+
+## Backend Connection Architecture
+
+See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the **production-verified** backend proxy pattern:
+- Service map (game, account, id, launcher APIs)
+- Dual registration requirement (dev + Vercel entry points)
+- Domain convention (`grudge-studio.com` with hyphen)
+- CORS, OAuth redirect handling, health monitoring
+- Checklist for adding backend connectivity to any new Grudge Studio app
 
 ## AI Systems
 
