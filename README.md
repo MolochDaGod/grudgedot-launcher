@@ -46,15 +46,24 @@ All tabs are listed in `client/src/tabs.registry.json`. See [TABS_AND_APPS.md](d
 
 All games draw from the same hero identity:
 
-- **WCS Attributes**: 8 core stats defined in `shared/grudachain.ts`
-- **Hero Roster**: 4 Gruda Wars heroes (Thane, Lyra, Kael, Mira) in `shared/grudaWarsHeroes.ts`
-- **Tier Gear**: T0–T5 equipment system with class restrictions
+- **WCS Canonical Data**: `shared/wcs/` — single source of truth for all game systems, copied from Warlord-Crafting-Suite. Includes:
+  - `gameConstants.ts` — T0–T8 tiers, combat caps, diminishing returns, economy, class/race IDs
+  - `attributeSystem.ts` — 8 core attributes (STR/VIT/END/INT/WIS/DEX/AGI/TAC), 18 secondary stats, `calculateStats()`
+  - `classWeaponRestrictions.ts` — 17 weapon types, 3 armor types, per-class restrictions
+  - `definitions/classSkillTrees.ts` — 4 class skill trees (6 tiers each, pick-one-per-tier)
+  - `definitions/weaponSkills.ts` — 10 weapon skill trees (4 slots, upgrade system)
+  - `definitions/equipmentData.ts` — 144 items (6 sets × 8 slots × 3 materials)
+  - `gameDefinitions/professions.ts` — 5 gathering + 5 crafting professions with XP curves
+- **4 Classes**: Warrior, Mage, Ranger, Worge (shape-shifter with Bear/Raptor/Bird forms)
+- **4 Races**: Orc, Elf, Human, Undead
+- **Tier Gear**: T0–T8 equipment system with class-specific weapon and armor restrictions
 - **CNFT Ownership** (Crossmint on Solana):
   - Character collection: `a9bb2c8d-1350-4413-aec7-5ba1f6888511`
   - Home Island collection: `18d0e641-8713-4d5b-9a1d-ba67c516a3ce`
   - Parent collection: `5061318d-ff65-4893-ac4b-9b28efb18ace`
 - **Character Creation**: Originates from [Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder) — generates avatar, mints cNFT with WCS stats as on-chain metadata
 - **Cross-game**: Any Grudge game reads the player's cNFT to load their hero, stats, and gear
+- **Backend Sync**: Characters, inventory, professions, and crafting sync to `api.grudge-studio.com` via React Query hooks (`useGrudgeAPI.ts`, `useGrudgePlayer.ts`)
 
 ## Project Structure
 
@@ -68,8 +77,9 @@ GDevelopAssistant/
 ├── client/               # React frontend (Vite)
 │   ├── src/
 │   │   ├── components/   # UI components (Radix-based)
-│   │   ├── lib/          # auth.ts, mmo-systems.ts, mmo-indicators.ts
-│   │   ├── pages/        # App pages (mmo-world.tsx, etc.)
+│   │   ├── hooks/        # useGrudgeAPI.ts, useGrudgePlayer.ts (React Query)
+│   │   ├── lib/          # auth.ts, grudgeBackendApi.ts, mmo-systems.ts
+│   │   ├── pages/        # App pages (mmo-world.tsx, warlord-suite/, etc.)
 │   │   └── tabs.registry.json  # All registered game tabs
 │   ├── public/           # Favicons, static assets
 │   └── index.html        # Vite entry point
@@ -82,7 +92,13 @@ GDevelopAssistant/
 ├── shared/               # Shared types and schemas
 │   ├── schema.ts         # Drizzle ORM database schema
 │   ├── grudachain.ts     # WCS hero attributes & conversion
-│   └── grudaWarsHeroes.ts # Gruda Wars hero definitions
+│   ├── grudaWarsHeroes.ts # Gruda Wars hero definitions
+│   └── wcs/              # Canonical WCS game data (source of truth)
+│       ├── gameConstants.ts        # Tiers, caps, DR, economy, class/race IDs
+│       ├── attributeSystem.ts      # 8 attributes, 18 secondary stats, calculateStats()
+│       ├── classWeaponRestrictions.ts # 17 weapons, 3 armors, per-class restrictions
+│       ├── definitions/            # Skill trees, weapon skills, equipment
+│       └── gameDefinitions/        # Professions, XP curves
 ├── docs/                 # Project documentation
 │   ├── AI_SYSTEMS_GUIDE.md  # AI architecture & best practices
 │   └── TABS_AND_APPS.md     # Tab system guide
@@ -139,25 +155,29 @@ vercel --prod --yes        # Deploy to production
 
 ## Warlord Suite (Native Pages)
 
-The Warlord Suite tabs at `/warlord-suite/:page` are fully native React pages (no external iframes). Each sub-page uses live game data from `mmo-systems.ts` and `grudaWarsHeroes.ts`.
+The Warlord Suite tabs at `/warlord-suite/:page` are fully native React pages using **canonical WCS data** from `shared/wcs/` and **WCS fantasy MMO styling** (gold-bordered panels, dark fantasy theme, Cinzel Decorative/MedievalSharp fonts, skill node icons, gem-glow animations).
 
-| Slug | Page | Description |
-|------|------|-------------|
-| `skill-tree` | Skill Tree | 6 class skill trees with unlock/reset mechanics |
-| `arsenal` | Arsenal | Equipment browser with tier/class filters, weapon & armor stats |
-| `crafting` | Crafting | Recipe browser with materials, professions, and craft progress bar |
-| `weapon-skills` | Weapon Skills | 12 weapon type skill progressions with class restrictions |
-| `class-skill` | Class Skills | Class overview, abilities, attributes from Gruda Wars heroes |
-| `character-builder` | Character Builder | Race/class selector, 8-stat allocator, live derived combat stats |
+All pages connect to the Grudge backend via React Query hooks for live character/inventory/profession sync.
+
+- **Skill Tree** (`/warlord-suite/skill-tree`) — 4 class skill trees (warrior/mage/ranger/worge), 6 tiers each, pick-one-per-tier with special abilities. Ornate-frame headers, class-colored gem-glow indicators.
+- **Arsenal** (`/warlord-suite/arsenal`) — 144 equipment items (cloth/leather/metal), filterable by material/set/slot. Stone-panel item cards with stat breakdowns and tooltip lore.
+- **Crafting** (`/warlord-suite/crafting`) — Backend-synced recipe browser + crafting queue, 10 canonical professions (5 gathering + 5 crafting) with XP progress. Parchment-panel recipes, gilded craft buttons.
+- **Weapon Skills** (`/warlord-suite/weapon-skills`) — 10 weapon skill trees (SWORD/AXE/BOW/STAFF/DAGGER/MACE/HAMMER/SPEAR/WAND/SCYTHE), 4 slots each with upgrade paths showing damage/cooldown scaling. Skill icons from canonical data.
+- **Class Skills** (`/warlord-suite/class-skill`) — Class overview with allowed weapons/armor from `classWeaponRestrictions.ts`, full skill tree preview, 8-attribute reference grid. Only 4 canonical classes.
+- **Character Builder** (`/warlord-suite/character-builder`) — Full WCS attribute allocator (8 attrs, 18 secondary stats, diminishing returns), 4 races (orc/elf/human/undead), 4 classes, derived combat stats via `calculateStats()`. Ornate-frame attribute sliders with DR indicators.
 
 Source: `client/src/pages/warlord-suite/`
 
 ## Key Modules
 
-- `client/src/lib/mmo-systems.ts` — Combat formulas, equipment tiers, crafting recipes, gathering professions (all built on WCS stats)
+- `shared/wcs/` — **Canonical WCS game data** (single source of truth): attributes, skill trees, weapon skills, equipment, professions, class restrictions, game constants
+- `client/src/hooks/useGrudgeAPI.ts` — React Query hooks for crafting, equip, create-character mutations against Grudge backend
+- `client/src/hooks/useGrudgePlayer.ts` — Character, inventory, profession hooks with active character state
+- `client/src/lib/grudgeBackendApi.ts` — Typed API client for `api.grudge-studio.com`
+- `client/src/lib/mmo-systems.ts` — Combat formulas, equipment tiers (used by MMO World tab)
 - `client/src/lib/mmo-indicators.ts` — Souls-like attack telegraph system for Phaser 3 (6 indicator types, dodge windows)
 - `shared/grudachain.ts` — Universal WCS hero attribute definitions and conversion functions
-- `shared/grudaWarsHeroes.ts` — Hero roster with per-hero stats, abilities, and equipment IDs
+- `shared/grudaWarsHeroes.ts` — Legacy hero roster (Warlord Suite now uses `shared/wcs/` canonical data)
 
 ## AI Systems
 

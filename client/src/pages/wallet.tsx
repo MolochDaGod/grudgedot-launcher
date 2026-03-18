@@ -1,9 +1,11 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Gem, Trophy, LogIn, ShoppingBag } from "lucide-react";
+import { Coins, Gem, Trophy, LogIn, ShoppingBag, Wallet } from "lucide-react";
+import { grudgeGameApi } from "@/lib/grudgeBackendApi";
 import type { Currency, PlayerWallet, StoreItem } from "@shared/schema";
 
 const CURRENCY_ICONS: Record<string, any> = {
@@ -35,6 +37,19 @@ export default function WalletPage() {
     ["/api/store"],
     { ttlMs: 600_000 },
   );
+
+  // Grudge backend economy
+  const { data: grudgeEconomy } = useQuery({
+    queryKey: ['grudge', 'economy'],
+    queryFn: () => grudgeGameApi.getEconomy(),
+    enabled: isAuthenticated,
+  });
+
+  const { data: grudgeChars = [] } = useQuery({
+    queryKey: ['grudge', 'characters'],
+    queryFn: () => grudgeGameApi.listCharacters(),
+    enabled: isAuthenticated,
+  });
 
   const getWalletBalance = (currencyId: string) => {
     const wallet = wallets?.find(w => w.currencyId === currencyId);
@@ -78,6 +93,44 @@ export default function WalletPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Grudge Warlords Economy */}
+        {(grudgeEconomy || grudgeChars.length > 0) && (
+          <div>
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Wallet className="h-5 w-5" /> Grudge Warlords
+            </h2>
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mb-6">
+              {grudgeChars.map((ch) => (
+                <Card key={ch.id}>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-yellow-500">
+                      <Coins className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold">{ch.gold?.toLocaleString() ?? 0}</p>
+                      <p className="text-sm text-muted-foreground">{ch.name} Gold</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {grudgeEconomy && (
+                <Card>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-blue-500">
+                      <Trophy className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Economy Status</p>
+                      <p className="text-xs text-muted-foreground">Connected to Grudge backend</p>
+                    </div>
+                    <Badge variant="secondary" className="ml-auto">Live</Badge>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           {currencies?.map((currency) => {
             const Icon = CURRENCY_ICONS[currency.code] || Coins;

@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import { io, Socket } from 'socket.io-client';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { grudgeGameApi, type GrudgeCharacter } from '@/lib/grudgeBackendApi';
 // Colyseus lobby hook — enable by setting VITE_USE_COLYSEUS=true
 // import { useColyseusLobby } from '@/hooks/useColyseusLobby';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -113,6 +114,19 @@ export default function LobbyPage() {
     queryKey: ['/api/lobby/stats'],
     refetchInterval: 10000,
   });
+
+  // Grudge backend character picker
+  const { data: grudgeChars = [] } = useQuery<GrudgeCharacter[]>({
+    queryKey: ['grudge', 'characters'],
+    queryFn: () => grudgeGameApi.listCharacters(),
+    enabled: isAuthenticated,
+  });
+  const [selectedChar, setSelectedChar] = useState<GrudgeCharacter | null>(null);
+
+  // Auto-select first character
+  useEffect(() => {
+    if (grudgeChars.length > 0 && !selectedChar) setSelectedChar(grudgeChars[0]);
+  }, [grudgeChars, selectedChar]);
 
   useEffect(() => {
     if (user?.username) {
@@ -521,6 +535,26 @@ export default function LobbyPage() {
       </div>
 
       <div className="flex-1 p-6">
+        {/* Grudge character picker */}
+        {grudgeChars.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-sm font-medium mb-2">Play as:</h3>
+            <div className="flex gap-2 flex-wrap">
+              {grudgeChars.map((ch) => (
+                <Button
+                  key={ch.id}
+                  variant={selectedChar?.id === ch.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedChar(ch)}
+                  data-testid={`btn-select-char-${ch.id}`}
+                >
+                  {ch.name} (Lv {ch.level} {ch.class})
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">

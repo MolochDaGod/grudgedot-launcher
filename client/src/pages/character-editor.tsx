@@ -53,6 +53,9 @@ import {
   Cloud,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { grudgeGameApi, type GrudgeCharacter, type GrudgeFaction } from "@/lib/grudgeBackendApi";
 import { GrudgeStorageBrowser } from "@/components/grudge-storage-browser";
 
 interface BodyPart {
@@ -200,6 +203,7 @@ function identifyBodyPart(name: string): { displayName: string; category: BodyPa
 
 export default function CharacterEditor() {
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -224,6 +228,19 @@ export default function CharacterEditor() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [webglError, setWebglError] = useState(false);
   const [storageBrowserOpen, setStorageBrowserOpen] = useState(false);
+  const [selectedGrudgeCharId, setSelectedGrudgeCharId] = useState<number | null>(null);
+
+  // Grudge backend characters & factions for the editor
+  const { data: grudgeChars = [], refetch: refetchGrudgeChars } = useQuery<GrudgeCharacter[]>({
+    queryKey: ['grudge', 'characters'],
+    queryFn: () => grudgeGameApi.listCharacters(),
+    enabled: isAuthenticated,
+  });
+
+  const { data: factions = [] } = useQuery<GrudgeFaction[]>({
+    queryKey: ['grudge', 'factions'],
+    queryFn: () => grudgeGameApi.listFactions(),
+  });
 
   const initScene = useCallback(() => {
     if (!containerRef.current || rendererRef.current) return;
@@ -1131,6 +1148,34 @@ export default function CharacterEditor() {
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            {/* Backend character picker */}
+            {grudgeChars.length > 0 && (
+              <select
+                className="h-8 text-xs bg-gray-800 border border-gray-700 rounded px-2 text-white"
+                value={selectedGrudgeCharId ?? ''}
+                onChange={(e) => setSelectedGrudgeCharId(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Select Grudge Char</option>
+                {grudgeChars.map((ch) => (
+                  <option key={ch.id} value={ch.id}>{ch.name} (Lv {ch.level} {ch.class})</option>
+                ))}
+              </select>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!selectedGrudgeCharId) { toast({ title: 'Select a character first', variant: 'destructive' }); return; }
+                const inv = await grudgeGameApi.listInventory(selectedGrudgeCharId);
+                const profs = await grudgeGameApi.getProfessions(selectedGrudgeCharId);
+                toast({ title: 'Inventory Loaded', description: `${inv.length} items, ${profs.length} professions` });
+              }}
+              disabled={!selectedGrudgeCharId}
+              data-testid="button-load-inventory"
+            >
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Load Inventory
+            </Button>
             <Button
               variant="outline"
               size="sm"

@@ -3,7 +3,7 @@ import {
   Swords, Wand2, Users, User, Wallet, Trophy, Sword, Crown,
   Joystick, Puzzle, Zap, Rocket, Box, Plane, Shield, Target, Crosshair, Map,
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
-  Compass, ExternalLink, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse,
+  Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse,
 } from "lucide-react";
 import {
   Sidebar,
@@ -78,45 +78,39 @@ const mainMenuItems = [
 const warlordSuiteItems = [
   {
     title: "Skill Tree",
-    url: "https://warlord-crafting-suite.vercel.app/skill-tree",
+    url: "/warlord-suite/skill-tree",
     icon: TreeDeciduous,
     badge: "WCS",
-    external: true,
   },
   {
     title: "Arsenal",
-    url: "https://warlord-crafting-suite.vercel.app/arsenal",
+    url: "/warlord-suite/arsenal",
     icon: Shield,
     badge: "Items",
-    external: true,
   },
   {
     title: "Crafting",
-    url: "https://warlord-crafting-suite.vercel.app/crafting",
+    url: "/warlord-suite/crafting",
     icon: Hammer,
     badge: "WCS",
-    external: true,
   },
   {
     title: "Weapon Skills",
-    url: "https://warlord-crafting-suite.vercel.app/weapon-skills",
+    url: "/warlord-suite/weapon-skills",
     icon: Sword,
     badge: "WCS",
-    external: true,
   },
   {
     title: "Class Skills",
-    url: "https://warlord-crafting-suite.vercel.app/class-skill",
+    url: "/warlord-suite/class-skill",
     icon: Crown,
     badge: "WCS",
-    external: true,
   },
   {
     title: "Character Builder",
-    url: "https://warlord-crafting-suite.vercel.app/character-builder",
+    url: "/warlord-suite/character-builder",
     icon: UserCog,
     badge: "WCS",
-    external: true,
   },
 ];
 
@@ -329,18 +323,18 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
+                    data-active={location === item.url || location.startsWith(item.url)}
                     data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
-                    <a href={item.url} target="_blank" rel="noopener noreferrer">
+                    <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
-                      <ExternalLink className="h-3 w-3 opacity-50" />
                       {item.badge && (
                         <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-cyan-500/20 text-cyan-400 border-0">
                           {item.badge}
                         </Badge>
                       )}
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

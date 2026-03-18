@@ -19,11 +19,41 @@ import {
   Flame, Snowflake, Sword, Target, Sparkles, 
   Play, Pause, RefreshCw, Zap, Wind, Droplets, 
   Star, Bomb, Sun, Moon, Heart, Skull, ArrowLeft,
-  Settings, Eye, Move, Scale3D, Palette
+  Settings, Eye, Move, Scale3D, Palette,
+  Download, Upload, Cloud, Database, Search, Loader2, ExternalLink, CircleDot
 } from 'lucide-react';
 import { Link } from 'wouter';
 
-type EffectCategory = 'fire' | 'ice' | 'lightning' | 'magic' | 'impact' | 'aura';
+type EffectCategory = 'fire' | 'ice' | 'lightning' | 'magic' | 'impact' | 'aura' | 'portal' | 'combat' | 'environment';
+
+const OBJECTSTORE_BASE = 'https://molochdagod.github.io/ObjectStore';
+const OBJECTSTORE_REGISTRY_URL = `${OBJECTSTORE_BASE}/api/v1/3dfx-registry.json`;
+const OBJECTSTORE_R2_BASE = 'https://objectstore.grudge-studio.com';
+
+interface ObjectStoreEffect {
+  id: string;
+  name: string;
+  category: EffectCategory;
+  source: string;
+  description: string;
+  colors: { primary: string; secondary: string };
+  timing: { duration: number; loop: boolean; speed: number };
+  shader: string | null;
+  particles: Record<string, any>;
+  geometry?: Record<string, any>;
+  bloom: { strength: number; radius: number; threshold: number };
+  light?: { color: string; intensity: number; distance: number };
+  uniforms?: Record<string, any>;
+  tags: string[];
+}
+
+interface ObjectStoreRegistry {
+  version: string;
+  totalEffects: number;
+  categories: Record<string, { name: string; icon: string; color: string; count: number }>;
+  shaderFiles: Record<string, { vertex: string; fragment: string }>;
+  effects: Record<string, ObjectStoreEffect>;
+}
 
 interface EffectPreset {
   id: string;
@@ -346,7 +376,32 @@ const CATEGORY_INFO: Record<EffectCategory, { name: string; icon: typeof Flame; 
   magic: { name: 'Magic', icon: Sparkles, color: 'bg-purple-500' },
   impact: { name: 'Impact', icon: Bomb, color: 'bg-red-600' },
   aura: { name: 'Aura', icon: Star, color: 'bg-amber-400' },
+  portal: { name: 'Portal', icon: CircleDot, color: 'bg-blue-500' },
+  combat: { name: 'Combat', icon: Sword, color: 'bg-red-500' },
+  environment: { name: 'Environment', icon: Wind, color: 'bg-green-500' },
 };
+
+const ICON_MAP: Record<string, typeof Flame> = {
+  flame: Flame, snowflake: Snowflake, zap: Zap, sparkles: Sparkles,
+  bomb: Bomb, star: Star, circle: CircleDot, sword: Sword, wind: Wind,
+  sun: Sun, moon: Moon, heart: Heart, skull: Skull, target: Target,
+};
+
+function registryEffectToPreset(effect: ObjectStoreEffect): EffectPreset {
+  const catInfo = CATEGORY_INFO[effect.category];
+  return {
+    id: effect.id,
+    name: effect.name,
+    category: effect.category,
+    icon: catInfo?.icon ?? Sparkles,
+    description: effect.description,
+    primaryColor: effect.colors.primary,
+    secondaryColor: effect.colors.secondary,
+    intensity: effect.uniforms?.uIntensity?.value ?? effect.bloom?.strength ?? 1.5,
+    particleCount: effect.particles?.count ?? 200,
+    duration: effect.timing?.duration ?? 2.0,
+  };
+}
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -375,6 +430,13 @@ export default function EffectsPlayground() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<EffectCategory | 'all'>('all');
+  const [objectStoreRegistry, setObjectStoreRegistry] = useState<ObjectStoreRegistry | null>(null);
+  const [objectStorePresets, setObjectStorePresets] = useState<EffectPreset[]>([]);
+  const [registryLoading, setRegistryLoading] = useState(false);
+  const [registryError, setRegistryError] = useState<string | null>(null);
+  const [showObjectStore, setShowObjectStore] = useState(false);
+  const [objectStoreSearch, setObjectStoreSearch] = useState('');
+  const [savingToObjectStore, setSavingToObjectStore] = useState(false);
   
   const [effectScale, setEffectScale] = useState({ x: 1, y: 1, z: 1 });
   const [effectPosition, setEffectPosition] = useState({ x: 0, y: 0, z: 0 });
@@ -382,6 +444,28 @@ export default function EffectsPlayground() {
   const [animationSpeed, setAnimationSpeed] = useState(1.0);
   const [primaryColor, setPrimaryColor] = useState('#ff4400');
   const [secondaryColor, setSecondaryColor] = useState('#ffcc00');
+
+  // Fetch ObjectStore 3DFX registry on mount
+  useEffect(() => {
+    const fetchRegistry = async () => {
+      setRegistryLoading(true);
+      setRegistryError(null);
+      try {
+        const res = await fetch(OBJECTSTORE_REGISTRY_URL);
+        if (!res.ok) throw new Error(`Registry fetch failed: ${res.status}`);
+        const data: ObjectStoreRegistry = await res.json();
+        setObjectStoreRegistry(data);
+        const presets = Object.values(data.effects).map(registryEffectToPreset);
+        setObjectStorePresets(presets);
+      } catch (err: any) {
+        console.warn('ObjectStore registry unavailable:', err.message);
+        setRegistryError(err.message);
+      } finally {
+        setRegistryLoading(false);
+      }
+    };
+    fetchRegistry();
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -1151,9 +1235,85 @@ export default function EffectsPlayground() {
     toast({ title: 'Effect Applied', description: preset.name });
   }, [clearEffects, createFireEffect, createIceEffect, createLightningEffect, createMagicEffect, createImpactEffect, createAuraEffect, toast]);
 
-  const filteredPresets = selectedCategory === 'all' 
-    ? EFFECT_PRESETS 
-    : EFFECT_PRESETS.filter(p => p.category === selectedCategory);
+  const exportEffectToJSON = useCallback(() => {
+    if (!activePreset) return;
+    const effectDef = objectStoreRegistry?.effects?.[activePreset.id];
+    const exportData = effectDef ?? {
+      id: activePreset.id,
+      name: activePreset.name,
+      category: activePreset.category,
+      source: 'gdevelop-effects-playground',
+      description: activePreset.description,
+      colors: { primary: primaryColor, secondary: secondaryColor },
+      timing: { duration: activePreset.duration, loop: true, speed: animationSpeed },
+      particles: { count: activePreset.particleCount, size: particleSize * 0.1, opacity: 0.8, blending: 'additive' },
+      bloom: { strength: bloomStrength, radius: bloomRadius, threshold: bloomThreshold },
+      uniforms: { uIntensity: { value: effectIntensity } },
+      tags: [activePreset.category, 'spell'],
+    };
+    // Apply current editor overrides
+    const overridden = {
+      ...exportData,
+      colors: { primary: primaryColor, secondary: secondaryColor },
+      bloom: { strength: bloomStrength, radius: bloomRadius, threshold: bloomThreshold },
+      timing: { ...((exportData as any).timing ?? {}), speed: animationSpeed },
+    };
+    return overridden;
+  }, [activePreset, objectStoreRegistry, primaryColor, secondaryColor, bloomStrength, bloomRadius, bloomThreshold, animationSpeed, effectIntensity, particleSize]);
+
+  const handleSaveToObjectStore = useCallback(async () => {
+    const data = exportEffectToJSON();
+    if (!data) return;
+    setSavingToObjectStore(true);
+    try {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const key = `3dfx/definitions/${data.id}.json`;
+      const res = await fetch(`${OBJECTSTORE_R2_BASE}/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: blob,
+      });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      toast({ title: 'Saved to ObjectStore', description: `${data.name} uploaded to 3DFX storage` });
+    } catch (err: any) {
+      toast({ title: 'Save Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingToObjectStore(false);
+    }
+  }, [exportEffectToJSON, toast]);
+
+  const handleDownloadJSON = useCallback(() => {
+    const data = exportEffectToJSON();
+    if (!data) return;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.id}.3dfx.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Downloaded', description: `${data.name} exported as JSON` });
+  }, [exportEffectToJSON, toast]);
+
+  // Merge local presets with ObjectStore presets (local first, deduped by id)
+  const allPresets = (() => {
+    const localIds = new Set(EFFECT_PRESETS.map(p => p.id));
+    const objectStoreOnly = objectStorePresets.filter(p => !localIds.has(p.id));
+    return showObjectStore ? [...EFFECT_PRESETS, ...objectStoreOnly] : EFFECT_PRESETS;
+  })();
+
+  const filteredPresets = (() => {
+    let presets = selectedCategory === 'all' ? allPresets : allPresets.filter(p => p.category === selectedCategory);
+    if (showObjectStore && objectStoreSearch) {
+      const q = objectStoreSearch.toLowerCase();
+      presets = presets.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    }
+    return presets;
+  })();
 
   if (!webglAvailable) {
     return (
@@ -1202,6 +1362,44 @@ export default function EffectsPlayground() {
               {activePreset.name}
             </Badge>
           )}
+          <Button
+            variant={showObjectStore ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowObjectStore(!showObjectStore)}
+            data-testid="button-objectstore"
+          >
+            <Database className="mr-1 h-4 w-4" />
+            ObjectStore
+            {registryLoading && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
+            {objectStoreRegistry && (
+              <Badge variant="secondary" className="ml-1 text-[10px] h-4">
+                {objectStoreRegistry.totalEffects}
+              </Badge>
+            )}
+          </Button>
+          {activePreset && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveToObjectStore}
+                disabled={savingToObjectStore}
+                data-testid="button-save-objectstore"
+              >
+                {savingToObjectStore ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />}
+                Save to R2
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadJSON}
+                data-testid="button-download"
+              >
+                <Download className="mr-1 h-4 w-4" />
+                Export
+              </Button>
+            </>
+          )}
           <Button 
             variant="outline" 
             size="sm" 
@@ -1216,34 +1414,56 @@ export default function EffectsPlayground() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="w-72 border-r bg-muted/20 flex flex-col overflow-hidden">
-          <div className="p-3 border-b">
-            <Label className="text-xs text-muted-foreground mb-2 block">Category</Label>
-            <div className="flex flex-wrap gap-1">
-              <Button
-                size="sm"
-                variant={selectedCategory === 'all' ? 'default' : 'ghost'}
-                className="h-7 text-xs"
-                onClick={() => setSelectedCategory('all')}
-                data-testid="category-all"
-              >
-                All
-              </Button>
-              {Object.entries(CATEGORY_INFO).map(([key, info]) => {
-                const Icon = info.icon;
-                return (
-                  <Button
-                    key={key}
-                    size="sm"
-                    variant={selectedCategory === key ? 'default' : 'ghost'}
-                    className="h-7 text-xs"
-                    onClick={() => setSelectedCategory(key as EffectCategory)}
-                    data-testid={`category-${key}`}
-                  >
-                    <Icon className="h-3 w-3 mr-1" />
-                    {info.name}
-                  </Button>
-                );
-              })}
+          <div className="p-3 border-b space-y-2">
+            {showObjectStore && (
+              <div className="flex items-center gap-2 p-2 rounded-md bg-blue-500/10 border border-blue-500/30">
+                <Cloud className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                <span className="text-xs font-medium text-blue-400">ObjectStore Connected</span>
+                {registryError && <span className="text-[10px] text-red-400">({registryError})</span>}
+              </div>
+            )}
+            {showObjectStore && (
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search effects..."
+                  value={objectStoreSearch}
+                  onChange={(e) => setObjectStoreSearch(e.target.value)}
+                  className="h-8 text-xs pl-7"
+                  data-testid="objectstore-search"
+                />
+              </div>
+            )}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">Category</Label>
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  size="sm"
+                  variant={selectedCategory === 'all' ? 'default' : 'ghost'}
+                  className="h-7 text-xs"
+                  onClick={() => setSelectedCategory('all')}
+                  data-testid="category-all"
+                >
+                  All
+                </Button>
+                {Object.entries(CATEGORY_INFO).map(([key, info]) => {
+                  const Icon = info.icon;
+                  return (
+                    <Button
+                      key={key}
+                      size="sm"
+                      variant={selectedCategory === key ? 'default' : 'ghost'}
+                      className="h-7 text-xs"
+                      onClick={() => setSelectedCategory(key as EffectCategory)}
+                      data-testid={`category-${key}`}
+                    >
+                      <Icon className="h-3 w-3 mr-1" />
+                      {info.name}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -1298,6 +1518,12 @@ export default function EffectsPlayground() {
                       <span className="text-[10px] text-muted-foreground">
                         {preset.particleCount} particles
                       </span>
+                      {showObjectStore && !EFFECT_PRESETS.find(p => p.id === preset.id) && (
+                        <Badge variant="outline" className="text-[9px] h-3 ml-auto text-blue-400 border-blue-400/40">
+                          <Cloud className="h-2 w-2 mr-0.5" />
+                          R2
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 );
@@ -1651,10 +1877,30 @@ export default function EffectsPlayground() {
                 />
                 <span className="font-medium text-sm">{activePreset.name}</span>
                 <Badge variant="outline" className="text-[10px] ml-auto">
-                  {CATEGORY_INFO[activePreset.category].name}
+                  {CATEGORY_INFO[activePreset.category]?.name ?? activePreset.category}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">{activePreset.description}</p>
+              {objectStoreRegistry?.effects?.[activePreset.id] && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {objectStoreRegistry.effects[activePreset.id].tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-[9px] h-4">{tag}</Badge>
+                  ))}
+                </div>
+              )}
+              {showObjectStore && activePreset && (
+                <div className="mt-2 pt-2 border-t flex flex-col gap-1">
+                  <a
+                    href={`${OBJECTSTORE_BASE}/3dfx-viewer.html?effect=${activePreset.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Open in 3DFX Viewer
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </div>
