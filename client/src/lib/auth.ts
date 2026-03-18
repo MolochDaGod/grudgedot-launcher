@@ -230,7 +230,7 @@ export async function loginAsGuest(deviceId?: string) {
 
 /** Initiate Google OAuth — returns { url } to redirect to. */
 export async function loginWithGoogle(returnUrl?: string) {
-  const state = encodeURIComponent(returnUrl || window.location.href);
+  const state = encodeURIComponent(returnUrl || window.location.pathname);
   const res = await fetch(`/api/auth/google?state=${state}`);
   const data = await res.json();
   if (data.url) {
@@ -241,7 +241,7 @@ export async function loginWithGoogle(returnUrl?: string) {
 
 /** Initiate Discord OAuth — returns { url } to redirect to. */
 export async function loginWithDiscord(returnUrl?: string) {
-  const state = encodeURIComponent(returnUrl || window.location.href);
+  const state = encodeURIComponent(returnUrl || window.location.pathname);
   const res = await fetch(`/api/auth/discord?state=${state}`);
   const data = await res.json();
   if (data.url) {
@@ -252,7 +252,7 @@ export async function loginWithDiscord(returnUrl?: string) {
 
 /** Initiate GitHub OAuth — returns { url } to redirect to. */
 export async function loginWithGitHub(returnUrl?: string) {
-  const state = encodeURIComponent(returnUrl || window.location.href);
+  const state = encodeURIComponent(returnUrl || window.location.pathname);
   const res = await fetch(`/api/auth/github?state=${state}`);
   const data = await res.json();
   if (data.url) {

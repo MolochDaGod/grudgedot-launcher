@@ -166,13 +166,14 @@ export default function AuthPage() {
     setLoading(provider);
     setError(null);
     try {
-      const callbackUrl = window.location.origin + `/auth?return=${encodeURIComponent(returnUrl)}`;
+      // Pass just the return path — server callback already redirects to /auth with token params.
+      // The path travels through OAuth state and comes back as ?return=<path> on /auth.
       if (provider === "google") {
-        await loginWithGoogle(callbackUrl);
+        await loginWithGoogle(returnUrl);
       } else if (provider === "discord") {
-        await loginWithDiscord(callbackUrl);
+        await loginWithDiscord(returnUrl);
       } else if (provider === "github") {
-        await loginWithGitHub(callbackUrl);
+        await loginWithGitHub(returnUrl);
       }
       // The above functions redirect the browser — if we get here, something failed
     } catch {
