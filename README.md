@@ -74,8 +74,8 @@ GDevelopAssistant/
 ├── client/               # React frontend (Vite)
 │   ├── src/
 │   │   ├── components/   # UI components (Radix-based)
-│   │   ├── lib/          # auth.ts, mmo-systems.ts, mmo-indicators.ts
-│   │   ├── pages/        # App pages (mmo-world.tsx, etc.)
+│   │   ├── lib/          # auth.ts, mmo-systems.ts, mmo-indicators.ts, SpriteEffects2D.ts
+│   │   ├── pages/        # App pages (mmo-world, grudge-box, crypt-crawlers, etc.)
 │   │   └── tabs.registry.json  # All registered game tabs
 │   ├── public/           # Favicons, static assets
 │   └── index.html        # Vite entry point
@@ -178,9 +178,25 @@ See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the
 
 See [docs/AI_SYSTEMS_GUIDE.md](docs/AI_SYSTEMS_GUIDE.md) for the full AI architecture: AIWorker/Grok, GRUDA Legion, AI Agent Server, sprite pipeline, combat AI behavior trees, and best practices.
 
+## Native 2D Game Pages
+
+The platform includes fully native canvas-based game pages (no iframes):
+
+- **Grudge Box** (`/grudge-box`) — Native 2D canvas fighting game with multi-class combat, AI opponents, and sprite effects
+- **Crypt Crawlers** (`/crypt-crawlers`) — 2D dungeon crawler with BSP + cellular automata dungeon generation, A* pathfinding enemies, class selection (Warrior/Mage/Ranger/Worge), fog of war minimap, multi-floor progression
+- **Grudge Gangs** (`/grudge-gangs`) — 2D sprite effect showcase with integrated SpriteEffects2D library
+
+Source: `client/src/pages/` with shared effect library at `client/src/lib/SpriteEffects2D.ts`
+
+## ObjectStore Integration
+
+- **[Grudge Crafting (Puter)](https://grudge-crafting.puter.site)** fetches `items-database.json` from [ObjectStore](https://molochdagod.github.io/ObjectStore) for a browsable Item Database tab (3,425 items) and replaces emoji icons with real sprite icons across the crafting bench, inventory, and recipe lists
+- Source: `grudge-studio/apps/grudge-crafting/index.html`
+
 ## Related Projects
 
 - **[Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder)** — Universal character creation + Crossmint cNFT minting
+- **[ObjectStore](https://github.com/MolochDaGod/ObjectStore)** — Unified game data API, 49+ JSON endpoints, 10,000+ assets
 - **[Auth Gateway](https://github.com/MolochDaGod/Warlord-Crafting-Suite/tree/main/auth-gateway)** — Grudge ID SSO system
 - **[Grudachain](https://github.com/MolochDaGod/grudachain)** — GRUDA Legion standalone AI system
 - **[Warlord Crafting Suite](https://github.com/MolochDaGod/Warlord-Crafting-Suite)** — Main game platform
