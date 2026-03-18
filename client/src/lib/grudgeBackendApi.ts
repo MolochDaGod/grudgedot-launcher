@@ -15,11 +15,11 @@ const ID      = '/api/grudge/id';      // → id.grudgestudio.com
 const LAUNCHER = '/api/grudge/launcher'; // → launcher.grudgestudio.com
 
 // ── Auth helper ──
-function getToken(): string | null {
+export function getToken(): string | null {
   return localStorage.getItem('grudge_auth_token');
 }
 
-function authHeaders(): Record<string, string> {
+export function authHeaders(): Record<string, string> {
   const token = getToken();
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) h['Authorization'] = `Bearer ${token}`;
@@ -27,7 +27,7 @@ function authHeaders(): Record<string, string> {
 }
 
 /** Generic fetch wrapper with auth + error handling. Returns null on failure. */
-async function apiFetch<T = any>(
+export async function apiFetch<T = any>(
   url: string,
   opts: RequestInit = {},
 ): Promise<T | null> {
@@ -55,7 +55,7 @@ async function apiFetch<T = any>(
 }
 
 /** Same as apiFetch but returns an empty array on failure. */
-async function apiFetchList<T = any>(url: string, opts?: RequestInit): Promise<T[]> {
+export async function apiFetchList<T = any>(url: string, opts?: RequestInit): Promise<T[]> {
   const data = await apiFetch<T[]>(url, opts);
   return Array.isArray(data) ? data : [];
 }

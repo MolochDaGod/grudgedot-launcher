@@ -9,32 +9,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import {
   grudgeGameApi,
+  apiFetch,
   type GrudgeCharacter,
   type GrudgeInventoryItem,
 } from "@/lib/grudgeBackendApi";
 
 const GAME = '/api/grudge/game';
-
-function getToken(): string | null {
-  return localStorage.getItem('grudge_auth_token');
-}
-
-function authHeaders(): Record<string, string> {
-  const token = getToken();
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) h['Authorization'] = `Bearer ${token}`;
-  return h;
-}
-
-async function apiFetch<T = any>(url: string, opts: RequestInit = {}): Promise<T | null> {
-  try {
-    const res = await fetch(url, { ...opts, headers: { ...authHeaders(), ...(opts.headers as Record<string, string> || {}) } });
-    if (!res.ok) return null;
-    const ct = res.headers.get('content-type') || '';
-    if (ct.includes('application/json')) return res.json();
-    return null;
-  } catch { return null; }
-}
 
 // ── Crafting Queue Item ──
 export interface CraftingQueueItem {

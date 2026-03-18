@@ -1,25 +1,26 @@
 # Base image
-FROM node:18-alpine
+FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
 # Install dependencies
-RUN npm install --production
+COPY package*.json ./
+RUN npm ci
 
 # Copy application files
-COPY src/ ./src/
-COPY config/ ./config/
+COPY server/ ./server/
+COPY shared/ ./shared/
+COPY client/ ./client/
+COPY api/ ./api/
+COPY public/ ./public/
+COPY tsconfig.json vite.config.ts tailwind.config.ts postcss.config.js drizzle.config.ts ./
 
-# Expose ports
-EXPOSE 3000 3001 3002 3003
+# Build frontend
+RUN npm run build
 
-# Health check
+EXPOSE 5000
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"
+  CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"
 
-# Start the application
-CMD ["node", "src/index.js"]
+CMD ["npm", "start"]

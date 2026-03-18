@@ -1,21 +1,21 @@
 import "../env";
-import mysql from "mysql2/promise";
+import postgres from "postgres";
 
 async function main() {
-  const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+  const sql = postgres(process.env.DATABASE_URL!);
 
   // Check if already seeded
-  const [rows] = await conn.execute("SELECT count(*) as cnt FROM openrts_units") as any;
+  const rows = await sql`SELECT count(*) as cnt FROM openrts_units`;
   if (parseInt(rows[0].cnt) > 0) {
     console.log(`Already seeded (${rows[0].cnt} units). Skipping.`);
-    await conn.end();
+    await sql.end();
     return;
   }
 
   console.log("\uD83C\uDF31 Seeding OpenRTS data...");
 
   // Movers
-  await conn.execute(`
+  await sql.unsafe(`
     INSERT INTO openrts_movers (name, pathfinding_mode, heightmap, standing_mode) VALUES
     ('Ground', 'Walk', 'Ground', 'Stand'),
     ('Fly', 'Fly', 'Sky', 'Stand'),
@@ -25,7 +25,7 @@ async function main() {
   console.log("  ✅ 4 movers");
 
   // Effects
-  await conn.execute(`
+  await sql.unsafe(`
     INSERT INTO openrts_effects (name, effect_type, damage, radius, duration, particle_effect) VALUES
     ('SlashDamage', 'damage', 15, NULL, NULL, 'slash_sparks'),
     ('ArrowHit', 'damage', 12, NULL, NULL, 'arrow_impact'),
@@ -39,7 +39,7 @@ async function main() {
   console.log("  ✅ 8 effects");
 
   // Weapons
-  await conn.execute(`
+  await sql.unsafe(`
     INSERT INTO openrts_weapons (name, ui_name, range, scan_range, period, damage, damage_type, effect_link) VALUES
     ('Longsword', 'Longsword', '1.5', '5', '1.5', 15, 'physical', 'SlashDamage'),
     ('ShortBow', 'Short Bow', '8', '10', '2.0', 10, 'physical', 'ArrowHit'),
@@ -55,7 +55,7 @@ async function main() {
   console.log("  ✅ 10 weapons");
 
   // Units — weapon_links is now JSON instead of text[]
-  await conn.execute(`
+  await sql.unsafe(`
     INSERT INTO openrts_units (name, ui_name, race, speed, max_health, sight, mover_link, weapon_links, cost, build_time, radius, separation_radius, mass) VALUES
     ('Footman', 'Footman', 'human', '2.5', 120, '6', 'Ground', '["Longsword"]', '{"gold":100}', 12, '0.25', '0.25', '1.0'),
     ('Archer', 'Archer', 'human', '2.8', 80, '9', 'Ground', '["ShortBow"]', '{"gold":120}', 14, '0.25', '0.25', '1.0'),
@@ -78,7 +78,7 @@ async function main() {
   `);
   console.log("  ✅ 18 units");
 
-  await conn.end();
+  await sql.end();
   console.log("\n✅ OpenRTS seed complete!");
 }
 
