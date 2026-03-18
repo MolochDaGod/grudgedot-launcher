@@ -1,9 +1,9 @@
 /**
  * GRUDA Legion Service
- * Server-side proxy to the Railway-deployed GRUDA Legion AI node system.
+ * Server-side proxy to the Grudge Studio VPS-deployed GRUDA Legion AI node system.
  * Keeps API keys server-side and adds Puter account linkage + cloud storage best practices.
  *
- * Production: https://gruda-legion-production.up.railway.app
+ * Production: https://api.grudge-studio.com
  * Endpoints proxied: /health, /api/chat, /api/generate-code, /api/status,
  *   /api/vibe/*, /api/sdk/info, /api/storage/*, /api/grudge-studio/*, /api/admin/*
  */
@@ -111,9 +111,9 @@ export function registerGrudaLegionRoutes(app: Express) {
     res.status(result.status).json(result.data);
   });
 
-  // ─── Aggregated health check (Railway + WCS + local) ───
+  // ─── Aggregated health check (VPS + WCS + local) ───
   app.get("/api/gruda-legion/aggregate-health", async (_req, res) => {
-    const [railwayHealth, wcsHealth] = await Promise.all([
+    const [vpsHealth, wcsHealth] = await Promise.all([
       proxyFetch(GRUDACHAIN_API.health),
       proxyFetch(`${WCS_URL}/api/health`).catch(() => ({
         ok: false,
@@ -122,7 +122,7 @@ export function registerGrudaLegionRoutes(app: Express) {
       })),
     ]);
 
-    const allHealthy = railwayHealth.ok && wcsHealth.ok;
+    const allHealthy = vpsHealth.ok && wcsHealth.ok;
 
     res.status(allHealthy ? 200 : 207).json({
       status: allHealthy ? "healthy" : "degraded",
@@ -130,8 +130,8 @@ export function registerGrudaLegionRoutes(app: Express) {
       services: {
         grudaLegion: {
           url: GRUDACHAIN_URL,
-          status: railwayHealth.ok ? "healthy" : "unreachable",
-          data: railwayHealth.data,
+          status: vpsHealth.ok ? "healthy" : "unreachable",
+          data: vpsHealth.data,
           source: GRUDACHAIN_SOURCE,
         },
         wcs: {
@@ -147,7 +147,7 @@ export function registerGrudaLegionRoutes(app: Express) {
     });
   });
 
-  // ─── Vibe AI proxy (Railway server.js now serves these natively) ───
+  // ─── Vibe AI proxy (VPS game-api serves these natively) ───
   app.get("/api/vibe/providers", async (_req, res) => {
     const result = await proxyFetch(GRUDACHAIN_API.vibeProviders);
     res.status(result.status).json(result.data);

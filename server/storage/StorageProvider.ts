@@ -4,12 +4,10 @@
  * Implementations:
  *   - LocalFSProvider:    serves files from a local directory (dev)
  *   - VercelBlobProvider: uses @vercel/blob for Vercel deployments
- *   - ReplitProvider:     delegates to existing GCS sidecar (backward compat)
  *
  * The active provider is selected by the STORAGE_PROVIDER env var:
  *   STORAGE_PROVIDER=local   → LocalFSProvider (default for dev)
  *   STORAGE_PROVIDER=vercel  → VercelBlobProvider
- *   STORAGE_PROVIDER=replit  → ReplitProvider (existing objectStorage.ts)
  */
 
 import fs from "fs/promises";

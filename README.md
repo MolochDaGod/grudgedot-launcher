@@ -9,7 +9,7 @@ GDevelop Assistant (GGE) is a full-stack web platform hosting multiple games and
 Characters and islands are owned on-chain as **Solana cNFTs via Crossmint**. The canonical character creation flow originates from [Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder), which mints characters with their full WCS stats as NFT metadata. Any Grudge game (Gruda Wars, Warlord Crafting Suite, GDevelop, etc.) can read a player's cNFT to load their hero.
 
 **Live**: [gdevelop-assistant.vercel.app](https://gdevelop-assistant.vercel.app)  
-**Auth**: Auto-guest on first visit; full auth via [auth-gateway-flax.vercel.app](https://auth-gateway-flax.vercel.app) (Grudge ID SSO)
+**Auth**: Auto-guest on first visit; full auth via [id.grudge-studio.com](https://id.grudge-studio.com) (Grudge ID SSO)
 
 ## Tech Stack
 
@@ -151,7 +151,7 @@ See [docs/AI_SYSTEMS_GUIDE.md](docs/AI_SYSTEMS_GUIDE.md) for the full AI archite
 ## Related Projects
 
 - **[Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder)** — Universal character creation + Crossmint cNFT minting
-- **[Auth Gateway](https://github.com/MolochDaGod/Warlord-Crafting-Suite/tree/main/auth-gateway)** — Grudge ID SSO system
+- **[Grudge Studio Backend](https://github.com/MolochDaGod/grudge-studio-backend)** — VPS backend (auth, game API, economy, crafting)
 - **[Grudachain](https://github.com/MolochDaGod/grudachain)** — GRUDA Legion standalone AI system
 - **[Warlord Crafting Suite](https://github.com/MolochDaGod/Warlord-Crafting-Suite)** — Main game platform
 

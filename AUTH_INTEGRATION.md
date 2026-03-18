@@ -2,7 +2,7 @@
 
 ## Overview
 
-GGE authenticates via the **Grudge Auth Gateway** at `https://auth-gateway-flax.vercel.app`. All auth flows produce a **JWT** stored in localStorage as `grudge_auth_token`. The auth gateway is the source of truth for the shared `accounts` table across all Grudge Studio apps.
+GGE authenticates via **Grudge ID** at `https://id.grudge-studio.com`. All auth flows produce a **JWT** stored in localStorage as `grudge_auth_token`. The Grudge backend is the source of truth for the shared `accounts` table across all Grudge Studio apps.
 
 ## Authentication Flow
 

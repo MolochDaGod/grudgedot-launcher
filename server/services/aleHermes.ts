@@ -13,13 +13,9 @@
  * - Integration with existing asset pipeline
  */
 
-// @replit/object-storage only works on Replit — dynamically import to avoid crash on Vercel
+// Object storage client — @replit/object-storage removed; use S3/R2 via StorageProvider instead.
+// ALE_HERMES currently operates in DB-metadata-only mode when no storage backend is configured.
 let ReplitClient: any = null;
-try {
-  if (process.env.REPL_ID || process.env.REPLIT_DEPLOYMENT) {
-    ReplitClient = require("@replit/object-storage").Client;
-  }
-} catch {}
 import { db } from "../db";
 import { 
   userObjects, 
@@ -62,7 +58,7 @@ export class AleHermesService {
 
   constructor() {
     if (!ReplitClient) {
-      console.warn(`[${this.agentName}] @replit/object-storage unavailable — storage ops will no-op`);
+      console.warn(`[${this.agentName}] No storage backend configured — storage ops will no-op`);
       this.client = null;
     } else {
       this.client = new ReplitClient();

@@ -13,10 +13,10 @@ import {
 } from "./objectAcl";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
-const IS_REPLIT = !!process.env.REPL_ID || !!process.env.REPLIT_DEPLOYMENT;
+// Legacy: Replit sidecar is no longer used. Storage migrated to Grudge VPS (R2/S3).
+// GCS client is kept for backward compatibility but will always be null.
+const IS_REPLIT = false;
 
-// Only create the GCS client when running on Replit (sidecar available).
-// On Vercel the object-storage routes are unused — they'll return 503 gracefully.
 export const objectStorageClient: Storage | null = IS_REPLIT
   ? new Storage({
       credentials: {
