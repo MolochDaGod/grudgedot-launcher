@@ -14,10 +14,10 @@
 import type { Express, Request, Response } from "express";
 
 // ── Backend origins ──
-const GAME_API     = process.env.GRUDGE_GAME_API     || "https://api.grudgestudio.com";
-const ACCOUNT_API  = process.env.GRUDGE_ACCOUNT_API  || "https://account.grudgestudio.com";
-const ID_API       = process.env.GRUDGE_ID_API       || "https://id.grudgestudio.com";
-const LAUNCHER_API = process.env.GRUDGE_LAUNCHER_API || "https://launcher.grudgestudio.com";
+const GAME_API     = process.env.GRUDGE_GAME_API     || "https://api.grudge-studio.com";
+const ACCOUNT_API  = process.env.GRUDGE_ACCOUNT_API  || "https://account.grudge-studio.com";
+const ID_API       = process.env.GRUDGE_ID_API       || "https://id.grudge-studio.com";
+const LAUNCHER_API = process.env.GRUDGE_LAUNCHER_API || "https://launcher.grudge-studio.com";
 
 const SERVICE_MAP: Record<string, string> = {
   game:     GAME_API,

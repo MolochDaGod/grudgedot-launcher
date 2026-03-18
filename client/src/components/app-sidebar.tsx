@@ -3,7 +3,7 @@ import {
   Swords, Wand2, Users, User, Wallet, Trophy, Sword, Crown,
   Joystick, Puzzle, Zap, Rocket, Box, Plane, Shield, Target, Crosshair, Map,
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
-  Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse,
+  Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse, Link2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -264,6 +264,11 @@ const gameSystemItems = [
     title: "Admin Storage",
     url: "/admin-storage",
     icon: HardDrive,
+  },
+  {
+    title: "Connections",
+    url: "/connections",
+    icon: Link2,
   },
 ];
 

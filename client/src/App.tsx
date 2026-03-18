@@ -59,6 +59,7 @@ const BettaWarlords = lazy(() => import("@/pages/betta-warlords"));
 const GrudgeBoxPage = lazy(() => import("@/pages/grudge-box"));
 const CryptCrawlers = lazy(() => import("@/pages/crypt-crawlers"));
 const WarlordSuite = lazy(() => import("@/pages/warlord-suite"));
+const ConnectionsPage = lazy(() => import("@/pages/connections"));
 
 function PageLoader() {
   return (
@@ -85,6 +86,7 @@ function Router() {
         <Route path="/profile" component={ProfilePage} />
         <Route path="/characters" component={CharactersPage} />
         <Route path="/wallet" component={WalletPage} />
+        <Route path="/connections" component={ConnectionsPage} />
         <Route path="/achievements" component={AchievementsPage} />
         <Route path="/crown-clash" component={CrownClash} />
         <Route path="/platformer" component={PlatformerGame} />
@@ -143,6 +145,7 @@ function Header() {
     if (location === "/lobby") return "Battle Lobby";
     if (location === "/characters") return "Fighters";
     if (location === "/wallet") return "War Chest";
+    if (location === "/connections") return "Connections";
     if (location === "/achievements") return "Glory Hall";
     if (location === "/profile") return "Commander";
     if (location === "/settings") return "Settings";

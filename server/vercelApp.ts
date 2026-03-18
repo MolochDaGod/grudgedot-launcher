@@ -19,6 +19,7 @@
 import "./env";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { setupGrudgeAuth } from "./grudgeAuth";
+import { setupGrudgeProxy } from "./routes/grudgeProxy";
 import { registerGrudaLegionRoutes } from "./services/grudaLegion";
 import { registerGrudaWarsRoutes } from "./routes/grudaWars";
 import { registerUserRoutes } from "./routes/user";
@@ -98,6 +99,11 @@ const GDEVELOP_SYSTEM_PROMPT = `You are an expert GDevelop game development assi
 // Auth routes (proxy to Grudge backend)
 // ════════════════════════════════════════════
 setupGrudgeAuth(app);
+
+// ════════════════════════════════════════════
+// Grudge backend proxy (/api/grudge/game|account|id|launcher)
+// ════════════════════════════════════════════
+setupGrudgeProxy(app);
 
 // ════════════════════════════════════════════
 // Health check

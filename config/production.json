@@ -15,7 +15,12 @@
       "maxRequests": 1000
     },
     "cors": {
-      "origins": ["https://yourdomain.com"]
+      "origins": [
+        "https://gdevelop-assistant.vercel.app",
+        "https://gdevelop-assistant-git-main-grudgenexus.vercel.app",
+        "https://*.vercel.app",
+        "https://*.grudge-studio.com"
+      ]
     }
   },
   "logging": {

@@ -57,8 +57,12 @@ function buildAuthRedirect(data: any, provider: string, returnUrl: string): stri
   let cleanReturn = returnUrl || "/";
   try {
     const parsed = new URL(cleanReturn);
-    // Only strip origin if it's our own domain
-    if (parsed.origin === "https://gdevelop-assistant.vercel.app" || parsed.hostname === "localhost") {
+    // Strip origin if it's any of our Vercel domains or localhost
+    const isOurDomain = parsed.hostname === "localhost"
+      || parsed.hostname.endsWith(".vercel.app")
+      || parsed.hostname.endsWith(".grudge-studio.com")
+      || parsed.hostname.endsWith(".grudgestudio.com");
+    if (isOurDomain) {
       cleanReturn = parsed.pathname + parsed.search;
     }
   } catch {
