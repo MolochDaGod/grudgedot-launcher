@@ -9,7 +9,8 @@ GDevelop Assistant (GGE) is a full-stack web platform hosting multiple games and
 Characters and islands are owned on-chain as **Solana cNFTs via Crossmint**. The canonical character creation flow originates from [Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder), which mints characters with their full WCS stats as NFT metadata. Any Grudge game (Gruda Wars, Warlord Crafting Suite, GDevelop, etc.) can read a player's cNFT to load their hero.
 
 **Live**: [gdevelop-assistant.vercel.app](https://gdevelop-assistant.vercel.app)  
-**Auth**: Auto-guest on first visit; full auth via [id.grudge-studio.com](https://id.grudge-studio.com) (Grudge ID SSO)
+**Auth**: Auto-guest on first visit; full auth via [id.grudge-studio.com](https://id.grudge-studio.com) (Grudge ID SSO)  
+**Discord**: [discord.gg/FtGtmxmwkh](https://discord.gg/FtGtmxmwkh)
 
 ## Tech Stack
 
@@ -103,10 +104,10 @@ GDevelopAssistant/
 GGE uses the **Grudge Auth Gateway** (`id.grudge-studio.com`) for all authentication. See [AUTH_INTEGRATION.md](AUTH_INTEGRATION.md) for details.
 
 Supported login methods:
-- Username/password
-- Puter.js SSO
-- Guest accounts
-- Auth gateway redirect
+- **Grudge Login** — Puter-backed cloud auth (displayed as Grudge branding; Puter is backend-only)
+- Username/password via `id.grudge-studio.com`
+- Discord OAuth (goes through VPS)
+- Guest accounts (device ID)
 
 All methods produce a JWT stored as `grudge_auth_token` in localStorage.
 
@@ -200,6 +201,20 @@ Source: `client/src/pages/` with shared effect library at `client/src/lib/Sprite
 - **[Auth Gateway](https://github.com/MolochDaGod/Warlord-Crafting-Suite/tree/main/auth-gateway)** — Grudge ID SSO system
 - **[Grudachain](https://github.com/MolochDaGod/grudachain)** — GRUDA Legion standalone AI system
 - **[Warlord Crafting Suite](https://github.com/MolochDaGod/Warlord-Crafting-Suite)** — Main game platform
+
+## Community
+
+- **Discord**: [discord.gg/FtGtmxmwkh](https://discord.gg/FtGtmxmwkh)
+- **Game**: [grudgewarlords.com](https://grudgewarlords.com)
+- **Studio**: [grudge-studio.com](https://grudge-studio.com)
+
+## Recent Changes
+
+- **Discord invite** — all invite links updated to `discord.gg/FtGtmxmwkh`
+- **Grudge Login branding** — auth button uses Grudge logo; Puter is now backend-only (no Puter branding shown to users)
+- **Auth consolidation** — all auth flows route through `id.grudge-studio.com` VPS
+- **GrudgeEmbed + GKO Boxing** — Phase 1 engine bridge integration
+- **GBUX Economy API** — live price feed and on-chain tracker endpoints
 
 ## License
 
