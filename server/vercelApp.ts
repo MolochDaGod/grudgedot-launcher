@@ -24,6 +24,7 @@ import { registerGrudaWarsRoutes } from "./routes/grudaWars";
 import { registerUserRoutes } from "./routes/user";
 import { registerAccountRoutes } from "./routes/accountRoutes";
 import { registerOpenRTSRoutes } from "./routes/openrts";
+import { registerCoolifyRoutes } from "./routes/coolifyProxy";
 import { overdriveEngine } from "./services/overdriveEngine";
 import OpenAI from "openai";
 
@@ -141,6 +142,7 @@ registerGrudaLegionRoutes(app);
 registerGrudaWarsRoutes(app);
 registerAccountRoutes(app);
 registerOpenRTSRoutes(app);
+registerCoolifyRoutes(app);
 
 // ════════════════════════════════════════════
 // DB-backed routes → proxy to Grudge backend
