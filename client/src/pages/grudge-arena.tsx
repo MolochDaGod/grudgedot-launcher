@@ -24,7 +24,63 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 
-// Weapon definitions
+// ── Grudge Engine (ported from Online-Multiplayer-Game) ───────────────────
+import {
+  // ECS
+  World,
+  Entity as ECSEntity,
+  Components,
+  // Weapons
+  WEAPON_DEFINITIONS,
+  WEAPON_TYPES,
+  ABILITY_KEYS,
+  getWeapon,
+  type WeaponType,
+  type AbilityKey,
+  // Races
+  RACES,
+  RACE_IDS,
+  type RaceId,
+  // Character
+  CharacterSystem,
+  type CharacterData,
+  // Camera
+  ChaseCamera,
+  // Collision
+  CollisionSystem as GrudgeCollisionSystem,
+  CollisionLayer as GrudgeCollisionLayer,
+  // Shaders
+  createShaderMaterial,
+  updateShaderTime,
+  // Animation
+  ANIMATION_CATALOG,
+  EMOTE_BINDINGS,
+  ABILITY_BINDINGS,
+  CONTROLLER_DEADZONE,
+  CONTROLLER_MAPPINGS,
+  getAnimationsByCategory,
+  resolveAnimationPath,
+  // Dev Inspector & MMO UI
+  DevInspector,
+  UnitFrame,
+  CombatLog,
+  type CombatLogEntry,
+  ArenaRatingDisplay,
+  // Elo Rating
+  loadArenaStats,
+  processMatchResult,
+  simulateQueueSearch,
+  getRank,
+  type ArenaStats,
+  type QueuedOpponent,
+} from '@/lib/grudge-engine';
+
+// Legacy game-effects (kept for backward compat — will be migrated)
+import { ParticleManager, ParticleEffectPresets } from '@/lib/game-effects/ParticleSystem';
+import { SpellEffectsManager } from '@/lib/game-effects/SpellEffects';
+import { CollisionSystem, Collider, CollisionLayer, CollisionEntity } from '@/lib/game-effects/CollisionSystem';
+
+// ── Weapon UI types (maps engine weapon defs to React UI) ─────────────────
 interface Weapon {
   id: string;
   name: string;
@@ -41,14 +97,34 @@ interface InventoryItem {
   quantity: number;
 }
 
-const WEAPONS: Weapon[] = [
-  { id: 'sword_basic', name: 'Iron Sword', damage: 15, attackSpeed: 1.0, icon: Sword, rarity: 'common' },
-  { id: 'sword_steel', name: 'Steel Blade', damage: 25, attackSpeed: 0.9, icon: Sword, rarity: 'uncommon' },
-  { id: 'sword_dual', name: 'Dual Sabers', damage: 35, attackSpeed: 1.2, icon: Swords, rarity: 'rare' },
-  { id: 'axe_battle', name: 'Battle Axe', damage: 45, attackSpeed: 0.7, icon: Axe, rarity: 'epic' },
-  { id: 'staff_fire', name: 'Fire Staff', damage: 40, attackSpeed: 0.8, icon: Wand2, rarity: 'rare' },
-  { id: 'sword_legendary', name: 'King\'s Greatsword', damage: 60, attackSpeed: 0.6, icon: Sword, rarity: 'legendary' },
-];
+// Map Grudge Engine weapon definitions to UI weapon objects
+const WEAPON_ICON_MAP: Record<WeaponType, typeof Sword> = {
+  greatsword: Sword,
+  bow: Target,
+  sabres: Swords,
+  scythe: Wand2,
+  runeblade: Sword,
+};
+
+const WEAPON_RARITY_MAP: Record<WeaponType, Weapon['rarity']> = {
+  greatsword: 'legendary',
+  bow: 'rare',
+  sabres: 'epic',
+  scythe: 'rare',
+  runeblade: 'epic',
+};
+
+const WEAPONS: Weapon[] = WEAPON_TYPES.map((type) => {
+  const def = getWeapon(type);
+  return {
+    id: type,
+    name: def.name,
+    damage: def.baseAttackDamage,
+    attackSpeed: def.attackSpeed,
+    icon: WEAPON_ICON_MAP[type],
+    rarity: WEAPON_RARITY_MAP[type],
+  };
+});
 
 const RARITY_COLORS: Record<string, string> = {
   common: 'border-stone-500 bg-stone-800/50',
@@ -65,10 +141,6 @@ const RARITY_TEXT: Record<string, string> = {
   epic: 'text-purple-400',
   legendary: 'text-amber-400',
 };
-
-import { ParticleManager, ParticleEffectPresets } from '@/lib/game-effects/ParticleSystem';
-import { SpellEffectsManager } from '@/lib/game-effects/SpellEffects';
-import { CollisionSystem, Collider, CollisionLayer, CollisionEntity } from '@/lib/game-effects/CollisionSystem';
 
 interface CombatStats {
   health: number;
@@ -111,24 +183,27 @@ interface Entity {
 
 type GameState = 'menu' | 'loading' | 'playing' | 'paused' | 'victory' | 'defeat';
 
-const ANIMATED_PACK_PATH = '/game-assets/characters/animated-pack/Ultimate Animated Character Pack - Nov 2019/glTF';
+// ── Race-based model paths (from Grudge Engine race-config) ───────────────
+// Models are served via Grudge backend /public-objects/characters/ endpoint
 const MODEL_PATHS = {
-  player: `${ANIMATED_PACK_PATH}/Knight_Golden_Male.gltf`,
-  skeletonWarrior: `${ANIMATED_PACK_PATH}/Viking_Male.gltf`,
-  skeletonMage: `${ANIMATED_PACK_PATH}/Wizard.gltf`,
-  skeletonMinion: `${ANIMATED_PACK_PATH}/Goblin_Male.gltf`,
-  skeletonRogue: `${ANIMATED_PACK_PATH}/Ninja_Male.gltf`,
+  player: RACES.human.modelUrl,
+  skeletonWarrior: RACES.barbarian.modelUrl,
+  skeletonMage: RACES.elf.modelUrl,
+  skeletonMinion: RACES.dwarf.modelUrl,
+  skeletonRogue: RACES.orc.modelUrl,
 };
 
+// ── Animation paths (from Grudge Engine animation-library) ────────────────
+const ANIM_BASE = '/public-objects/animations';
 const ANIMATION_PATHS = {
-  idle: '/public-objects/game-assets/animations/a009908c_Idle.glb',
-  kick: '/public-objects/game-assets/animations/92881184_Kick.glb',
-  spell: '/public-objects/game-assets/animations/6fc809bb_Standing_2H_Cast_Spell_01.glb',
-  dualCombo: '/public-objects/game-assets/animations/51838fce_Northern_Soul_Spin_Combo.glb',
-  clubCombo: '/public-objects/game-assets/animations/57d12819_Two_Hand_Club_Combo.glb',
-  combatMelee: '/public-objects/game-assets/animations/92881184_Kick.glb',
-  movementBasic: '/public-objects/game-assets/animations/11bbed9d_Swagger_Walk.glb',
-  general: '/public-objects/game-assets/animations/a009908c_Idle.glb',
+  idle: `${ANIM_BASE}/Idle.glb`,
+  kick: `${ANIM_BASE}/Kick.glb`,
+  spell: `${ANIM_BASE}/Standing_2H_Cast_Spell_01.glb`,
+  dualCombo: `${ANIM_BASE}/Northern_Soul_Spin_Combo.glb`,
+  clubCombo: `${ANIM_BASE}/Two_Hand_Club_Combo.glb`,
+  combatMelee: `${ANIM_BASE}/Kick.glb`,
+  movementBasic: `${ANIM_BASE}/Swagger_Walk.glb`,
+  general: `${ANIM_BASE}/Idle.glb`,
 };
 
 const DIRECTION_ANGLES: Record<Direction8, number> = {
@@ -291,6 +366,24 @@ export default function GrudgeArena() {
   );
   const [isJumping, setIsJumping] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<number[]>([0, 0, 0, 0, 0]);
+  
+  // Dev Inspector state (toggle with backtick `)
+  const [showDevInspector, setShowDevInspector] = useState(false);
+  
+  // Arena Elo rating stats
+  const [arenaStats, setArenaStats] = useState<ArenaStats>(() => loadArenaStats());
+  
+  // Combat log entries for MMO UI
+  const [combatLogEntries, setCombatLogEntries] = useState<CombatLogEntry[]>([]);
+  const combatLogIdRef = useRef(0);
+  
+  /** Add a combat log entry. */
+  const addCombatLog = useCallback((text: string, type: CombatLogEntry['type'] = 'info') => {
+    setCombatLogEntries(prev => [
+      ...prev.slice(-49),
+      { id: `log-${combatLogIdRef.current++}`, text, type, timestamp: Date.now() },
+    ]);
+  }, []);
   
   // Jump physics refs
   const verticalVelocityRef = useRef(0);
@@ -483,11 +576,11 @@ export default function GrudgeArena() {
 
   const createGothicArena = useCallback((scene: THREE.Scene) => {
     const groundGeometry = new THREE.CircleGeometry(35, 64);
-    const groundMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x1a1510,
-      roughness: 0.95,
-      metalness: 0.05,
-    });
+    // Use Grudge Engine arena ground shader for pulsing grid effect
+    const groundShader = createShaderMaterial('arenaGround');
+    const groundMaterial = groundShader instanceof THREE.ShaderMaterial
+      ? groundShader
+      : new THREE.MeshStandardMaterial({ color: 0x1a1510, roughness: 0.95, metalness: 0.05 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -770,25 +863,37 @@ export default function GrudgeArena() {
     collisionSystemRef.current = collisionSystem;
 
     setLoadingProgress(60);
-    setLoadingStatus('Loading King model...');
+    setLoadingStatus('Loading character model via CharacterSystem...');
 
+    // Use Grudge Engine CharacterSystem for race-based model loading
     let playerMesh: THREE.Group;
+    let playerCharacterData: CharacterData | null = null;
     try {
-      playerMesh = await loadModel(MODEL_PATHS.player, 'King');
-      playerMesh.scale.setScalar(1.0);
+      playerCharacterData = await CharacterSystem.createCharacter(scene, {
+        race: 'human',
+        position: new THREE.Vector3(0, 0, 0),
+        scale: 1.0, // Arena uses unit scale; race scaleFactor (0.037) is for Babylon compat
+      });
+      playerMesh = playerCharacterData.group;
     } catch (error) {
-      console.error('Failed to load King model:', error);
-      playerMesh = new THREE.Group();
-      const capsule = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.4, 1.2, 8, 16),
-        new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.6, roughness: 0.3 })
-      );
-      capsule.position.y = 1;
-      playerMesh.add(capsule);
+      console.error('CharacterSystem failed, falling back to loadModel:', error);
+      try {
+        playerMesh = await loadModel(MODEL_PATHS.player, 'Human');
+        playerMesh.scale.setScalar(1.0);
+        playerMesh.position.set(0, 0, 0);
+        scene.add(playerMesh);
+      } catch {
+        playerMesh = new THREE.Group();
+        const capsule = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.4, 1.2, 8, 16),
+          new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.6, roughness: 0.3 }),
+        );
+        capsule.position.y = 1;
+        playerMesh.add(capsule);
+        playerMesh.position.set(0, 0, 0);
+        scene.add(playerMesh);
+      }
     }
-    
-    playerMesh.position.set(0, 0, 0);
-    scene.add(playerMesh);
 
     setLoadingProgress(80);
     setLoadingStatus('Loading animations...');
@@ -1470,9 +1575,17 @@ export default function GrudgeArena() {
         setShowSettings(false);
       }
       
+      // Backtick (`) for Dev Inspector toggle
+      if (e.code === 'Backquote') {
+        e.preventDefault();
+        setShowDevInspector(prev => !prev);
+      }
+      
       // Escape to close panels or pause
       if (e.code === 'Escape') {
-        if (showInventory || showEquipment || showSettings) {
+        if (showDevInspector) {
+          setShowDevInspector(false);
+        } else if (showInventory || showEquipment || showSettings) {
           setShowInventory(false);
           setShowEquipment(false);
           setShowSettings(false);
@@ -1525,8 +1638,34 @@ export default function GrudgeArena() {
       <div className="flex-1 relative cursor-crosshair">
         <div ref={containerRef} className="w-full h-full" data-testid="game-canvas" />
 
+        {/* Dev Inspector — toggle with backtick (`) */}
+        <DevInspector
+          visible={showDevInspector}
+          onClose={() => setShowDevInspector(false)}
+          playerStats={{
+            health: playerHealth,
+            mana: playerMana,
+            damage: 35,
+            speed: 6,
+          }}
+        />
+
         {gameState === 'playing' && (
           <>
+            {/* ── Grudge Engine MMO UI ── */}
+            <UnitFrame
+              name="Player"
+              level={1}
+              className={equippedWeapon.id.toUpperCase()}
+              health={playerHealth}
+              maxHealth={100}
+              mana={playerMana}
+              maxMana={100}
+              portrait="⚔"
+              side="left"
+            />
+            <CombatLog entries={combatLogEntries} />
+
             <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
               <Link href="/" className="pointer-events-auto">
                 <Button 
@@ -1866,6 +2005,10 @@ export default function GrudgeArena() {
                   GRUDGE ARENA
                 </h1>
                 <p className="text-stone-400 text-sm">8-Directional Combat with Mouse Targeting</p>
+                {/* Elo Rating Display */}
+                <div className="mt-4 flex justify-center">
+                  <ArenaRatingDisplay stats={arenaStats} />
+                </div>
               </div>
 
               <div className="space-y-4">

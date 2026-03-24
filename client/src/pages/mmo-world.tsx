@@ -27,6 +27,18 @@ import { GRUDA_WARS_HEROES } from "../../../shared/grudaWarsHeroes";
 import type { WCSHeroAttributes } from "../../../shared/grudachain";
 import type { GrudaWarsHero } from "../../../shared/grudaWarsHeroes";
 
+// ── Grudge Engine integration (shared with Arena/MOBA) ────────────────────
+// Race model URLs and weapon definitions are available for future 3D mode toggle
+import {
+  RACES,
+  RACE_IDS,
+  WEAPON_DEFINITIONS,
+  WEAPON_TYPES,
+  getWeapon,
+  type RaceId,
+  type WeaponType,
+} from "@/lib/grudge-engine";
+
 const WORLD_WIDTH = 4800;
 const WORLD_HEIGHT = 3600;
 const TILE_SIZE = 32;
@@ -47,13 +59,26 @@ interface Spell {
   icon: string;
 }
 
-/** Default spells — overridden when a hero is selected */
+/**
+ * Default spells — overridden when a hero is selected.
+ * Spell damage values are influenced by Grudge Engine weapon base stats
+ * so that MMO and Arena use consistent numbers.
+ */
+const GREATSWORD_BASE = getWeapon('greatsword').baseAttackDamage; // 45
 const DEFAULT_SPELLS: Spell[] = [
-  { id: "fireball", name: "Fireball", key: "1", manaCost: 15, cooldown: 1500, damage: 25, range: 280, color: 0xff4400, icon: "fire" },
-  { id: "iceShard", name: "Ice Shard", key: "2", manaCost: 12, cooldown: 1000, damage: 18, range: 250, color: 0x00ccff, icon: "ice" },
-  { id: "lightning", name: "Lightning", key: "3", manaCost: 20, cooldown: 2500, damage: 40, range: 320, color: 0xffff00, icon: "zap" },
+  { id: "fireball", name: "Fireball", key: "1", manaCost: 15, cooldown: 1500, damage: Math.round(GREATSWORD_BASE * 0.55), range: 280, color: 0xff4400, icon: "fire" },
+  { id: "iceShard", name: "Ice Shard", key: "2", manaCost: 12, cooldown: 1000, damage: Math.round(GREATSWORD_BASE * 0.4), range: 250, color: 0x00ccff, icon: "ice" },
+  { id: "lightning", name: "Lightning", key: "3", manaCost: 20, cooldown: 2500, damage: Math.round(GREATSWORD_BASE * 0.9), range: 320, color: 0xffff00, icon: "zap" },
   { id: "heal", name: "Heal", key: "4", manaCost: 25, cooldown: 4000, damage: -30, range: 0, color: 0x00ff88, icon: "heal" },
 ];
+
+/**
+ * Race model URLs for future 3D rendering mode.
+ * When 3D mode is toggled, these GLBs can be loaded via CharacterSystem.
+ */
+const RACE_MODEL_URLS: Record<RaceId, string> = Object.fromEntries(
+  RACE_IDS.map((id) => [id, RACES[id].modelUrl]),
+) as Record<RaceId, string>;
 
 /** Convert MMOSpell → scene Spell format */
 function mmoSpellToSceneSpell(s: MMOSpell): Spell {

@@ -3763,6 +3763,65 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   });
 
   // ============================================
+  // GRUDGE ENGINE — CHARACTER & ANIMATION ROUTES
+  // ============================================
+  // Serves race prefab definitions and animation catalogs for the
+  // shared Grudge Engine used by arena, MOBA, and MMO game modes.
+  // Actual GLB files are served via the existing /public-objects/ route.
+
+  // Get all available race character definitions
+  app.get("/api/grudge-engine/races", async (_req, res) => {
+    const races = [
+      { id: 'human',     name: 'Human',     modelUrl: '/public-objects/characters/human_animated.glb',     uiColor: '#4488ff', referenceHeight: 2.0 },
+      { id: 'barbarian', name: 'Barbarian', modelUrl: '/public-objects/characters/barbarian_animated.glb', uiColor: '#ff6633', referenceHeight: 2.2 },
+      { id: 'elf',       name: 'Elf',       modelUrl: '/public-objects/characters/elf_animated.glb',       uiColor: '#44ff88', referenceHeight: 1.95 },
+      { id: 'dwarf',     name: 'Dwarf',     modelUrl: '/public-objects/characters/dwarf_animated.glb',     uiColor: '#cc8844', referenceHeight: 1.5 },
+      { id: 'orc',       name: 'Orc',       modelUrl: '/public-objects/characters/orc_animated.glb',       uiColor: '#44cc44', referenceHeight: 2.3 },
+      { id: 'undead',    name: 'Undead',     modelUrl: '/public-objects/characters/undead_animated.glb',    uiColor: '#aa44ff', referenceHeight: 1.9 },
+    ];
+    res.json({ races, count: races.length });
+  });
+
+  // Get animation catalog for the Grudge Engine
+  app.get("/api/grudge-engine/animations", async (req, res) => {
+    const { category } = req.query;
+    const animations = [
+      { name: 'Idle', file: 'Idle.glb', category: 'movement', path: '/public-objects/animations/Idle.glb' },
+      { name: 'Walking', file: 'Walking.glb', category: 'movement', path: '/public-objects/animations/Walking.glb' },
+      { name: 'Running', file: 'Running.glb', category: 'movement', path: '/public-objects/animations/Running.glb' },
+      { name: 'Jump', file: 'Jump.glb', category: 'movement', path: '/public-objects/animations/Jump.glb' },
+      { name: 'Dodge', file: 'Dodge.glb', category: 'movement', path: '/public-objects/animations/Dodge.glb' },
+      { name: 'Sword And Shield Attack', file: 'Sword_And_Shield_Attack.glb', category: 'combat', path: '/public-objects/animations/Sword_And_Shield_Attack.glb' },
+      { name: 'Two Hand Club Combo', file: 'Two_Hand_Club_Combo.glb', category: 'combat', path: '/public-objects/animations/Two_Hand_Club_Combo.glb' },
+      { name: 'Northern Soul Spin Combo', file: 'Northern_Soul_Spin_Combo.glb', category: 'combat', path: '/public-objects/animations/Northern_Soul_Spin_Combo.glb' },
+      { name: 'Block', file: 'Block.glb', category: 'combat', path: '/public-objects/animations/Block.glb' },
+      { name: 'Death', file: 'Death.glb', category: 'combat', path: '/public-objects/animations/Death.glb' },
+      { name: 'Standing 2H Cast Spell 01', file: 'Standing_2H_Cast_Spell_01.glb', category: 'magic', path: '/public-objects/animations/Standing_2H_Cast_Spell_01.glb' },
+      { name: 'Summon', file: 'Summon.glb', category: 'magic', path: '/public-objects/animations/Summon.glb' },
+      { name: 'Hit React', file: 'Hit_React.glb', category: 'reactions', path: '/public-objects/animations/Hit_React.glb' },
+      { name: 'Hip Hop Dance', file: 'Hip_Hop_Dance.glb', category: 'emotes', path: '/public-objects/animations/Hip_Hop_Dance.glb' },
+      { name: 'Taunt', file: 'Taunt.glb', category: 'emotes', path: '/public-objects/animations/Taunt.glb' },
+      { name: 'Victory', file: 'Victory.glb', category: 'emotes', path: '/public-objects/animations/Victory.glb' },
+    ];
+    const filtered = category && typeof category === 'string'
+      ? animations.filter((a) => a.category === category)
+      : animations;
+    res.json({ animations: filtered, count: filtered.length });
+  });
+
+  // Get weapon definitions for the Grudge Engine
+  app.get("/api/grudge-engine/weapons", async (_req, res) => {
+    const weapons = [
+      { type: 'greatsword', name: 'Greatsword', title: 'IMMORTAL', damage: 45, attackSpeed: 0.8, resource: 'rage' },
+      { type: 'bow',        name: 'Bow',        title: 'VIPER',    damage: 30, attackSpeed: 1.2, resource: 'energy' },
+      { type: 'sabres',     name: 'Sabres',     title: 'ASSASSIN', damage: 25, attackSpeed: 2.0, resource: 'energy' },
+      { type: 'scythe',     name: 'Scythe',     title: 'WEAVER',   damage: 35, attackSpeed: 1.0, resource: 'mana' },
+      { type: 'runeblade',  name: 'Runeblade',  title: 'TEMPLAR',  damage: 40, attackSpeed: 1.1, resource: 'mana' },
+    ];
+    res.json({ weapons, count: weapons.length });
+  });
+
+  // ============================================
   // MMO WORLD SPRITE & ANIMATION ROUTES
   // ============================================
 

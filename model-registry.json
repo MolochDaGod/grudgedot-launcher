@@ -14,10 +14,24 @@
     "misc": 470,
     "weapons": 245,
     "props": 3,
-    "characters": 91,
+    "characters": 97,
     "buildings": 23,
     "vehicles": 10,
     "nature": 7
+  },
+  "grudgeEngineRaces": [
+    { "id": "human",     "name": "Human",     "modelUrl": "/public-objects/characters/human_animated.glb",     "localFile": "humananimations.glb",    "animations": 20, "referenceHeight": 2.0 },
+    { "id": "barbarian", "name": "Barbarian", "modelUrl": "/public-objects/characters/barbarian_animated.glb", "localFile": "barbanimations.glb",    "animations": 20, "referenceHeight": 2.2 },
+    { "id": "elf",       "name": "Elf",       "modelUrl": "/public-objects/characters/elf_animated.glb",       "localFile": "elfanimations.glb",     "animations": 20, "referenceHeight": 1.95 },
+    { "id": "dwarf",     "name": "Dwarf",     "modelUrl": "/public-objects/characters/dwarf_animated.glb",     "localFile": "dwarfanimations.glb",   "animations": 20, "referenceHeight": 1.5 },
+    { "id": "orc",       "name": "Orc",       "modelUrl": "/public-objects/characters/orc_animated.glb",       "localFile": "orcanimations.glb",     "animations": 20, "referenceHeight": 2.3 },
+    { "id": "undead",    "name": "Undead",    "modelUrl": "/public-objects/characters/undead_animated.glb",    "localFile": "undeadanimations.glb",  "animations": 20, "referenceHeight": 1.9 }
+  ],
+  "grudgeEngineAnimations": {
+    "totalSlots": 20,
+    "categories": ["movement", "combat", "magic", "reactions", "emotes"],
+    "basePath": "/public-objects/animations",
+    "slots": ["idle", "walk", "run", "jump", "dodge", "attack_1", "attack_2", "attack_combo", "block", "parry", "death", "cast_spell", "channel", "summon", "hit_react", "stun", "knockdown", "taunt", "victory", "defeat"]
   },
   "models": [
     {
