@@ -25,16 +25,16 @@ class AIService {
   }
 
   private initProviders() {
-    // Puter AI — PRIMARY (GRUDACHAIN paid membership, 500+ models, no API keys needed)
-    // Set PUTER_API_KEY to the GRUDACHAIN Puter account API key from puter.com
-    const puterKey = process.env.PUTER_API_KEY;
-    if (puterKey) {
-      this.providers.push(new PuterAIProvider({ apiKey: puterKey }));
+    // Puter AI — PRIMARY (GRUDACHAIN paid membership, 500+ models)
+    // Set PUTER_AUTH_TOKEN to the GRUDACHAIN Puter account token from puter.com/dashboard
+    const puterToken = process.env.PUTER_AUTH_TOKEN || process.env.PUTER_API_KEY;
+    if (puterToken) {
+      this.providers.push(new PuterAIProvider({ apiKey: puterToken }));
       console.log('✅ AI provider: Puter AI (GRUDACHAIN account — 500+ models free)');
     } else {
-      // Works without auth key for free-tier access too
+      // Still works on free tier — set PUTER_AUTH_TOKEN for GRUDACHAIN account quota
       this.providers.push(new PuterAIProvider());
-      console.log('✅ AI provider: Puter AI (unauthenticated free tier)');
+      console.log('⚠️  AI provider: Puter AI (no auth token — free tier, set PUTER_AUTH_TOKEN for GRUDACHAIN)');
     }
 
     // Legion Hub — secondary (edge AI + VPS fallback built-in)

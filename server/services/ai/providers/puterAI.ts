@@ -63,20 +63,24 @@ export class PuterAIProvider implements AIProvider {
   constructor(config: PuterAIConfig = {}) {
     this.config = {
       baseURL: config.baseURL || process.env.PUTER_BASE_URL || 'https://api.puter.com',
-      apiKey: config.apiKey || process.env.PUTER_API_KEY,
+      // PUTER_AUTH_TOKEN is the canonical env var (matches puter.js Node.js docs)
+      // Fallback to PUTER_API_KEY for backwards compatibility
+      apiKey: config.apiKey || process.env.PUTER_AUTH_TOKEN || process.env.PUTER_API_KEY,
     };
     this.initClient();
   }
 
   private initClient() {
     try {
-      // Use @heyputer/puter.js Node.js SDK
-      const { puter } = require('@heyputer/puter.js');
+      // @heyputer/puter.js Node.js SDK: use init() from init.cjs
+      // Authenticate as the GRUDACHAIN server account via PUTER_AUTH_TOKEN
+      const { init } = require('@heyputer/puter.js/src/init.cjs');
+      this.puterClient = init(this.config.apiKey || undefined);
       if (this.config.apiKey) {
-        // Authenticate as the GRUDACHAIN server account
-        puter.setAPIKey(this.config.apiKey);
+        console.log('[puter-ai] Initialized with GRUDACHAIN auth token');
+      } else {
+        console.log('[puter-ai] Initialized without auth token (free tier — set PUTER_AUTH_TOKEN for GRUDACHAIN account)');
       }
-      this.puterClient = puter;
     } catch (err: any) {
       console.warn('[puter-ai] @heyputer/puter.js not available:', err.message);
     }
