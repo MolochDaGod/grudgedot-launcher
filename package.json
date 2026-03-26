@@ -25,6 +25,7 @@
     "@discordjs/rest": "^2.6.0",
     "@drizzle-team/studio": "^1.0.3",
     "@google/genai": "^1.31.0",
+    "@heyputer/puter.js": "^2.2.14",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@loaders.gl/3d-tiles": "^4.3.4",

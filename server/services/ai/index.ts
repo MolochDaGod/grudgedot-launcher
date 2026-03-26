@@ -2,15 +2,18 @@
  * AI Service — Provider Chain
  *
  * Manages AI providers with fallback:
- *   1. Legion Hub (ai.grudge-studio.com) — Workers AI + VPS agents
- *   2. Grok (xAI) — direct API fallback
+ *   1. Puter AI (GRUDACHAIN account) — 500+ models free via paid Puter membership
+ *   2. Legion Hub (ai.grudge-studio.com) — Workers AI + VPS agents
+ *   3. Grok (xAI) — direct API fallback
  *
  * Enable/disable providers via environment variables:
+ *   PUTER_API_KEY      — enables Puter AI (GRUDACHAIN account) — PRIMARY
  *   LEGION_HUB_API_KEY — enables Legion Hub
  *   XAI_API_KEY        — enables Grok
  */
 
 import type { AIProvider, GenerateOptions } from './providers/provider.interface';
+import { PuterAIProvider, PUTER_MODEL_MAP } from './providers/puterAI';
 import { LegionHubProvider } from './providers/legionHub';
 import { GrokProvider } from './providers/grok';
 
@@ -22,7 +25,19 @@ class AIService {
   }
 
   private initProviders() {
-    // Legion Hub — primary (edge AI + VPS fallback built-in)
+    // Puter AI — PRIMARY (GRUDACHAIN paid membership, 500+ models, no API keys needed)
+    // Set PUTER_API_KEY to the GRUDACHAIN Puter account API key from puter.com
+    const puterKey = process.env.PUTER_API_KEY;
+    if (puterKey) {
+      this.providers.push(new PuterAIProvider({ apiKey: puterKey }));
+      console.log('✅ AI provider: Puter AI (GRUDACHAIN account — 500+ models free)');
+    } else {
+      // Works without auth key for free-tier access too
+      this.providers.push(new PuterAIProvider());
+      console.log('✅ AI provider: Puter AI (unauthenticated free tier)');
+    }
+
+    // Legion Hub — secondary (edge AI + VPS fallback built-in)
     const legionKey = process.env.LEGION_HUB_API_KEY;
     if (legionKey) {
       this.providers.push(
@@ -92,6 +107,11 @@ class AIService {
       name: p.name,
       available: true,
     }));
+  }
+
+  /** GRD-17 core → Puter AI model map */
+  getPuterModelMap(): Record<string, string> {
+    return { ...PUTER_MODEL_MAP };
   }
 
   private getProviderChain(preferProvider?: string): AIProvider[] {

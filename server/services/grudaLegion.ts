@@ -13,6 +13,7 @@ import {
   GRUDACHAIN_URL, GRUDACHAIN_API, GAME_API_GRUDA, GRUDACHAIN_SOURCE, WCS_URL,
   GRD17_MODELS, GRD17_CORES, GRD17_API, GRD17_PUTER_KEYS, GRD17_PUTER_FS, GRD17_REPO, GRD17_DEPLOYMENT_ID,
 } from "../../shared/grudachain";
+import { aiService } from "../services/ai";
 
 const PROXY_TIMEOUT_MS = 15_000;
 
@@ -382,6 +383,70 @@ export function registerGrudaLegionRoutes(app: Express) {
         protocol: "socket.io",
         events: ["chat-message", "chat-response", "system-status", "ai-services"],
       },
+    });
+  });
+
+  // ─── Puter AI Legion routes ──────────────────────────────────────────
+  // These routes use the GRUDACHAIN Puter account’s paid membership to access
+  // 500+ AI models free via puter.ai. Falls back to Legion Hub if Puter fails.
+
+  // GET /api/gruda-legion/puter-ai/models
+  // Returns the GRD-17 core → Puter model mapping + live model list
+  app.get("/api/gruda-legion/puter-ai/models", async (_req, res) => {
+    const coreMap = aiService.getPuterModelMap();
+    res.json({
+      coreModelMap: coreMap,
+      grd17Models: GRD17_MODELS,
+      grd17Cores: GRD17_CORES,
+      puterSDK: "https://js.puter.com/v2/",
+      account: "GRUDACHAIN",
+      note: "Client-side: use puter.ai.chat() directly after signing in as GRUDACHAIN. Server-side: routed through PUTER_API_KEY.",
+    });
+  });
+
+  // POST /api/gruda-legion/puter-ai/chat
+  // Server-side Puter AI chat using GRUDACHAIN account.
+  // Body: { message, core?, model?, temperature?, maxTokens?, history?, systemPrompt? }
+  app.post("/api/gruda-legion/puter-ai/chat", async (req, res) => {
+    const { message, core, model, temperature, maxTokens, systemPrompt, history } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "message is required" });
+    }
+
+    try {
+      // Resolve model: prefer explicit model, then core mapping, then default
+      const resolvedModel = model || core || "grd17";
+
+      const text = await aiService.generateText(message, {
+        model: resolvedModel,
+        temperature: temperature ?? 0.7,
+        maxTokens: maxTokens ?? 2048,
+        systemPrompt,
+        provider: "puter-ai",  // prefer Puter AI, fallback chain handles the rest
+      });
+
+      res.json({
+        response: text,
+        core: core ?? "grd17",
+        model: resolvedModel,
+        source: "puter-ai-server",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Puter AI chat failed" });
+    }
+  });
+
+  // GET /api/gruda-legion/puter-ai/status
+  // Returns Puter AI provider status and model availability
+  app.get("/api/gruda-legion/puter-ai/status", (_req, res) => {
+    res.json({
+      providers: aiService.getStatus(),
+      coreModelMap: aiService.getPuterModelMap(),
+      puterMembership: "GRUDACHAIN",
+      hasPuterApiKey: !!process.env.PUTER_API_KEY,
+      modelsAvailable: 500,
     });
   });
 
