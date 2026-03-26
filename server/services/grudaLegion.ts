@@ -15,6 +15,53 @@ import {
 } from "../../shared/grudachain";
 import { aiService } from "../services/ai";
 
+// ── Server-side conversation history store ──────────────────────────────────
+// Keeps last 20 messages per user+core in memory as fallback when
+// the client is not signed into Puter.  Cleared on server restart.
+// For production, upgrade to Redis via REDIS_URL when available.
+
+const MAX_HISTORY = 20;
+const historyStore = new Map<string, Array<{ role: string; content: string; timestamp: string }>>();
+
+function historyKey(userId: string, coreId: string) {
+  return `${userId}::${coreId}`;
+}
+
+function getHistory(userId: string, coreId: string) {
+  return historyStore.get(historyKey(userId, coreId)) ?? [];
+}
+
+function appendHistory(
+  userId: string, coreId: string,
+  userMsg: string, assistantMsg: string,
+) {
+  const key = historyKey(userId, coreId);
+  const hist = historyStore.get(key) ?? [];
+  const ts = new Date().toISOString();
+  hist.push({ role: "user", content: userMsg, timestamp: ts });
+  hist.push({ role: "assistant", content: assistantMsg, timestamp: ts });
+  // Trim to last MAX_HISTORY messages
+  if (hist.length > MAX_HISTORY) hist.splice(0, hist.length - MAX_HISTORY);
+  historyStore.set(key, hist);
+}
+
+// ── Per-IP request throttle (simple in-memory) ────────────────────────────
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT_CALLS = 20; // per IP per minute across all AI routes
+const ipCounts = new Map<string, { count: number; windowStart: number }>();
+
+function checkServerRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipCounts.get(ip);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    ipCounts.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_CALLS) return false;
+  entry.count += 1;
+  return true;
+}
+
 const PROXY_TIMEOUT_MS = 15_000;
 
 // ── Proxy helper ──
@@ -405,37 +452,90 @@ export function registerGrudaLegionRoutes(app: Express) {
   });
 
   // POST /api/gruda-legion/puter-ai/chat
-  // Server-side Puter AI chat using GRUDACHAIN account.
-  // Body: { message, core?, model?, temperature?, maxTokens?, history?, systemPrompt? }
+  // Server-side Puter AI chat — rate-limited, history-aware, GRUDACHAIN account
+  // Body: { message, core?, model?, temperature?, maxTokens?, systemPrompt?, userId? }
   app.post("/api/gruda-legion/puter-ai/chat", async (req, res) => {
-    const { message, core, model, temperature, maxTokens, systemPrompt, history } = req.body;
+    const ip = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim()
+      ?? req.socket?.remoteAddress
+      ?? "unknown";
+
+    // Server-side rate limit (20 req/min per IP)
+    if (!checkServerRateLimit(ip)) {
+      return res.status(429).json({
+        error: "Rate limit exceeded",
+        retryAfterMs: RATE_WINDOW_MS,
+      });
+    }
+
+    const { message, core, model, temperature, maxTokens, systemPrompt, userId } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "message is required" });
     }
 
     try {
-      // Resolve model: prefer explicit model, then core mapping, then default
-      const resolvedModel = model || core || "grd17";
+      const resolvedCore  = core  || "grd17";
+      const resolvedModel = model || resolvedCore;
+      const resolvedUser  = userId || ip;
+
+      // Load prior conversation history for context
+      const history = getHistory(resolvedUser, resolvedCore);
 
       const text = await aiService.generateText(message, {
-        model: resolvedModel,
-        temperature: temperature ?? 0.7,
-        maxTokens: maxTokens ?? 2048,
+        model:        resolvedModel,
+        temperature:  temperature ?? 0.7,
+        maxTokens:    maxTokens   ?? 2048,
         systemPrompt,
-        provider: "puter-ai",  // prefer Puter AI, fallback chain handles the rest
+        provider: "puter-ai",
       });
+
+      // Persist exchange to server-side history
+      appendHistory(resolvedUser, resolvedCore, message, text);
 
       res.json({
         response: text,
-        core: core ?? "grd17",
-        model: resolvedModel,
-        source: "puter-ai-server",
+        core:      resolvedCore,
+        model:     resolvedModel,
+        source:    "puter-ai-server",
+        historyLength: getHistory(resolvedUser, resolvedCore).length,
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Puter AI chat failed" });
     }
+  });
+
+  // GET /api/gruda-legion/puter-ai/history/:userId/:coreId
+  // Returns conversation history for a user+core pair
+  app.get("/api/gruda-legion/puter-ai/history/:userId/:coreId", (req, res) => {
+    const { userId, coreId } = req.params;
+    const hist = getHistory(userId, coreId);
+    res.json({
+      userId,
+      coreId,
+      messageCount: hist.length,
+      messages: hist,
+    });
+  });
+
+  // DELETE /api/gruda-legion/puter-ai/history/:userId/:coreId
+  // Clears conversation history for a user+core pair
+  app.delete("/api/gruda-legion/puter-ai/history/:userId/:coreId", (req, res) => {
+    const { userId, coreId } = req.params;
+    historyStore.delete(historyKey(userId, coreId));
+    res.json({ cleared: true, userId, coreId });
+  });
+
+  // GET /api/gruda-legion/puter-ai/history/:userId
+  // Returns history summary across all cores for a user
+  app.get("/api/gruda-legion/puter-ai/history/:userId", (req, res) => {
+    const { userId } = req.params;
+    const cores = Object.values(GRD17_MODELS) as string[];
+    const summary = cores.map(coreId => ({
+      coreId,
+      messageCount: getHistory(userId, coreId).length,
+    })).filter(c => c.messageCount > 0);
+    res.json({ userId, cores: summary });
   });
 
   // GET /api/gruda-legion/puter-ai/status
