@@ -22,7 +22,6 @@ import { setupGrudgeProxy } from "./routes/grudgeProxy";
 import { registerGrudaLegionRoutes } from "./services/grudaLegion";
 import { registerGrudaWarsRoutes } from "./routes/grudaWars";
 import { registerUserRoutes } from "./routes/user";
-import { registerAccountRoutes } from "./routes/accountRoutes";
 import { registerOpenRTSRoutes } from "./routes/openrts";
 import { registerCoolifyRoutes } from "./routes/coolifyProxy";
 import { registerEconomyRoutes } from "./routes/economyRoutes";
@@ -143,7 +142,6 @@ app.get("/api/health", async (_req: Request, res: Response) => {
 // ════════════════════════════════════════════
 registerGrudaLegionRoutes(app);
 registerGrudaWarsRoutes(app);
-registerAccountRoutes(app);
 registerOpenRTSRoutes(app);
 registerCoolifyRoutes(app);
 registerEconomyRoutes(app);

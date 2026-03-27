@@ -147,3 +147,29 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
   }
   next();
 }
+
+/**
+ * Require premium user. Must be used after requireAuth.
+ */
+export function requirePremium(req: Request, res: Response, next: NextFunction) {
+  if (!req.grudgeUser) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  if (!req.grudgeUser.isPremium) {
+    return res.status(403).json({ error: "Premium account required" });
+  }
+  next();
+}
+
+/**
+ * Require non-guest user. Must be used after requireAuth.
+ */
+export function requireRegistered(req: Request, res: Response, next: NextFunction) {
+  if (!req.grudgeUser) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  if (req.grudgeUser.isGuest) {
+    return res.status(403).json({ error: "Registered account required" });
+  }
+  next();
+}

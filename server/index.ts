@@ -9,6 +9,7 @@ import { isDatabaseConfigured } from "./db";
 import { setupGrudgeAuth } from "./grudgeAuth";
 import { setupGrudgeProxy } from "./routes/grudgeProxy";
 import { registerBridgeRoutes } from "./routes/bridgeProxy";
+import { registerCoolifyRoutes } from "./routes/coolifyProxy";
 
 const app = express();
 
@@ -59,9 +60,11 @@ app.use((req, res, next) => {
   setupGrudgeAuth(app);
   setupGrudgeProxy(app);
   registerBridgeRoutes(app);
+  registerCoolifyRoutes(app);
   log("Grudge Authentication configured (gateway proxy mode)");
   log("Grudge Backend proxy configured (game / account / id / launcher)");
   log("Grudge Bridge proxy configured (backups / dumps / deploy / mesh)");
+  log("Coolify API proxy configured (server management)");
 
   // Seed database if configured (optional)
   if (isDatabaseConfigured()) {
