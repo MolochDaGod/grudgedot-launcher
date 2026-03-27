@@ -126,7 +126,7 @@
     "gltf-pipeline": "^4.3.0",
     "google-auth-library": "^10.5.0",
     "googleapis": "^170.1.0",
-    "grudge-studio": "^2.0.0",
+    "grudge-studio": "^1.0.2",
     "howler": "^2.2.4",
     "input-otp": "^1.4.2",
     "jsonwebtoken": "^9.0.3",
