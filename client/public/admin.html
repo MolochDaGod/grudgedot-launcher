@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRUDGE STUDIO — VPS Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    /* ══════════════════════════════════════════════════════ */
+    /* RESET + BASE                                          */
+    /* ══════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold:        #d4af37;
+      --gold-dim:    #a88a28;
+      --gold-glow:   rgba(212,175,55,.18);
+      --red:         #e53e3e;
+      --green:       #38a169;
+      --yellow:      #d69e2e;
+      --blue:        #4299e1;
+      --bg:          #07070c;
+      --bg-panel:    #0e0e18;
+      --bg-card:     #14141f;
+      --bg-hover:    #1a1a2a;
+      --border:      rgba(212,175,55,.18);
+      --text:        #e8e6dc;
+      --text-dim:    #8a8478;
+      --font-ui:     'Inter', system-ui, sans-serif;
+      --font-title:  'Cinzel', serif;
+      --font-mono:   'JetBrains Mono', monospace;
+      --radius:      6px;
+      --sidebar-w:   220px;
+      --header-h:    58px;
+      --transition:  .18s ease;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; }
+    a { color: var(--gold); text-decoration: none; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input, select, textarea { font-family: var(--font-mono); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-panel); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* AUTH GATE                                             */
+    /* ══════════════════════════════════════════════════════ */
+    #auth-gate {
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+    }
+    .auth-card {
+      width: 380px; padding: 40px 36px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 0 60px rgba(212,175,55,.08);
+      text-align: center;
+    }
+    .auth-card .skull { font-size: 42px; margin-bottom: 12px; }
+    .auth-card h1 { font-family: var(--font-title); font-size: 18px; color: var(--gold); letter-spacing: .1em; margin-bottom: 6px; }
+    .auth-card p { color: var(--text-dim); font-size: 12px; margin-bottom: 28px; }
+    .auth-card .puter-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 12px 20px;
+      background: var(--gold); color: #07070c;
+      font-family: var(--font-title); font-size: 13px; font-weight: 700;
+      letter-spacing: .08em; border-radius: var(--radius);
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    .auth-card .puter-btn:hover { background: #f0cc55; box-shadow: 0 0 20px var(--gold-glow); }
+    .auth-card .auth-err { color: var(--red); font-size: 12px; margin-top: 14px; display: none; }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* LAYOUT                                                */
+    /* ══════════════════════════════════════════════════════ */
+    #app { display: none; flex-direction: column; height: 100vh; }
+    #app.ready { display: flex; }
+
+    /* ── Header ── */
+    header {
+      height: var(--header-h); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px 0 0;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+    .header-brand {
+      display: flex; align-items: center; gap: 0;
+      height: 100%;
+      padding: 0 20px;
+      border-right: 1px solid var(--border);
+    }
+    .header-brand span:first-child { font-family: var(--font-title); font-size: 15px; color: var(--gold); letter-spacing: .12em; }
+    .header-brand small { display: block; font-size: 9px; letter-spacing: .2em; color: var(--text-dim); text-transform: uppercase; margin-top: 1px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .header-status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dim); display: inline-block;
+      transition: background .3s;
+    }
+    .header-status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .header-status-dot.offline { background: var(--red); }
+    .header-user { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+    .header-user img { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); }
+    .icon-btn {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      transition: background var(--transition), color var(--transition);
+    }
+    .icon-btn:hover { background: var(--bg-hover); color: var(--gold); }
+    .refresh-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: var(--radius);
+      background: var(--gold-glow); border: 1px solid var(--border);
+      color: var(--gold); font-size: 12px; letter-spacing: .04em;
+      transition: background var(--transition);
+    }
+    .refresh-btn:hover { background: rgba(212,175,55,.28); }
+    .refresh-btn svg { transition: transform .4s; }
+    .refresh-btn.spinning svg { transform: rotate(360deg); }
+
+    /* ── Body split ── */
+    .body-wrap { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    nav.sidebar {
+      width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow-y: auto; padding: 12px 0 20px;
+    }
+    .nav-section { margin-bottom: 6px; }
+    .nav-label { padding: 8px 18px 4px; font-size: 9px; letter-spacing: .2em; color: var(--text-dim); text-transform: uppercase; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 18px; font-size: 13px; color: var(--text-dim);
+      border-left: 2px solid transparent;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .nav-item:hover { color: var(--text); background: var(--bg-hover); }
+    .nav-item.active { color: var(--gold); background: var(--gold-glow); border-left-color: var(--gold); }
+    .nav-item svg { flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px;
+      border-radius: 9px; background: var(--bg-hover); color: var(--text-dim);
+      font-size: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-badge.warn { background: rgba(214,158,46,.2); color: var(--yellow); }
+    .nav-badge.ok   { background: rgba(56,161,105,.2); color: var(--green); }
+
+    /* ── Main panel ── */
+    main.main-panel {
+      flex: 1; overflow-y: auto;
+      padding: 24px 28px;
+    }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* SECTIONS                                              */
+    /* ══════════════════════════════════════════════════════ */
+    .section { display: none; }
+    .section.active { display: block; }
+    .section-title {
+      font-family: var(--font-title); font-size: 17px; color: var(--gold);
+      letter-spacing: .08em; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title small { font-family: var(--font-ui); font-size: 11px; color: var(--text-dim); font-weight: 400; letter-spacing: 0; }
+
+    /* ── Stat cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .stat-card {
+      padding: 16px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color var(--transition);
+    }
+    .stat-card:hover { border-color: var(--gold-dim); }
+    .stat-card .stat-label { font-size: 10px; letter-spacing: .15em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+    .stat-card .stat-value { font-family: var(--font-title); font-size: 26px; color: var(--gold); }
+    .stat-card .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 10px 14px; text-align: left; font-size: 10px; letter-spacing: .15em; color: var(--text-dim); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+    tr:hover td { background: var(--bg-hover); }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; letter-spacing: .04em;
+    }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .badge-green  { background: rgba(56,161,105,.15); color: var(--green); }
+    .badge-red    { background: rgba(229,62,62,.15);  color: var(--red); }
+    .badge-yellow { background: rgba(214,158,46,.15); color: var(--yellow); }
+    .badge-blue   { background: rgba(66,153,225,.15); color: var(--blue); }
+    .badge-grey   { background: rgba(138,132,120,.15);color: var(--text-dim); }
+
+    /* ── Action buttons ── */
+    .action-group { display: flex; gap: 6px; }
+    .btn {
+      padding: 5px 12px; border-radius: var(--radius); font-size: 12px;
+      display: inline-flex; align-items: center; gap: 5px;
+      transition: opacity var(--transition), box-shadow var(--transition);
+      font-weight: 500;
+    }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-deploy { background: var(--gold); color: #07070c; }
+    .btn-deploy:hover:not(:disabled) { box-shadow: 0 0 16px var(--gold-glow); }
+    .btn-restart { background: rgba(66,153,225,.15); color: var(--blue); border: 1px solid rgba(66,153,225,.3); }
+    .btn-restart:hover:not(:disabled) { background: rgba(66,153,225,.28); }
+    .btn-stop { background: rgba(229,62,62,.12); color: var(--red); border: 1px solid rgba(229,62,62,.3); }
+    .btn-stop:hover:not(:disabled) { background: rgba(229,62,62,.24); }
+    .btn-start { background: rgba(56,161,105,.12); color: var(--green); border: 1px solid rgba(56,161,105,.3); }
+    .btn-start:hover:not(:disabled) { background: rgba(56,161,105,.24); }
+    .btn-logs { background: var(--bg-hover); color: var(--text-dim); border: 1px solid var(--border); }
+    .btn-logs:hover:not(:disabled) { color: var(--text); }
+
+    /* ── Log viewer ── */
+    .log-viewer {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+      font-family: var(--font-mono); font-size: 12px; line-height: 1.7;
+      color: #a8d8a8; overflow-y: auto; min-height: 180px; max-height: 500px;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .log-viewer .log-err   { color: #ff7070; }
+    .log-viewer .log-warn  { color: #ffd070; }
+    .log-viewer .log-info  { color: #70b8ff; }
+    .log-viewer .log-empty { color: var(--text-dim); font-style: italic; }
+
+    /* ── Log section controls ── */
+    .log-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    .log-controls select {
+      background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 6px 10px; font-size: 12px; outline: none;
+    }
+    .log-controls select:focus { border-color: var(--gold-dim); }
+    .lines-select { min-width: 80px; }
+
+    /* ── Card containers ── */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-family: var(--font-title); font-size: 13px; color: var(--gold);
+      letter-spacing: .06em; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── Health grid ── */
+    .health-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .health-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; background: var(--bg-panel);
+      border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .health-item .hi-icon { font-size: 18px; flex-shrink: 0; }
+    .health-item .hi-label { font-size: 12px; color: var(--text-dim); }
+    .health-item .hi-val { font-size: 13px; font-weight: 500; }
+
+    /* ── Toast ── */
+    #toast-container {
+      position: fixed; bottom: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 99999; pointer-events: none;
+    }
+    .toast {
+      padding: 12px 18px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500;
+      background: var(--bg-card); border: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+      animation: toastIn .2s ease, toastOut .3s ease 3.2s forwards;
+      pointer-events: all;
+    }
+    .toast-ok   { border-color: var(--green); color: var(--green); }
+    .toast-err  { border-color: var(--red);   color: var(--red); }
+    .toast-info { border-color: var(--blue);  color: var(--blue); }
+    @keyframes toastIn  { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-6px); } }
+
+    /* ── Loading spinner ── */
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-dim); }
+    .empty-state .e-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state p { font-size: 13px; }
+
+    /* ── Deployment item ── */
+    .deploy-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .deploy-item:last-child { border-bottom: none; }
+    .deploy-hash { font-family: var(--font-mono); font-size: 12px; color: var(--gold-dim); }
+    .deploy-time { font-size: 11px; color: var(--text-dim); margin-left: auto; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 5000;
+      background: rgba(0,0,0,.72); align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      width: 700px; max-width: 95vw; max-height: 90vh;
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 10px; display: flex; flex-direction: column;
+      box-shadow: 0 0 80px rgba(0,0,0,.8);
+    }
+    .modal-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-family: var(--font-title); font-size: 14px; color: var(--gold); letter-spacing: .06em; }
+    .modal-close { color: var(--text-dim); font-size: 20px; line-height: 1; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* UTIL                                                  */
+    /* ══════════════════════════════════════════════════════ */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-2 { gap: 8px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-4 { margin-top: 16px; }
+    .text-dim { color: var(--text-dim); }
+    .text-mono { font-family: var(--font-mono); }
+    .hidden { display: none !important; }
+    .loading-row td { text-align: center; padding: 32px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════ AUTH GATE ══════════════════════════ -->
+<div id="auth-gate">
+  <div class="auth-card">
+    <div class="skull">⚔️</div>
+    <h1>GRUDGE STUDIO</h1>
+    <p>VPS Control Portal — Admin Access Required</p>
+    <button class="puter-btn" id="puter-signin-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      Sign in with Puter
+    </button>
+    <div class="auth-err" id="auth-err">Authentication failed. Try again.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ APP ══════════════════════════ -->
+<div id="app">
+  <!-- Header -->
+  <header>
+    <div class="header-brand">
+      <div>
+        <span>GRUDGE STUDIO</span>
+        <small>VPS Control Portal</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="conn-dot" class="header-status-dot" title="Backend status"></span>
+      <span id="conn-label" class="text-dim" style="font-size:11px">checking…</span>
+      <button class="refresh-btn" id="refresh-btn" onclick="refreshAll()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Refresh
+      </button>
+      <div class="header-user">
+        <img id="user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=grudge" alt="avatar" />
+        <span id="user-name">Loading…</span>
+      </div>
+      <button class="icon-btn" title="Sign out" onclick="signOut()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="body-wrap">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="nav-section">
+        <div class="nav-label">Overview</div>
+        <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item" data-section="health" onclick="showSection('health',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Health
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Infrastructure</div>
+        <div class="nav-item" data-section="servers" onclick="showSection('servers',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          Servers
+          <span class="nav-badge" id="nb-servers">—</span>
+        </div>
+        <div class="nav-item" data-section="apps" onclick="showSection('apps',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Applications
+          <span class="nav-badge" id="nb-apps">—</span>
+        </div>
+        <div class="nav-item" data-section="services" onclick="showSection('services',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          Services
+          <span class="nav-badge" id="nb-svcs">—</span>
+        </div>
+        <div class="nav-item" data-section="databases" onclick="showSection('databases',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          Databases
+          <span class="nav-badge" id="nb-dbs">—</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Monitoring</div>
+        <div class="nav-item" data-section="logs" onclick="showSection('logs',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Logs
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-panel">
+
+      <!-- ═══════════ DASHBOARD ═══════════ -->
+      <section class="section active" id="section-dashboard">
+        <div class="section-title">
+          Dashboard
+          <small id="last-refresh-label">—</small>
+        </div>
+
+        <div class="stat-grid" id="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Applications</div>
+            <div class="stat-value" id="stat-apps">—</div>
+            <div class="stat-sub">deployed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Services</div>
+            <div class="stat-value" id="stat-svcs">—</div>
+            <div class="stat-sub">running</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Servers</div>
+            <div class="stat-value" id="stat-servers">—</div>
+            <div class="stat-sub">connected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Databases</div>
+            <div class="stat-value" id="stat-dbs">—</div>
+            <div class="stat-sub">connected</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-title">Recent Applications</div>
+            <div id="dash-apps-list">
+              <div class="empty-state"><div class="spinner"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Backend Health</div>
+            <div id="dash-health-list">
+              <div class="empty-state"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ HEALTH ═══════════ -->
+      <section class="section" id="section-health">
+        <div class="section-title">Health Monitor</div>
+        <div class="health-grid" id="health-grid">
+          <div class="empty-state" style="grid-column:1/-1"><div class="spinner"></div></div>
+        </div>
+      </section>
+
+      <!-- ═══════════ SERVERS ═══════════ -->
+      <section class="section" id="section-servers">
+        <div class="section-title">Servers</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>IP</th><th>Status</th><th>OS</th><th>RAM</th></tr></thead>
+            <tbody id="servers-tbody">
+              <tr class="loading-row"><td colspan="5"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════ APPLICATIONS ═══════════ -->
+      <section class="section" id="section-apps">
+        <div class="section-title">Applications</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Status</th><th>Branch</th><th>Last Deploy</th><th>Actions</th></tr></thead>
+            <tbody id="apps-tbody">
+              <tr class="loading-row"><td colspan="5"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════ SERVICES ═══════════ -->
+      <section class="section" id="section-services">
+        <div class="section-title">Services</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="services-tbody">
+              <tr class="loading-row"><td colspan="4"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════ DATABASES ═══════════ -->
+      <section class="section" id="section-databases">
+        <div class="section-title">Databases</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Version</th></tr></thead>
+            <tbody id="databases-tbody">
+              <tr class="loading-row"><td colspan="4"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════ LOGS ═══════════ -->
+      <section class="section" id="section-logs">
+        <div class="section-title">Log Viewer</div>
+        <div class="log-controls">
+          <select id="log-app-select" onchange="loadLogs()">
+            <option value="">Select an application…</option>
+          </select>
+          <select class="lines-select" id="log-lines" onchange="loadLogs()">
+            <option value="50">50 lines</option>
+            <option value="100" selected>100 lines</option>
+            <option value="250">250 lines</option>
+            <option value="500">500 lines</option>
+          </select>
+          <button class="btn btn-logs" onclick="loadLogs()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Fetch Logs
+          </button>
+        </div>
+        <div class="log-viewer" id="log-viewer">
+          <span class="log-empty">← Select an application and fetch logs</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Log / Deploy Modal -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Application Logs</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="log-viewer" id="modal-log-viewer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   GRUDGE STUDIO — VPS Admin Portal
+   ═══════════════════════════════════════════════════════════════ */
+
+// State
+const state = {
+  user: null,
+  servers: [],
+  apps: [],
+  services: [],
+  databases: [],
+  health: null,
+  coolifyOk: false,
+};
+
+// ── Toast ──────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type === 'ok' ? 'ok' : type === 'err' ? 'err' : 'info'}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3600);
+}
+
+// ── API helpers ────────────────────────────────────────────────
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch('/api' + path, opts);
+  const ct = r.headers.get('content-type') || '';
+  if (ct.includes('json')) return { ok: r.ok, status: r.status, data: await r.json() };
+  return { ok: r.ok, status: r.status, data: await r.text() };
+}
+
+// ── Section routing ────────────────────────────────────────────
+function showSection(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + name)?.classList.add('active');
+  el?.classList.add('active');
+  if (name === 'logs') populateLogSelect();
+}
+
+// ── Status badge ───────────────────────────────────────────────
+function statusBadge(status='') {
+  const s = (status || '').toLowerCase();
+  if (s.includes('running') || s === 'healthy' || s === 'exited_with_success') return `<span class="badge badge-green">Running</span>`;
+  if (s.includes('stop') || s === 'exited') return `<span class="badge badge-red">Stopped</span>`;
+  if (s.includes('build') || s.includes('deploy') || s.includes('start')) return `<span class="badge badge-blue">Deploying</span>`;
+  if (s.includes('error') || s.includes('fail')) return `<span class="badge badge-red">Error</span>`;
+  if (s === 'idle') return `<span class="badge badge-grey">Idle</span>`;
+  return `<span class="badge badge-grey">${status || 'Unknown'}</span>`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+  catch { return d; }
+}
+
+// ── Load data ──────────────────────────────────────────────────
+async function loadHealth() {
+  try {
+    const r = await api('/health');
+    state.health = r.data;
+    renderHealth();
+    // Update connection dot
+    const dot = document.getElementById('conn-dot');
+    const lbl = document.getElementById('conn-label');
+    if (r.ok) {
+      dot.className = 'header-status-dot online';
+      lbl.textContent = 'Backend online';
+    } else {
+      dot.className = 'header-status-dot offline';
+      lbl.textContent = 'Backend error';
+    }
+  } catch (e) {
+    document.getElementById('conn-dot').className = 'header-status-dot offline';
+    document.getElementById('conn-label').textContent = 'Unreachable';
+  }
+}
+
+async function loadCoolifyStatus() {
+  try {
+    const r = await api('/coolify/status');
+    state.coolifyOk = r.data?.configured;
+    if (!state.coolifyOk) {
+      toast('Coolify not configured — set COOLIFY_API_URL + COOLIFY_API_TOKEN in Vercel env vars', 'err');
+    }
+  } catch {}
+}
+
+async function loadServers() {
+  const tbody = document.getElementById('servers-tbody');
+  try {
+    const r = await api('/coolify/servers');
+    if (!r.ok) { tbody.innerHTML = emptyRow(5, 'Coolify not configured'); return; }
+    state.servers = Array.isArray(r.data) ? r.data : [];
+    document.getElementById('nb-servers').textContent = state.servers.length;
+    document.getElementById('stat-servers').textContent = state.servers.length;
+    tbody.innerHTML = state.servers.length === 0 ? emptyRow(5, 'No servers found') :
+      state.servers.map(s => `<tr>
+        <td><strong>${s.name || s.ip}</strong></td>
+        <td class="text-mono text-dim">${s.ip || '—'}</td>
+        <td>${statusBadge(s.validation_status || 'running')}</td>
+        <td class="text-dim">${s.settings?.os_type || '—'}</td>
+        <td class="text-dim">${s.settings?.ram || '—'}</td>
+      </tr>`).join('');
+  } catch { tbody.innerHTML = emptyRow(5, 'Failed to load servers'); }
+}
+
+async function loadApps() {
+  const tbody = document.getElementById('apps-tbody');
+  try {
+    const r = await api('/coolify/applications');
+    if (!r.ok) { tbody.innerHTML = emptyRow(5, 'Coolify not configured'); return; }
+    state.apps = Array.isArray(r.data) ? r.data : [];
+    document.getElementById('nb-apps').textContent = state.apps.length;
+    document.getElementById('stat-apps').textContent = state.apps.length;
+    tbody.innerHTML = state.apps.length === 0 ? emptyRow(5, 'No applications found') :
+      state.apps.map(a => `<tr>
+        <td>
+          <strong>${a.name || a.uuid}</strong>
+          <div style="font-size:11px;color:var(--text-dim)">${a.uuid?.slice(0,8)}…</div>
+        </td>
+        <td>${statusBadge(a.status)}</td>
+        <td class="text-mono" style="font-size:12px">${a.git_branch || '—'}</td>
+        <td class="text-dim" style="font-size:12px">${fmtDate(a.updated_at)}</td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-deploy" onclick="doAction('deploy','${a.uuid}','${a.name || a.uuid}')">▶ Deploy</button>
+            <button class="btn btn-restart" onclick="doAction('restart','${a.uuid}','${a.name || a.uuid}')">↺</button>
+            <button class="btn btn-stop" onclick="doAction('stop','${a.uuid}','${a.name || a.uuid}')">■</button>
+            <button class="btn btn-logs" onclick="openLogModal('${a.uuid}','${a.name || a.uuid}')">Logs</button>
+          </div>
+        </td>
+      </tr>`).join('');
+    renderDashApps();
+  } catch { tbody.innerHTML = emptyRow(5, 'Failed to load applications'); }
+}
+
+async function loadServices() {
+  const tbody = document.getElementById('services-tbody');
+  try {
+    const r = await api('/coolify/services');
+    if (!r.ok) { tbody.innerHTML = emptyRow(4, 'Coolify not configured'); return; }
+    state.services = Array.isArray(r.data) ? r.data : [];
+    document.getElementById('nb-svcs').textContent = state.services.length;
+    document.getElementById('stat-svcs').textContent = state.services.length;
+    tbody.innerHTML = state.services.length === 0 ? emptyRow(4, 'No services found') :
+      state.services.map(s => `<tr>
+        <td><strong>${s.name || s.uuid}</strong></td>
+        <td class="text-dim">${s.type || '—'}</td>
+        <td>${statusBadge(s.status)}</td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-restart" onclick="doServiceAction('restart','${s.uuid}','${s.name}')">↺ Restart</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch { tbody.innerHTML = emptyRow(4, 'Failed to load services'); }
+}
+
+async function loadDatabases() {
+  const tbody = document.getElementById('databases-tbody');
+  try {
+    const r = await api('/coolify/databases');
+    if (!r.ok) { tbody.innerHTML = emptyRow(4, 'Coolify not configured'); return; }
+    state.databases = Array.isArray(r.data) ? r.data : [];
+    document.getElementById('nb-dbs').textContent = state.databases.length;
+    document.getElementById('stat-dbs').textContent = state.databases.length;
+    tbody.innerHTML = state.databases.length === 0 ? emptyRow(4, 'No databases found') :
+      state.databases.map(d => `<tr>
+        <td><strong>${d.name || d.uuid}</strong></td>
+        <td class="text-dim">${d.type || d.database_type || '—'}</td>
+        <td>${statusBadge(d.status)}</td>
+        <td class="text-mono text-dim">${d.image || '—'}</td>
+      </tr>`).join('');
+  } catch { tbody.innerHTML = emptyRow(4, 'Failed to load databases'); }
+}
+
+// ── Render helpers ─────────────────────────────────────────────
+function emptyRow(cols, msg) {
+  return `<tr><td colspan="${cols}" style="text-align:center;padding:28px;color:var(--text-dim)">${msg}</td></tr>`;
+}
+
+function renderHealth() {
+  const h = state.health;
+  if (!h) return;
+  const grid = document.getElementById('health-grid');
+  grid.innerHTML = `
+    <div class="health-item">
+      <span class="hi-icon">🖥️</span>
+      <div>
+        <div class="hi-label">Backend Status</div>
+        <div class="hi-val" style="color:${h.status==='healthy'?'var(--green)':'var(--red)'}">
+          ${h.status === 'healthy' ? '● Healthy' : '● Unhealthy'}
+        </div>
+      </div>
+    </div>
+    <div class="health-item">
+      <span class="hi-icon">🔗</span>
+      <div>
+        <div class="hi-label">Grudge Backend</div>
+        <div class="hi-val" style="color:${h.env?.grudgeBackend==='reachable'?'var(--green)':'var(--red)'}">
+          ${h.env?.grudgeBackend || '—'}
+        </div>
+      </div>
+    </div>
+    <div class="health-item">
+      <span class="hi-icon">🤖</span>
+      <div>
+        <div class="hi-label">xAI (Grok)</div>
+        <div class="hi-val" style="color:${h.env?.hasXaiKey?'var(--green)':'var(--text-dim)'}">
+          ${h.env?.hasXaiKey ? '✓ Configured' : '✗ Not set'}
+        </div>
+      </div>
+    </div>
+    <div class="health-item">
+      <span class="hi-icon">🎨</span>
+      <div>
+        <div class="hi-label">Meshy 3D</div>
+        <div class="hi-val" style="color:${h.env?.hasMeshyKey?'var(--green)':'var(--text-dim)'}">
+          ${h.env?.hasMeshyKey ? '✓ Configured' : '✗ Not set'}
+        </div>
+      </div>
+    </div>
+    <div class="health-item">
+      <span class="hi-icon">🔑</span>
+      <div>
+        <div class="hi-label">Session Secret</div>
+        <div class="hi-val" style="color:${h.env?.hasSessionSecret?'var(--green)':'var(--red)'}">
+          ${h.env?.hasSessionSecret ? '✓ Set' : '✗ Missing'}
+        </div>
+      </div>
+    </div>
+    <div class="health-item">
+      <span class="hi-icon">⚙️</span>
+      <div>
+        <div class="hi-label">Node.js</div>
+        <div class="hi-val">${h.runtime || '—'}</div>
+      </div>
+    </div>
+    <div class="health-item">
+      <span class="hi-icon">🔧</span>
+      <div>
+        <div class="hi-label">Coolify Proxy</div>
+        <div class="hi-val" style="color:${(state.coolifyOk || h.env?.hasCoolify)?'var(--green)':'var(--red)'}">
+          ${(state.coolifyOk || h.env?.hasCoolify) ? '✓ Connected' : '✗ Not configured'}
+        </div>
+        ${h.env?.coolifyUrl ? `<div style="font-size:10px;color:var(--text-dim);margin-top:2px">${h.env.coolifyUrl}</div>` : ''}
+      </div>
+    </div>
+    <div class="health-item">
+      <span class="hi-icon">🕐</span>
+      <div>
+        <div class="hi-label">Timestamp</div>
+        <div class="hi-val">${fmtDate(h.timestamp)}</div>
+      </div>
+    </div>
+  `;
+  // Update dashboard health list
+  document.getElementById('dash-health-list').innerHTML = grid.innerHTML;
+}
+
+function renderDashApps() {
+  const el = document.getElementById('dash-apps-list');
+  const items = state.apps.slice(0, 6);
+  if (!items.length) { el.innerHTML = '<div class="text-dim" style="font-size:12px">No applications</div>'; return; }
+  el.innerHTML = items.map(a => `
+    <div class="deploy-item">
+      <div>
+        <div style="font-size:13px">${a.name || a.uuid}</div>
+        <div class="text-dim" style="font-size:11px">${a.git_branch || '—'}</div>
+      </div>
+      ${statusBadge(a.status)}
+      <span class="deploy-time">${fmtDate(a.updated_at)}</span>
+    </div>
+  `).join('');
+}
+
+// ── Actions ────────────────────────────────────────────────────
+async function doAction(action, uuid, name) {
+  if (action === 'stop' && !confirm(`Stop "${name}"?`)) return;
+  toast(`Sending ${action} to ${name}…`, 'info');
+  try {
+    const r = await api(`/coolify/applications/${uuid}/${action}`, 'POST');
+    if (r.ok) {
+      toast(`${name}: ${action} queued ✓`, 'ok');
+      setTimeout(() => loadApps(), 2000);
+    } else {
+      toast(`${name}: ${action} failed — ${r.data?.message || r.status}`, 'err');
+    }
+  } catch (e) { toast(`Error: ${e.message}`, 'err'); }
+}
+
+async function doServiceAction(action, uuid, name) {
+  toast(`Sending ${action} to ${name}…`, 'info');
+  try {
+    const r = await api(`/coolify/services/${uuid}/${action}`, 'POST');
+    if (r.ok) {
+      toast(`${name}: ${action} ✓`, 'ok');
+      setTimeout(() => loadServices(), 2000);
+    } else {
+      toast(`${name}: ${action} failed — ${r.data?.message || r.status}`, 'err');
+    }
+  } catch (e) { toast(`Error: ${e.message}`, 'err'); }
+}
+
+// ── Log viewing ────────────────────────────────────────────────
+function populateLogSelect() {
+  const sel = document.getElementById('log-app-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Select an application…</option>';
+  state.apps.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.uuid;
+    opt.textContent = a.name || a.uuid;
+    if (a.uuid === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadLogs() {
+  const uuid = document.getElementById('log-app-select').value;
+  const lines = document.getElementById('log-lines').value;
+  const viewer = document.getElementById('log-viewer');
+  if (!uuid) { viewer.innerHTML = '<span class="log-empty">← Select an application</span>'; return; }
+  viewer.innerHTML = '<span class="log-empty"><span class="spinner"></span> Loading logs…</span>';
+  try {
+    const r = await api(`/coolify/applications/${uuid}/logs?lines=${lines}`);
+    if (!r.ok) { viewer.innerHTML = `<span class="log-err">Error ${r.status}: ${r.data?.error || 'Failed'}</span>`; return; }
+    const raw = typeof r.data === 'string' ? r.data : JSON.stringify(r.data, null, 2);
+    renderLogContent(viewer, raw);
+  } catch (e) { viewer.innerHTML = `<span class="log-err">Fetch error: ${e.message}</span>`; }
+}
+
+async function openLogModal(uuid, name) {
+  document.getElementById('modal-title').textContent = `Logs — ${name}`;
+  const viewer = document.getElementById('modal-log-viewer');
+  viewer.innerHTML = '<span class="log-empty"><span class="spinner"></span> Loading…</span>';
+  document.getElementById('log-modal').classList.add('open');
+  try {
+    const r = await api(`/coolify/applications/${uuid}/logs?lines=200`);
+    if (!r.ok) { viewer.innerHTML = `<span class="log-err">Error ${r.status}</span>`; return; }
+    const raw = typeof r.data === 'string' ? r.data : JSON.stringify(r.data, null, 2);
+    renderLogContent(viewer, raw);
+  } catch (e) { viewer.innerHTML = `<span class="log-err">${e.message}</span>`; }
+}
+
+function renderLogContent(el, raw) {
+  const lines = raw.split('\n');
+  el.innerHTML = lines.map(l => {
+    const lower = l.toLowerCase();
+    if (lower.includes('error') || lower.includes('fatal') || lower.includes('[err')) return `<span class="log-err">${escHtml(l)}</span>`;
+    if (lower.includes('warn')) return `<span class="log-warn">${escHtml(l)}</span>`;
+    if (lower.includes('info') || lower.includes('start') || lower.includes('ready')) return `<span class="log-info">${escHtml(l)}</span>`;
+    return escHtml(l);
+  }).join('\n');
+  el.scrollTop = el.scrollHeight;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function closeModal() { document.getElementById('log-modal').classList.remove('open'); }
+
+// ── Refresh all ────────────────────────────────────────────────
+async function refreshAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  document.getElementById('last-refresh-label').textContent = 'Refreshing…';
+  await Promise.all([loadHealth(), loadCoolifyStatus(), loadServers(), loadApps(), loadServices(), loadDatabases()]);
+  btn.classList.remove('spinning');
+  document.getElementById('last-refresh-label').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  toast('Refreshed', 'ok');
+}
+
+// ── Auth ───────────────────────────────────────────────────────
+async function init() {
+  try {
+    // Ensure Puter is ready
+    await puter.ready;
+    if (puter.auth.isSignedIn()) {
+      const user = await puter.auth.getUser();
+      await launchPortal(user);
+    } else {
+      document.getElementById('auth-gate').style.display = 'flex';
+    }
+  } catch {
+    document.getElementById('auth-gate').style.display = 'flex';
+  }
+}
+
+document.getElementById('puter-signin-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('puter-signin-btn');
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+  try {
+    await puter.auth.signIn();
+    const user = await puter.auth.getUser();
+    await launchPortal(user);
+  } catch (e) {
+    document.getElementById('auth-err').style.display = 'block';
+    btn.textContent = 'Try Again';
+    btn.disabled = false;
+  }
+});
+
+async function launchPortal(user) {
+  state.user = user;
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('app').classList.add('ready');
+  document.getElementById('user-name').textContent = user.username || 'Admin';
+  if (user.avatar) document.getElementById('user-avatar').src = user.avatar;
+  await refreshAll();
+  // Auto-refresh every 60 seconds
+  setInterval(refreshAll, 60000);
+}
+
+async function signOut() {
+  if (confirm('Sign out?')) {
+    try { await puter.auth.signOut(); } catch {}
+    location.reload();
+  }
+}
+
+// Start
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

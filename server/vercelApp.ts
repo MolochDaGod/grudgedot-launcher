@@ -131,6 +131,8 @@ app.get("/api/health", async (_req: Request, res: Response) => {
       hasSessionSecret: !!process.env.SESSION_SECRET,
       hasXaiKey: !!process.env.XAI_API_KEY,
       hasMeshyKey: !!process.env.MESHY_API_KEY,
+      hasCoolify: !!(process.env.COOLIFY_API_URL && process.env.COOLIFY_API_TOKEN),
+      coolifyUrl: process.env.COOLIFY_API_URL || null,
       nodeEnv: process.env.NODE_ENV || "not-set",
     },
   });
