@@ -1585,3 +1585,32 @@ export type StorageAuditLog = typeof storageAuditLogs.$inferSelect;
 
 export type InsertUserStorageQuota = z.infer<typeof insertUserStorageQuotaSchema>;
 export type UserStorageQuota = typeof userStorageQuotas.$inferSelect;
+
+// -----------------------------------------------------------------------------
+// GRUDGE DEVICES
+// Tracks ESP32-GRD17 hardware nodes and browser firmware instances
+// linked to Grudge accounts. Populated by POST /api/devices/register.
+// -----------------------------------------------------------------------------
+
+export const grudge_devices = pgTable("grudge_devices", {
+  id:              varchar("id", { length: 64 }).primaryKey(),
+  grudgeId:        varchar("grudge_id", { length: 64 }).notNull(),
+  deviceName:      varchar("device_name", { length: 128 }).notNull(),
+  publicKey:       varchar("public_key", { length: 128 }).notNull(),
+  firmwareVersion: varchar("firmware_version", { length: 64 }).notNull().default("unknown"),
+  hardwareType:    varchar("hardware_type", { length: 64 }).notNull().default("browser"),
+  status:          varchar("status", { length: 20 }).notNull().default("online"),
+  lastSeen:        text("last_seen"),
+  lastHeartbeat:   text("last_heartbeat"),    // JSON blob: blockHeight, uptime, balances, etc.
+  createdAt:       text("created_at").notNull(),
+}, (t) => ({
+  grudgeIdIdx: index("grd_devices_grudge_id_idx").on(t.grudgeId),
+  pubkeyIdx:   index("grd_devices_pubkey_idx").on(t.publicKey),
+}));
+
+export const insertGrudgeDeviceSchema = createInsertSchema(grudge_devices).omit({
+  createdAt: true,
+});
+
+export type GrudgeDevice       = typeof grudge_devices.$inferSelect;
+export type InsertGrudgeDevice = z.infer<typeof insertGrudgeDeviceSchema>;

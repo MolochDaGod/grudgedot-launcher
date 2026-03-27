@@ -6,6 +6,7 @@ import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { registerObjectstoreProxy } from "./routes/objectstoreProxy";
+import { registerDeviceRoutes } from "./routes/deviceRoutes";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { r2Client } from "./objectStoreR2";
 import {
@@ -201,6 +202,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ObjectStore R2 proxy — /api/objectstore/*  (reads public, writes server-key-gated)
   registerObjectstoreProxy(app);
+
+  // Device registration — /api/devices/* (ESP32-GRD17 + browser firmware)
+  registerDeviceRoutes(app);
 
   // Gruda Wars routes (hero sync, GRUDACHAIN status, WCS config)
   registerGrudaWarsRoutes(app);

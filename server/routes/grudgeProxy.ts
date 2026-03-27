@@ -19,11 +19,14 @@ const ACCOUNT_API  = process.env.GRUDGE_ACCOUNT_API  || "https://account.grudge-
 const ID_API       = process.env.GRUDGE_ID_API       || "https://id.grudge-studio.com";
 const LAUNCHER_API = process.env.GRUDGE_LAUNCHER_API || "https://launcher.grudge-studio.com";
 
+const DEVICE_API  = process.env.GRUDGE_DEVICE_API  || ID_API; // devices live on id service
+
 const SERVICE_MAP: Record<string, string> = {
   game:     GAME_API,
   account:  ACCOUNT_API,
   id:       ID_API,
   launcher: LAUNCHER_API,
+  devices:  DEVICE_API,   // /api/grudge/devices/* → id.grudge-studio.com/devices/*
 };
 
 /**
