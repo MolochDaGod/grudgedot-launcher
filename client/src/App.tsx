@@ -64,6 +64,8 @@ const CryptCrawlers = lazy(() => import("@/pages/crypt-crawlers"));
 const WarlordSuite = lazy(() => import("@/pages/warlord-suite"));
 const ConnectionsPage = lazy(() => import("@/pages/connections"));
 const NexusNemesis = lazy(() => import("@/pages/nexus-nemesis"));
+const AssetLibrary = lazy(() => import("@/pages/asset-library"));
+const DungeonCrawler = lazy(() => import("@/pages/dungeon-crawler"));
 
 function PageLoader() {
   return (
@@ -125,6 +127,8 @@ function Router() {
         <Route path="/crypt-crawlers" component={CryptCrawlers} />
         <Route path="/warlord-suite/:page?" component={WarlordSuite} />
         <Route path="/nexus-nemesis" component={NexusNemesis} />
+        <Route path="/asset-library" component={AssetLibrary} />
+        <Route path="/dungeon-crawler" component={DungeonCrawler} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -177,10 +181,12 @@ function Header() {
     if (location === "/crypt-crawlers") return "Crypt Crawlers";
     if (location.startsWith("/warlord-suite")) return "Warlord Suite";
     if (location === "/nexus-nemesis") return "Nexus Nemesis";
+    if (location === "/asset-library") return "ObjectStore Library";
+    if (location === "/dungeon-crawler") return "Dungeon Crawler";
     return "Grudge Brawl";
   };
 
-  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis"].some(
+  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/dungeon-crawler"].some(
     path => location === path
   );
 
