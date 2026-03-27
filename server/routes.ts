@@ -5,6 +5,7 @@ import path from "path";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
+import { registerObjectstoreProxy } from "./routes/objectstoreProxy";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { r2Client } from "./objectStoreR2";
 import {
@@ -198,6 +199,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.use(express.static(path.join(process.cwd(), "public")));
   }
   
+  // ObjectStore R2 proxy — /api/objectstore/*  (reads public, writes server-key-gated)
+  registerObjectstoreProxy(app);
+
   // Gruda Wars routes (hero sync, GRUDACHAIN status, WCS config)
   registerGrudaWarsRoutes(app);
 
