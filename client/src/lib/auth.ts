@@ -94,14 +94,31 @@ export function redirectToLogin(customReturnUrl?: string) {
   window.location.href = `/auth?return=${returnUrl}`;
 }
 
-/** Logout — clears tokens and redirects to auth page. */
+const _ID_BASE = 'https://id.grudge-studio.com';
+
+/** Logout — invalidates JWT server-side, clears tokens, redirects to auth page. */
 export function logout() {
+  // Fire-and-forget: invalidate JWT so it cannot be replayed
+  const token = localStorage.getItem(KEYS.token);
+  if (token) {
+    fetch(`${_ID_BASE}/api/auth/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    }).catch(() => {}); // best-effort
+  }
   clearAuth();
   window.location.href = '/auth';
 }
 
 /** Logout without redirect (for switching accounts, etc.) */
 export function logoutSilent() {
+  const token = localStorage.getItem(KEYS.token);
+  if (token) {
+    fetch(`${_ID_BASE}/api/auth/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    }).catch(() => {});
+  }
   clearAuth();
 }
 
