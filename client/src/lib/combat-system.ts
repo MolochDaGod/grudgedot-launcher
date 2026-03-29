@@ -432,10 +432,15 @@ export class CombatManager {
 let globalCombatManager: CombatManager | null = null;
 
 export function getCombatManager(scene?: BABYLON.Scene): CombatManager {
-  if (!globalCombatManager && scene) {
+  if (!globalCombatManager) {
+    if (!scene) {
+      throw new Error(
+        'CombatManager has not been initialized. Call getCombatManager(scene) with a valid BABYLON.Scene before using it.'
+      );
+    }
     globalCombatManager = new CombatManager(scene);
   }
-  return globalCombatManager!;
+  return globalCombatManager;
 }
 
 export function resetCombatManager(): void {
