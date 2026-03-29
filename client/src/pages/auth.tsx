@@ -11,6 +11,7 @@ import { Loader2, Eye, EyeOff, Gamepad2, Wallet, Shield, MessageSquare, Github, 
 import {
   storeAuth,
   captureAuthCallback,
+  getAuthData,
   loginWithPassword,
   registerAccount,
   loginAsGuest,
@@ -75,6 +76,13 @@ export default function AuthPage() {
         navigate(returnUrl, { replace: true });
         return;
       }
+    }
+
+    // If user is already logged in with a valid token, skip auth page
+    const existing = getAuthData();
+    if (existing) {
+      navigate(returnUrl, { replace: true });
+      return;
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

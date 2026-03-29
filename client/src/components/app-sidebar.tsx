@@ -254,6 +254,25 @@ const arcadeGames = [
   },
 ];
 
+const accountEconomyItems = [
+  {
+    title: "War Chest",
+    url: "/wallet",
+    icon: Wallet,
+    badge: "GBUX",
+  },
+  {
+    title: "Achievements",
+    url: "/achievements",
+    icon: Trophy,
+  },
+  {
+    title: "Connections",
+    url: "/connections",
+    icon: Link2,
+  },
+];
+
 const gameSystemItems = [
   {
     title: "Game Lobbies",
@@ -266,16 +285,6 @@ const gameSystemItems = [
     icon: Sword,
   },
   {
-    title: "Wallet",
-    url: "/wallet",
-    icon: Wallet,
-  },
-  {
-    title: "Achievements",
-    url: "/achievements",
-    icon: Trophy,
-  },
-  {
     title: "Projects",
     url: "/projects",
     icon: FolderOpen,
@@ -284,11 +293,6 @@ const gameSystemItems = [
     title: "Admin Storage",
     url: "/admin-storage",
     icon: HardDrive,
-  },
-  {
-    title: "Connections",
-    url: "/connections",
-    icon: Link2,
   },
 ];
 
@@ -416,6 +420,36 @@ export function AppSidebar() {
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground flex items-center gap-1">
+            <Wallet className="h-3 w-3 text-amber-500" />
+            Account & Economy
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {accountEconomyItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    data-active={location === item.url}
+                    data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span className="flex-1">{item.title}</span>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-400 border-0">
+                          {item.badge}
+                        </Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

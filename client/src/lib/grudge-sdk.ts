@@ -54,7 +54,7 @@ function getDefaultConfig(): GrudgeSDKConfig {
     objectStoreUrl: import.meta.env.VITE_OBJECTSTORE_URL || 'https://objectstore.grudge-studio.com',
     wsUrl: import.meta.env.VITE_WS_URL || 'wss://ws.grudge-studio.com',
     gbuxTokenAddress: import.meta.env.VITE_GBUX_TOKEN_ADDRESS || '55TpSoMNxbfsNJ9U1dQoo9H3dRtDmjBZVMcKqvU2nray',
-    enabled: false,
+    enabled: true,
   };
 }
 
@@ -116,7 +116,7 @@ class GrudgeSDKService {
         username: username || 'Unknown',
         walletAddress: walletAddr || undefined,
         token,
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        expiresAt: Date.now() + 12 * 60 * 60 * 1000,
       };
     }
 
@@ -171,7 +171,7 @@ class GrudgeSDKService {
         puterId: `GRUDGE-${data.grudgeId.substring(0, 8).toUpperCase()}`,
         username: puterUser.username,
         token: data.token,
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        expiresAt: Date.now() + 12 * 60 * 60 * 1000,
       };
 
       return { success: true };
@@ -202,7 +202,7 @@ class GrudgeSDKService {
         puterId: `GRUDGE-${data.grudgeId.substring(0, 8).toUpperCase()}`,
         username,
         token: data.token,
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        expiresAt: Date.now() + 12 * 60 * 60 * 1000,
       };
 
       return { success: true };

@@ -266,6 +266,147 @@ export interface AIGeneratedMission {
 }
 
 // ════════════════════════════════════════════════════════════════
+// ECONOMY TYPES
+// ════════════════════════════════════════════════════════════════
+
+export interface GbuxPriceData {
+  priceUsd: number;
+  priceNative: number;
+  priceChange24h: number;
+  volume24h: number;
+  marketCap: number;
+  liquidity: number;
+  fdv: number;
+  source: string;
+  lastUpdated: string;
+  dexId?: string;
+  pairAddress?: string;
+  baseToken?: any;
+  quoteToken?: any;
+  url?: string;
+}
+
+export interface EconomyOverview {
+  gbux: GbuxPriceData & { mint: string };
+  supply: { onChainTotal: number; decimals: number; fetchedAt: string };
+  agentWallet: { address: string; solBalance: number; gbuxBalance: number; fetchedAt: string };
+  links: { raydiumSwap: string; dexscreener: string; solscan: string };
+}
+
+export interface AccountWalletData {
+  wallet: {
+    walletAddress: string | null;
+    walletType: string | null;
+    crossmintWalletId: string | null;
+  };
+  balances: {
+    gold: number;
+    gbux: number;
+  };
+}
+
+export interface SwapQuote {
+  direction: 'buy' | 'sell';
+  inputAmount: number;
+  inputCurrency: string;
+  gbuxPriceUsd: number;
+  gbuxPriceSol: number;
+  gbuxAmount?: number;
+  solAmount?: number;
+  usdValue?: number;
+  solValue?: number;
+  raydiumSwapUrl: string;
+  note: string;
+}
+
+export interface PriceHistoryEntry {
+  priceUsd: number;
+  priceNative: number;
+  timestamp: string;
+}
+
+export interface EconomyTransaction {
+  id: number;
+  type: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  created_at: string;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ECONOMY API CLIENT — local /api/economy/* routes
+// ════════════════════════════════════════════════════════════════
+
+const ECONOMY = '/api/economy';
+const ACCOUNT_LOCAL = '/api/account';
+
+export const grudgeEconomyApi = {
+  /** Full economy snapshot: GBUX price, supply, agent wallet, links */
+  async getOverview(): Promise<EconomyOverview | null> {
+    return apiFetch(`${ECONOMY}/overview`);
+  },
+
+  /** Current GBUX price data */
+  async getGbuxPrice(): Promise<GbuxPriceData | null> {
+    return apiFetch(`${ECONOMY}/gbux/price`);
+  },
+
+  /** GBUX price history (up to 24h, 1-min intervals) */
+  async getPriceHistory(): Promise<{ count: number; history: PriceHistoryEntry[] } | null> {
+    return apiFetch(`${ECONOMY}/gbux/price-history`);
+  },
+
+  /** On-chain GBUX total supply */
+  async getSupply(): Promise<any> {
+    return apiFetch(`${ECONOMY}/gbux/supply`);
+  },
+
+  /** Raydium pool stats */
+  async getPoolInfo(): Promise<any> {
+    return apiFetch(`${ECONOMY}/raydium/pool`);
+  },
+
+  /** Get a swap quote for buying/selling GBUX */
+  async getSwapQuote(direction: 'buy' | 'sell', amount: number, currency: 'usd' | 'sol' | 'gbux' = 'usd'): Promise<SwapQuote | null> {
+    return apiFetch(`${ECONOMY}/swap/quote`, {
+      method: 'POST',
+      body: JSON.stringify({ direction, amount, currency }),
+    });
+  },
+
+  /** On-chain balance for any wallet address */
+  async getWalletBalance(address: string): Promise<any> {
+    return apiFetch(`${ECONOMY}/wallet/${address}`);
+  },
+
+  /** AI agent wallet balances */
+  async getAgentWallet(): Promise<any> {
+    return apiFetch(`${ECONOMY}/agent-wallet`);
+  },
+
+  /** All server-side wallet accounts */
+  async getAllWallets(): Promise<any> {
+    return apiFetch(`${ECONOMY}/wallets`);
+  },
+
+  /** Recent transactions */
+  async getTransactions(limit = 50): Promise<{ transactions: EconomyTransaction[] } | null> {
+    return apiFetch(`${ECONOMY}/transactions?limit=${limit}`);
+  },
+
+  /** Current user's account wallet (gold + GBUX + wallet address) */
+  async getMyWallet(): Promise<AccountWalletData | null> {
+    return apiFetch(`${ACCOUNT_LOCAL}/wallet`);
+  },
+
+  /** Ensure user has a Crossmint custodial wallet */
+  async ensureWallet(): Promise<any> {
+    return apiFetch(`${ACCOUNT_LOCAL}/wallet/ensure`, { method: 'POST' });
+  },
+};
+
+// ════════════════════════════════════════════════════════════════
 // GAME API CLIENT — api.grudgestudio.com
 // ════════════════════════════════════════════════════════════════
 
@@ -560,6 +701,7 @@ const grudgeApi = {
   account: grudgeAccountApi,
   id: grudgeIdApi,
   launcher: grudgeLauncherApi,
+  economy: grudgeEconomyApi,
 };
 
 export default grudgeApi;

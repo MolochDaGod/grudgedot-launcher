@@ -54,9 +54,37 @@ function clearAuth() {
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
 }
 
+// ── Token helpers ──
+
+/**
+ * Decode a JWT payload without verification (client-side only).
+ * Returns null if the token is malformed.
+ */
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if a JWT is expired (or will expire within `bufferSeconds`).
+ * Returns true if expired, malformed, or missing `exp` claim.
+ */
+export function isTokenExpired(token: string, bufferSeconds = 60): boolean {
+  const payload = decodeJwtPayload(token);
+  if (!payload || typeof payload.exp !== 'number') return true;
+  const nowSec = Math.floor(Date.now() / 1000);
+  return payload.exp - bufferSeconds <= nowSec;
+}
+
 // ── Public API ──
 
-/** Get current auth data without redirecting. Returns null if not logged in. */
+/** Get current auth data without redirecting. Returns null if not logged in or token is expired. */
 export function getAuthData(): AuthData | null {
   const token = localStorage.getItem(KEYS.token);
   const grudgeId = localStorage.getItem(KEYS.grudgeId);
@@ -64,6 +92,12 @@ export function getAuthData(): AuthData | null {
   const username = localStorage.getItem(KEYS.username);
 
   if (!token) return null;
+
+  // Proactively clear expired tokens so the user gets a clean login flow
+  if (isTokenExpired(token)) {
+    clearAuth();
+    return null;
+  }
 
   return {
     token,

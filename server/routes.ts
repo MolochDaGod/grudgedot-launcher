@@ -4063,6 +4063,97 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   setInterval(() => {
     // Future: Update NPC positions, AI, etc.
   }, 100);
+
+  // ============================================
+  // GRUDGE ENGINE BRIDGE — Scene Export + Deploy
+  // ============================================
+  // Allows GDevelop to save/load scenes from the Grudge Engine editor,
+  // check engine availability, and list ObjectStore models.
+
+  const ENGINE_EDITOR_URL = process.env.GRUDGE_ENGINE_URL || 'https://grudge-engine-web.vercel.app';
+  const OBJECTSTORE_WORKER_URL = process.env.OBJECTSTORE_WORKER_URL || 'https://objectstore.grudge-studio.com';
+
+  // In-memory scene store (keyed by projectId:sceneId)
+  const engineSceneStore = new Map<string, { scene: any; savedAt: string }>();
+
+  // Engine connection status
+  app.get("/api/engine/status", async (_req, res) => {
+    let engineAvailable = false;
+    try {
+      const r = await fetch(`${ENGINE_EDITOR_URL}/api/engine/status`, { signal: AbortSignal.timeout(5000) });
+      engineAvailable = r.ok;
+    } catch { /* offline */ }
+
+    let objectStoreOnline = false;
+    try {
+      const r = await fetch(`${OBJECTSTORE_WORKER_URL}/v1/health`, { signal: AbortSignal.timeout(5000) });
+      objectStoreOnline = r.ok;
+    } catch { /* offline */ }
+
+    res.json({
+      editorUrl: ENGINE_EDITOR_URL,
+      objectStoreUrl: OBJECTSTORE_WORKER_URL,
+      engineAvailable,
+      objectStoreOnline,
+    });
+  });
+
+  // Save a scene exported from the engine
+  app.post("/api/engine/scenes", (req, res) => {
+    try {
+      const { projectId, scene } = req.body;
+      if (!projectId || !scene?.id) {
+        return res.status(400).json({ error: 'projectId and scene.id are required' });
+      }
+      const key = `${projectId}:${scene.id}`;
+      const entry = { scene, savedAt: new Date().toISOString() };
+      engineSceneStore.set(key, entry);
+      res.status(201).json({ key, savedAt: entry.savedAt });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to save scene' });
+    }
+  });
+
+  // Load a scene for the engine
+  app.get("/api/engine/scenes/:projectId/:sceneId", (req, res) => {
+    const key = `${req.params.projectId}:${req.params.sceneId}`;
+    const entry = engineSceneStore.get(key);
+    if (!entry) {
+      return res.status(404).json({ error: 'Scene not found' });
+    }
+    res.json(entry);
+  });
+
+  // List all saved engine scenes for a project
+  app.get("/api/engine/scenes/:projectId", (req, res) => {
+    const prefix = `${req.params.projectId}:`;
+    const scenes: Array<{ sceneId: string; name: string; savedAt: string }> = [];
+    engineSceneStore.forEach((entry, key) => {
+      if (key.startsWith(prefix)) {
+        scenes.push({
+          sceneId: entry.scene.id,
+          name: entry.scene.name || 'Untitled',
+          savedAt: entry.savedAt,
+        });
+      }
+    });
+    res.json({ scenes });
+  });
+
+  // Proxy ObjectStore model listing for GDevelop (avoids client CORS)
+  app.get("/api/engine/objectstore/models", async (req, res) => {
+    try {
+      const prefix = (req.query.prefix as string) || '';
+      const limit = parseInt((req.query.limit as string) || '1000', 10);
+      let url = `${OBJECTSTORE_WORKER_URL}/v1/assets?limit=${limit}`;
+      if (prefix) url += `&prefix=${encodeURIComponent(prefix)}`;
+      const r2Res = await fetch(url);
+      const data = await r2Res.json();
+      res.json(data);
+    } catch {
+      res.status(502).json({ error: 'Failed to fetch from ObjectStore' });
+    }
+  });
   
   return httpServer;
 }
