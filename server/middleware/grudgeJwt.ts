@@ -7,11 +7,13 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const SESSION_SECRET = process.env.SESSION_SECRET || "";
+// Use JWT_SECRET (matching grudge-id backend) for local verification.
+// Falls back to SESSION_SECRET for backward compat.
+const JWT_VERIFY_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || "";
 const GRUDGE_BACKEND_URL = process.env.GRUDGE_BACKEND_URL || "https://id.grudge-studio.com";
 
-if (!process.env.SESSION_SECRET) {
-  console.warn("⚠️  SESSION_SECRET not set — JWT verification will fail for all requests");
+if (!process.env.JWT_SECRET && !process.env.SESSION_SECRET) {
+  console.warn("⚠️  Neither JWT_SECRET nor SESSION_SECRET set — local JWT verification disabled, using remote only");
 }
 
 /** Shape of the JWT payload issued by auth-gateway */
@@ -44,16 +46,18 @@ function extractToken(req: Request): string | null {
   return null;
 }
 
-/** Verify JWT locally using SESSION_SECRET. */
+/** Verify JWT locally using JWT_SECRET (or SESSION_SECRET fallback). */
 function verifyToken(token: string): GrudgeUser | null {
-  if (!SESSION_SECRET) return null;
+  if (!JWT_VERIFY_SECRET) return null;
   try {
-    const decoded = jwt.verify(token, SESSION_SECRET) as Record<string, any>;
-    if (!decoded.grudgeId) return null;
+    const decoded = jwt.verify(token, JWT_VERIFY_SECRET) as Record<string, any>;
+    // VPS grudge-id uses snake_case (grudge_id), some local issuers use camelCase (grudgeId)
+    const grudgeId = decoded.grudge_id || decoded.grudgeId;
+    if (!grudgeId) return null;
     return {
-      grudgeId: decoded.grudgeId,
+      grudgeId,
       username: decoded.username || "Player",
-      userId: decoded.userId || decoded.sub || decoded.grudgeId,
+      userId: decoded.grudge_id || decoded.grudgeId || decoded.sub,
       role: decoded.role,
       isPremium: decoded.isPremium,
       isGuest: decoded.isGuest,
