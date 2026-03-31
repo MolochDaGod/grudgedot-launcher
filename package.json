@@ -51,6 +51,7 @@
     "@ni2khanna/capacitor-game-connect": "^7.0.7",
     "@octokit/rest": "^22.0.1",
     "@opentelemetry/instrumentation-socket.io": "^0.55.0",
+    "@phantom/browser-sdk": "^1.0.7",
     "@radix-ui/react-accordion": "^1.2.4",
     "@radix-ui/react-alert-dialog": "^1.1.7",
     "@radix-ui/react-aspect-ratio": "^1.1.3",

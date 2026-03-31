@@ -101,6 +101,26 @@ export function redirectToLogin(customReturnUrl?: string) {
 // ── Grudge ID service (direct calls, no local proxy needed) ──
 const _ID_BASE = 'https://id.grudge-studio.com';
 
+// ── Phantom Connect SDK (lazy-loaded singleton) ──
+import { BrowserSDK, AddressType } from '@phantom/browser-sdk';
+const PHANTOM_APP_ID = '656b4ef2-7acc-44fe-bec7-4b288cfdd2e9';
+let _phantomSdk: InstanceType<typeof BrowserSDK> | null = null;
+
+export function getPhantomSdk() {
+  if (!_phantomSdk) {
+    _phantomSdk = new BrowserSDK({
+      providers: ['google', 'phantom', 'injected', 'deeplink'],
+      addressTypes: [AddressType.solana, AddressType.ethereum],
+      appId: PHANTOM_APP_ID,
+      authOptions: {
+        authUrl: 'https://connect.phantom.app/login',
+        redirectUrl: window.location.origin + '/',
+      },
+    });
+  }
+  return _phantomSdk;
+}
+
 /** Logout — invalidates JWT server-side, clears tokens, redirects to auth page. */
 export function logout() {
   // Fire-and-forget: invalidate JWT so it cannot be replayed
@@ -295,21 +315,45 @@ export async function verifyPhoneCode(phone: string, code: string) {
   return data;
 }
 
-/** Connect a Solana wallet (login or link to existing account). */
-export async function loginWithWallet(walletAddress: string, walletType = 'solana') {
+/** Connect wallet via Phantom Connect SDK → link to Grudge ID. */
+export async function loginWithWallet(walletAddress?: string, walletType = 'solana') {
+  // If no address provided, connect via Phantom SDK first
+  let address = walletAddress;
+  if (!address) {
+    const sdk = getPhantomSdk();
+    const { addresses } = await sdk.connect({ provider: 'injected' });
+    const solAddr = addresses.find((a: any) => a.addressType === 'solana');
+    address = solAddr?.address || addresses[0]?.address;
+    if (!address) throw new Error('No wallet address returned');
+    // Store wallet address for other parts of the app
+    localStorage.setItem('grudge_wallet_address', address);
+  }
+  // Link wallet to Grudge account
   const res = await fetch(`${_ID_BASE}/auth/wallet`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(hasAuthToken() ? { Authorization: `Bearer ${localStorage.getItem(KEYS.token)}` } : {}),
     },
-    body: JSON.stringify({ walletAddress, walletType }),
+    body: JSON.stringify({ walletAddress: address, walletType }),
   });
   const data = await res.json();
   if (data.success && data.token) {
     storeAuth(data);
   }
   return data;
+}
+
+/** Connect via Phantom embedded wallet (Google, Phantom login, etc.) */
+export async function loginWithPhantomConnect(provider: 'google' | 'phantom' | 'injected' = 'phantom') {
+  const sdk = getPhantomSdk();
+  const { addresses } = await sdk.connect({ provider });
+  const solAddr = addresses.find((a: any) => a.addressType === 'solana');
+  const address = solAddr?.address || addresses[0]?.address;
+  if (!address) throw new Error('No wallet address returned');
+  localStorage.setItem('grudge_wallet_address', address);
+  // Link to Grudge account
+  return loginWithWallet(address);
 }
 
 /** Verify current token with Grudge ID directly. Returns full profile or null. */
