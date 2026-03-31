@@ -167,6 +167,27 @@ export const GRD17_API = {
   blockchainTransfer: `${GRUDACHAIN_URL}/api/blockchain/transfer`,
 } as const;
 
+// ============================================================
+// Babylon AI Workers (Cloudflare Workers — BabylonJS 9 + Havok specialists)
+// Source: D:\GrudgeStudio\babylon-ai-workers
+// ============================================================
+
+export const BABYLON_AI_URL = process.env.BABYLON_AI_URL || "https://babylon-ai-workers.grudge.workers.dev";
+
+/** Babylon AI Workers endpoints — domain-specialist RAG over BabylonJS 9 API docs */
+export const BABYLON_AI_API = {
+  /** Havok Scholar — physics, character controllers, collision, constraints */
+  havok: `${BABYLON_AI_URL}/havok`,
+  /** Babylon Sage — rendering, materials, animations, terrain, VFX */
+  sage: `${BABYLON_AI_URL}/sage`,
+  /** Semantic search across all ingested BabylonJS docs */
+  search: `${BABYLON_AI_URL}/search`,
+  /** Ingest new API docs into the knowledge base */
+  learn: `${BABYLON_AI_URL}/learn`,
+  /** Health check */
+  health: `${BABYLON_AI_URL}/health`,
+} as const;
+
 /** Puter.js KV prefixes for GRD-17 data (Grudge account linked) */
 export const GRD17_PUTER_KEYS = {
   automationConfig: "grudge_grd17_automation_",

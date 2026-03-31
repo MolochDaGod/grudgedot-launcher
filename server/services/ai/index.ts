@@ -25,6 +25,11 @@ class AIService {
   }
 
   private initProviders() {
+    // NOTE: Babylon AI Workers (havok-scholar + babylon-sage) are accessed via
+    // ai.grudge-studio.com/v1/agents/havok/chat and /v1/agents/sage/chat
+    // or directly at babylon-ai-workers.grudge.workers.dev
+    // No duplicate provider needed here — the real backend handles routing.
+
     // Puter AI — PRIMARY (GRUDACHAIN paid membership, 500+ models)
     // Set PUTER_AUTH_TOKEN to the GRUDACHAIN Puter account token from puter.com/dashboard
     const puterToken = process.env.PUTER_AUTH_TOKEN || process.env.PUTER_API_KEY;

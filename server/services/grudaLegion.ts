@@ -595,5 +595,11 @@ export function registerGrudaLegionRoutes(app: Express) {
     res.status(result.status).json(result.data);
   });
 
+  // NOTE: Babylon AI Workers are accessed directly at:
+  //   - ai.grudge-studio.com/v1/agents/havok/chat  (auth'd, rate-limited)
+  //   - ai.grudge-studio.com/v1/agents/sage/chat
+  //   - babylon-ai-workers.grudge.workers.dev       (direct, CORS open)
+  // No duplicate proxy needed here — the real backend (ai-hub) handles routing.
+
   console.log("✅ GRUDA Legion proxy routes registered");
 }

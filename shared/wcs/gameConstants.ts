@@ -180,24 +180,31 @@ export const ECONOMY = {
 // FACTION SYSTEM
 // ============================================
 
-export const FACTIONS = ['order', 'chaos', 'neutral'] as const;
+export const FACTIONS = ['crusade', 'legion', 'fabled'] as const;
 export type FactionId = typeof FACTIONS[number];
+
+/** Faction → allied races */
+export const FACTION_RACES: Record<FactionId, readonly RaceId[]> = {
+  crusade: ['human', 'barbarian'],
+  legion:  ['orc', 'undead'],
+  fabled:  ['elf', 'dwarf'],
+};
 
 // ============================================
 // CLASSES & RACES
 // ============================================
 
-export const CLASS_IDS = ['warrior', 'mage', 'ranger', 'worg'] as const;
+export const CLASS_IDS = ['warrior', 'mage', 'ranger', 'worge'] as const;
 export type ClassId = typeof CLASS_IDS[number];
 
 export const CLASS_DISPLAY_NAMES: Record<ClassId, string> = {
   warrior: 'Warrior',
   mage: 'Mage Priest',
   ranger: 'Ranger Scout',
-  worg: 'Worg Shapeshifter',
+  worge: 'Worge Shapeshifter',
 };
 
-export const RACE_IDS = ['orc', 'elf', 'human', 'undead'] as const;
+export const RACE_IDS = ['human', 'orc', 'elf', 'undead', 'barbarian', 'dwarf'] as const;
 export type RaceId = typeof RACE_IDS[number];
 
 // ============================================

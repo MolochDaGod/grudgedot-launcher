@@ -34,13 +34,13 @@ export type ArmorTypeId = typeof ARMOR_TYPES[number];
  * Warrior: shields, swords, 2h weapons (swords, axes, hammers)
  * Mage:    staffs, tomes, maces, off-hand relics, wands
  * Ranger:  bows, crossbows, guns, daggers, 2h swords, spears
- * Worg:    staffs, spears, daggers, bows, hammers, maces, off-hand relics
+ * Worge:   staffs, spears, daggers, bows, hammers, maces, off-hand relics
  */
 export const CLASS_ALLOWED_WEAPONS: Record<ClassId, readonly WeaponTypeId[]> = {
   warrior: ['sword', '2h_sword', 'axe', '2h_axe', 'hammer', 'shield', 'mace', 'lance', 'spear'],
   mage:    ['staff', 'tome', 'mace', 'wand', 'off_hand_relic'],
   ranger:  ['bow', 'crossbow', 'gun', 'dagger', '2h_sword', 'spear'],
-  worg:    ['staff', 'spear', 'dagger', 'bow', 'hammer', 'mace', 'off_hand_relic'],
+  worge:   ['staff', 'spear', 'dagger', 'bow', 'hammer', 'mace', 'off_hand_relic'],
 };
 
 // ============================================
@@ -51,13 +51,13 @@ export const CLASS_ALLOWED_WEAPONS: Record<ClassId, readonly WeaponTypeId[]> = {
  * Warrior: can wear all armor types (cloth, leather, metal)
  * Mage:    cloth only
  * Ranger:  cloth and leather
- * Worg:    cloth and leather
+ * Worge:   cloth and leather
  */
 export const CLASS_ALLOWED_ARMOR: Record<ClassId, readonly ArmorTypeId[]> = {
   warrior: ['cloth', 'leather', 'metal'],
   mage:    ['cloth'],
   ranger:  ['cloth', 'leather'],
-  worg:    ['cloth', 'leather'],
+  worge:   ['cloth', 'leather'],
 };
 
 // ============================================
