@@ -29,3 +29,6 @@ Grudge-Engine-Web-1/
 
 # Vercel
 .vercel
+
+# Arena textures (served from ObjectStore in production)
+public/models/scenes/arena/*.png
