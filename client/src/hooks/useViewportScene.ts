@@ -49,6 +49,11 @@ export function useViewportScene({
     selectObject, addConsoleLog, registerAnimations, registerMeshCount, setEngineMetrics
   } = useEngineStore();
 
+  // Create a dependency tracker for current scene objects to trigger re-renders
+  // when objects are added/deleted (not just when scene ID changes)
+  const currentScene = getCurrentScene();
+  const sceneObjectIds = currentScene?.objects.map(obj => obj.id).join(',') || '';
+
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -399,8 +404,12 @@ export function useViewportScene({
       window.removeEventListener('resize', handleResize);
       if (shadowGeneratorRef.current) { shadowGeneratorRef.current.dispose(); shadowGeneratorRef.current = null; }
       if (controllerRef.current) { controllerRef.current.dispose(); controllerRef.current = null; }
+      // Clear mesh refs to prevent stale references
+      meshMapRef.current.clear();
+      gizmoMeshRef.current.clear();
+      animationGroupsRef.current.clear();
       scene.dispose();
       engine.dispose();
     };
-  }, [project?.id, currentSceneId, showGrid]);
+  }, [project?.id, currentSceneId, showGrid, sceneObjectIds]);
 }
