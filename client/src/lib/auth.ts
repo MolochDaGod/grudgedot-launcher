@@ -12,7 +12,9 @@
  * Source of truth: local /api proxy → auth-gateway (shared `accounts` table)
  */
 
-// Auth is now served in-app at /auth — no external gateway redirect needed
+// Auth is handled by the unified Grudge ID service at id.grudge-studio.com
+const GRUDGE_AUTH_URL = 'https://id.grudge-studio.com/auth';
+const GRUDGE_API_URL = 'https://id.grudge-studio.com';
 
 // ── localStorage keys (shared across all Grudge Studio apps) ──
 const KEYS = {
@@ -21,6 +23,7 @@ const KEYS = {
   userId: 'grudge_user_id',
   username: 'grudge_username',
   isPuter: 'grudge_puter_auth',
+  provider: 'grudge_auth_provider',
 } as const;
 
 export interface AuthData {
@@ -122,10 +125,10 @@ export function hasAuthToken(): boolean {
   return !!localStorage.getItem(KEYS.token);
 }
 
-/** Redirect to in-app auth page. */
+/** Redirect to unified Grudge auth page at id.grudge-studio.com. */
 export function redirectToLogin(customReturnUrl?: string) {
-  const returnUrl = encodeURIComponent(customReturnUrl || window.location.pathname);
-  window.location.href = `/auth?return=${returnUrl}`;
+  const returnUrl = encodeURIComponent(customReturnUrl || window.location.href);
+  window.location.href = `${GRUDGE_AUTH_URL}?redirect=${returnUrl}&app=gdevelop`;
 }
 
 const _ID_BASE = 'https://id.grudge-studio.com';
@@ -141,7 +144,7 @@ export function logout() {
     }).catch(() => {}); // best-effort
   }
   clearAuth();
-  window.location.href = '/auth';
+  redirectToLogin();
 }
 
 /** Logout without redirect (for switching accounts, etc.) */
@@ -190,18 +193,33 @@ export async function apiCall<T = any>(
 // ── Callback capture (after auth-gateway redirect) ──
 
 /**
- * Capture auth data from URL params after auth-gateway redirect.
- * The auth-gateway redirects back with ?token=...&grudgeId=...&userId=...&username=...
+ * Capture auth data from URL hash fragment after unified auth redirect.
+ * The auth page redirects back with #token=JWT&grudgeId=GID&name=NAME&provider=PROV
+ * Also supports legacy query-param style (?token=...) for backward compat.
  * This must be called BEFORE getAuthData() on page load.
- * Returns true if auth data was captured from the URL.
  */
 export function captureAuthCallback(): boolean {
+  // Try hash fragment first (new unified auth)
+  if (location.hash && location.hash.length > 1) {
+    const hash = new URLSearchParams(location.hash.slice(1));
+    const token = hash.get('token');
+    if (token) {
+      storeAuth({
+        token,
+        grudgeId: hash.get('grudgeId') || undefined,
+        username: hash.get('name') || undefined,
+        displayName: hash.get('name') || undefined,
+      });
+      history.replaceState(null, '', location.pathname + location.search);
+      return true;
+    }
+  }
+
+  // Fallback: query params (legacy)
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
-
   if (!token) return false;
 
-  // Store everything the gateway sent
   storeAuth({
     token,
     grudgeId: params.get('grudgeId') || undefined,
@@ -210,13 +228,11 @@ export function captureAuthCallback(): boolean {
     displayName: params.get('displayName') || undefined,
   });
 
-  // Strip auth params from URL so they don't leak into bookmarks/history
   const cleanUrl = new URL(window.location.href);
   ['token', 'grudgeId', 'userId', 'username', 'displayName', 'provider', 'isNew'].forEach(
     (k) => cleanUrl.searchParams.delete(k),
   );
-  window.history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
-
+  window.history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search);
   return true;
 }
 
