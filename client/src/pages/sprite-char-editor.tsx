@@ -64,10 +64,25 @@ interface LayerState {
 
 type CharState = Record<string, LayerState>;
 
-// ── PSD Loader ─────────────────────────────────────────────────────────────────
+// ── PSD Loader — loads psd.js browser build from CDN ─────────────────────────
+let _psdLib: any = null;
+
+async function getPsdLib(): Promise<any> {
+  if (_psdLib) return _psdLib;
+  // Dynamically inject the browser-compiled psd.js from jsDelivr CDN
+  await new Promise<void>((resolve, reject) => {
+    if ((window as any).PSD) { _psdLib = (window as any).PSD; resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/psd@3.4.0/dist/psd.min.js';
+    script.onload = () => { _psdLib = (window as any).PSD; resolve(); };
+    script.onerror = () => reject(new Error('Failed to load PSD.js from CDN'));
+    document.head.appendChild(script);
+  });
+  return _psdLib;
+}
+
 async function loadTinyWorldsPSD(): Promise<any> {
-  // @ts-ignore
-  const PSD = (await import('psd')).default;
+  const PSD = await getPsdLib();
   const seed = Math.floor(Math.random() * 1000) + 1;
   const psd = await PSD.fromURL(`https://jetrotal.github.io/EasyChar/tinyWorlds.psd?v=${seed}`);
   return psd;
