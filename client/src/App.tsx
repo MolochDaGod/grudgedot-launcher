@@ -13,6 +13,7 @@ import { Home, Gamepad2, Loader2 } from "lucide-react";
 import { LoadingProvider } from "@/hooks/useLoading";
 import { PuterProvider } from "@/contexts/puter-context";
 import { AuthGuard } from "@/components/AuthGuard";
+import { CharacterProvider } from "@/contexts/CharacterContext";
 import { initGrudgeSSO } from "@/lib/grudge-sso";
 
 // Enable cross-app SSO token relay for all outbound Grudge links
@@ -252,9 +253,11 @@ export default function App() {
       <TooltipProvider>
         <LoadingProvider>
           <PuterProvider>
-            <Suspense fallback={<PageLoader />}>
-              <AuthRouter />
-            </Suspense>
+            <CharacterProvider>
+              <Suspense fallback={<PageLoader />}>
+                <AuthRouter />
+              </Suspense>
+            </CharacterProvider>
           </PuterProvider>
         </LoadingProvider>
       </TooltipProvider>

@@ -14,6 +14,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Sword, Shield, Zap, Heart, Lock, Check, LogIn, Plus, Trash2, Users, Crown } from "lucide-react";
 import { useState } from "react";
 import { grudgeGameApi, type GrudgeCharacter, type GrudgeFaction } from "@/lib/grudgeBackendApi";
+import { useCharacter, CLASS_COLOR } from "@/contexts/CharacterContext";
+import { Coins } from "lucide-react";
 import type { Character, PlayerCharacter } from "@shared/schema";
 
 const RARITY_COLORS = {
@@ -36,6 +38,7 @@ const CLASSES = ['Warrior', 'Mage', 'Ranger', 'Worge'] as const;
 export default function CharactersPage() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { activeCharacter, setActiveCharacter } = useCharacter();
   const [showCreate, setShowCreate] = useState(false);
   const [newChar, setNewChar] = useState({ name: '', race: RACES[0], class: CLASSES[0] });
 
@@ -198,36 +201,54 @@ export default function CharactersPage() {
             </Card>
           ) : (
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {grudgeChars.map((ch) => (
-                <Card key={ch.id} className="hover-elevate" data-testid={`card-grudge-${ch.id}`}>
+              {grudgeChars.map((ch) => {
+                const classColor = CLASS_COLOR[ch.class?.toLowerCase()] || '#d97706';
+                const isActive = activeCharacter?.id === ch.id;
+                return (
+                <Card key={ch.id} className={`hover-elevate transition-all ${isActive ? 'ring-2' : ''}`}
+                  style={{ ...(isActive ? { ringColor: classColor } : {}) }}
+                  data-testid={`card-grudge-${ch.id}`}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600">
-                          <Sword className="h-5 w-5 text-white" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg text-white font-bold text-lg"
+                          style={{ background: `linear-gradient(135deg, ${classColor}cc, ${classColor}66)` }}>
+                          {ch.name[0]}
                         </div>
                         <div>
-                          <CardTitle className="text-lg">{ch.name}</CardTitle>
-                          <CardDescription className="capitalize">{ch.race} {ch.class}</CardDescription>
+                          <CardTitle className="text-base leading-tight">{ch.name}</CardTitle>
+                          <CardDescription className="capitalize text-xs">{ch.race} {ch.class}</CardDescription>
                         </div>
                       </div>
-                      <Badge variant="outline">Lv {ch.level}</Badge>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant="outline" className="text-xs">Lv {ch.level}</Badge>
+                        {isActive && <Badge className="text-[9px] px-1.5 h-4" style={{ background: classColor + '33', color: classColor, border: `1px solid ${classColor}44` }}>Active</Badge>}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-1"><Heart className="h-3 w-3 text-red-500" /><span>{ch.health}/{ch.max_health} HP</span></div>
-                      <div className="flex items-center gap-1"><Zap className="h-3 w-3 text-yellow-500" /><span>{ch.xp} XP</span></div>
-                      <div className="flex items-center gap-1"><Users className="h-3 w-3 text-blue-500" /><span>{ch.faction || 'No faction'}</span></div>
-                      <div className="flex items-center gap-1"><Shield className="h-3 w-3 text-green-500" /><span>{ch.gold} Gold</span></div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1 text-muted-foreground"><Heart className="h-3 w-3 text-red-500" />{ch.health}/{ch.max_health} HP</div>
+                      <div className="flex items-center gap-1 text-muted-foreground"><Zap className="h-3 w-3 text-yellow-500" />{ch.xp} XP</div>
+                      <div className="flex items-center gap-1 text-muted-foreground"><Users className="h-3 w-3 text-blue-500" />{ch.faction || 'No faction'}</div>
+                      <div className="flex items-center gap-1" style={{ color: '#f6d860' }}>
+                        <Coins className="h-3 w-3" />{(ch.gold ?? 0).toLocaleString()}
+                      </div>
                     </div>
                     {ch.island && <p className="text-xs text-muted-foreground">Island: {ch.island}</p>}
-                    <Button variant="destructive" size="sm" className="w-full" onClick={() => deleteGrudgeChar.mutate(ch.id)}>
-                      <Trash2 className="mr-1 h-3 w-3" /> Delete
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button size="sm" variant={isActive ? 'secondary' : 'outline'} className="w-full text-xs"
+                        onClick={() => setActiveCharacter(ch)} disabled={isActive}>
+                        {isActive ? '✓ Active' : 'Set Active'}
+                      </Button>
+                      <Button variant="destructive" size="sm" className="w-full text-xs" onClick={() => deleteGrudgeChar.mutate(ch.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
             </div>
           )}
         </TabsContent>
