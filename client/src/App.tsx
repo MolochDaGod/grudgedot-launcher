@@ -71,6 +71,7 @@ const ConnectionsPage = lazy(() => import("@/pages/connections"));
 const NexusNemesis = lazy(() => import("@/pages/nexus-nemesis"));
 const AssetLibrary = lazy(() => import("@/pages/asset-library"));
 const DungeonCrawler = lazy(() => import("@/pages/dungeon-crawler"));
+const SpriteCharEditor = lazy(() => import("@/pages/sprite-char-editor"));
 
 function PageLoader() {
   return (
@@ -134,6 +135,7 @@ function Router() {
         <Route path="/nexus-nemesis" component={NexusNemesis} />
         <Route path="/asset-library" component={AssetLibrary} />
         <Route path="/dungeon-crawler" component={DungeonCrawler} />
+        <Route path="/sprite-editor" component={SpriteCharEditor} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -188,6 +190,7 @@ function Header() {
     if (location === "/nexus-nemesis") return "Nexus Nemesis";
     if (location === "/asset-library") return "ObjectStore Library";
     if (location === "/dungeon-crawler") return "Dungeon Crawler";
+    if (location === "/sprite-editor") return "2D Sprite Editor";
     return "Grudge Brawl";
   };
 

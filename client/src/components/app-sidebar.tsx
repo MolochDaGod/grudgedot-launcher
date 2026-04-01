@@ -65,6 +65,12 @@ const mainMenuItems = [
     badge: "AI",
   },
   {
+    title: "2D Sprite Editor",
+    url: "/sprite-editor",
+    icon: Sparkles,
+    badge: "2D",
+  },
+  {
     title: "Effects Playground",
     url: "/effects",
     icon: Wand2,
