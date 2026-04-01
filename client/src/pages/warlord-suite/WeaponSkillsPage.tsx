@@ -1,23 +1,37 @@
 import { useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight, Clock, Droplet } from "lucide-react";
+import { ChevronRight, Clock, Droplet, Zap, Target, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   WEAPON_SKILL_TREES,
-  getSkillsForSlot,
+  MASTERY_LEVELS,
+  getClassBonusesForWeapon,
   calculateSkillDamage,
   calculateSkillCooldown,
   getUpgradeEffect,
   type WeaponSkill,
 } from "../../../../shared/wcs/definitions/weaponSkills";
-import {
-  CLASS_ALLOWED_WEAPONS,
-} from "../../../../shared/wcs/classWeaponRestrictions";
-import { CLASS_IDS } from "../../../../shared/wcs/gameConstants";
 
 const WEAPON_ICONS: Record<string, string> = {
-  SWORD: "⚔️", AXE: "🪓", BOW: "🏹", STAFF: "🪄", DAGGER: "🗡️",
-  MACE: "🔨", HAMMER: "⚒️", SPEAR: "🔱", WAND: "✨", SCYTHE: "💀",
+  SWORD: '⚔️', AXE: '🪳', BOW: '🏹', STAFF: '🪴', DAGGER: '🗡️',
+  MACE: '🔨', HAMMER: '⚒️', SPEAR: '🔱', WAND: '✨', SCYTHE: '💀',
+  CROSSBOW: '🏹', GUN: '💥', TOME: '📚', SHIELD: '🛡️', RELIC: '💎', CAPE: '🩹',
+};
+
+// Mastery tier color by level bracket
+function masteryColor(level: number): string {
+  if (level <= 5)  return 'hsl(0 0% 65%)';
+  if (level <= 10) return 'hsl(220 80% 65%)';
+  if (level <= 15) return 'hsl(280 70% 65%)';
+  return 'hsl(35 100% 60%)';
+}
+
+const CLASS_COLORS: Record<string, string> = {
+  warrior: '#d97706',
+  mage:    '#7c3aed',
+  ranger:  '#16a34a',
+  worge:   '#0891b2',
 };
 
 const SLOT_LABELS: Record<number, { name: string; color: string }> = {
@@ -28,20 +42,15 @@ const SLOT_LABELS: Record<number, { name: string; color: string }> = {
 };
 
 export default function WeaponSkillsPage() {
-  const [selectedWeapon, setSelectedWeapon] = useState<string>("SWORD");
+  const [selectedWeapon, setSelectedWeapon] = useState<string>('SWORD');
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'mastery' | 'skills'>('mastery');
 
   const weaponTypes = Object.keys(WEAPON_SKILL_TREES);
   const tree = WEAPON_SKILL_TREES[selectedWeapon];
 
-  // Which classes can use this weapon
-  const usableBy = useMemo(() => {
-    const lowerKey = selectedWeapon.toLowerCase();
-    return CLASS_IDS.filter(cls => {
-      const allowed = CLASS_ALLOWED_WEAPONS[cls];
-      return allowed?.some(w => w === lowerKey || w === `2h_${lowerKey}` || lowerKey === w.replace('2h_', ''));
-    });
-  }, [selectedWeapon]);
+  // Class bonuses (head-start) for this weapon
+  const classBonuses = useMemo(() => getClassBonusesForWeapon(selectedWeapon), [selectedWeapon]);
 
   const skillsBySlot = useMemo(() => {
     if (!tree) return {};
@@ -72,27 +81,93 @@ export default function WeaponSkillsPage() {
 
       {/* Weapon Info Header */}
       {tree && (
-        <div className="ornate-frame p-3 flex items-center gap-3">
-          <span className="text-2xl">{WEAPON_ICONS[selectedWeapon] || "⚔️"}</span>
-          <div>
-            <h3 className="font-[var(--font-heading)] text-sm gold-text tracking-wide">{selectedWeapon} Skills</h3>
-            <div className="flex gap-1 mt-1">
-              <span className="text-[10px] text-[hsl(45_15%_55%)]">Used by:</span>
-              {usableBy.map(cls => (
-                <span key={cls} className="text-[9px] px-1.5 py-0.5 rounded border border-[hsl(43_50%_30%)] text-[hsl(43_70%_55%)] capitalize">
-                  {cls}
+        <div className="ornate-frame p-3">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">{WEAPON_ICONS[selectedWeapon] || '⚔️'}</span>
+            <div className="flex-1">
+              <h3 className="font-[var(--font-heading)] text-sm gold-text tracking-wide">{selectedWeapon} Mastery</h3>
+              <p className="text-[10px] text-[hsl(45_15%_50%)] mt-0.5">
+                All classes can equip — mastery unlocks through use (max level +70% dmg, +35% spd, +25% crit)
+              </p>
+            </div>
+            <div className="text-[10px] text-[hsl(45_15%_55%)] text-right">
+              20 levels · {tree.skills.length} skills
+            </div>
+          </div>
+          {/* Class bonuses row */}
+          {classBonuses.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-[hsl(45_15%_50%)]">Class bonus:</span>
+              {classBonuses.map(({ cls, headstart }) => (
+                <span key={cls}
+                  className="text-[9px] px-1.5 py-0.5 rounded capitalize font-semibold"
+                  style={{ background: CLASS_COLORS[cls] + '22', color: CLASS_COLORS[cls], border: `1px solid ${CLASS_COLORS[cls]}44` }}>
+                  {cls} starts at Lv{headstart}
                 </span>
               ))}
             </div>
-          </div>
-          <div className="ml-auto text-[10px] text-[hsl(45_15%_55%)]">
-            {tree.skills.length} skills · 4 slots
-          </div>
+          )}
         </div>
       )}
 
-      {/* Skills by Slot */}
-      <ScrollArea className="h-[calc(100vh-260px)]">
+      {/* Tab toggle: Mastery / Skills */}
+      <div className="flex gap-1">
+        <button onClick={() => setActiveTab('mastery')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-heading)] tracking-wide rounded transition-all ${
+            activeTab === 'mastery' ? 'gilded-button' : 'dark-button'
+          }`}>
+          <TrendingUp className="h-3 w-3" /> Mastery Progression
+        </button>
+        <button onClick={() => setActiveTab('skills')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-heading)] tracking-wide rounded transition-all ${
+            activeTab === 'skills' ? 'gilded-button' : 'dark-button'
+          }`}>
+          <Zap className="h-3 w-3" /> Weapon Skills
+        </button>
+      </div>
+
+      {/* ── Mastery Ladder ── */}
+      {activeTab === 'mastery' && (
+        <ScrollArea className="h-[calc(100vh-300px)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-1.5">
+            {MASTERY_LEVELS.map((ml) => {
+              const color = masteryColor(ml.level);
+              const tierStart = [1, 6, 11, 16].includes(ml.level);
+              return (
+                <div key={ml.level}
+                  className={`stone-panel p-2.5 flex items-center gap-2.5 ${
+                    tierStart ? 'border-l-2' : ''
+                  }`}
+                  style={tierStart ? { borderLeftColor: color } : {}}>
+                  {/* Level badge */}
+                  <div className="w-7 h-7 rounded flex items-center justify-center text-[11px] font-bold shrink-0"
+                    style={{ background: color + '22', color, border: `1px solid ${color}44` }}>
+                    {ml.level}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-[var(--font-heading)] text-[11px] tracking-wide truncate" style={{ color }}>
+                      {ml.label}
+                    </div>
+                    <div className="flex gap-2 mt-0.5 text-[10px]">
+                      <span className="text-red-400">+{ml.damagePct}% dmg</span>
+                      <span className="text-blue-400">+{ml.attackSpeedPct}% spd</span>
+                      <span className="text-yellow-400">+{ml.critPct}% crit</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 stone-panel p-3 text-[10px] text-[hsl(45_15%_50%)] space-y-1">
+            <p>At <span className="gold-text">Grandmaster (Lv20)</span>: +70% damage · +35% attack speed · +25% crit chance</p>
+            <p>XP earned from hitting enemies with this weapon type. Class head-start applies on first login.</p>
+          </div>
+        </ScrollArea>
+      )}
+
+      {/* ── Skills by Slot ── */}
+      {activeTab === 'skills' && (
+      <ScrollArea className="h-[calc(100vh-300px)]">
         <div className="space-y-4">
           {([1, 2, 3, 4] as const).map(slot => {
             const skills = skillsBySlot[slot] || [];
@@ -190,6 +265,7 @@ export default function WeaponSkillsPage() {
           })}
         </div>
       </ScrollArea>
+      )}
     </div>
   );
 }

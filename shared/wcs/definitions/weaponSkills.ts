@@ -1,3 +1,93 @@
+// ── Weapon Mastery System ──────────────────────────────────────────────────
+// 20 mastery levels per weapon type, unlocked through use (not class-gated).
+// Each level scales: damage %, attack speed %, crit chance %.
+// Classes receive a head-start bonus on their specialty weapons.
+
+export interface MasteryLevel {
+  level: number;
+  damagePct: number;      // cumulative % damage bonus at this level
+  attackSpeedPct: number; // cumulative % attack speed bonus
+  critPct: number;        // cumulative % crit chance bonus
+  label: string;          // title for this tier
+}
+
+// Per-level gain by tier (1-5, 6-10, 11-15, 16-20)
+const MASTERY_GAINS: Array<{ dmg: number; spd: number; crit: number }> = [
+  { dmg: 2, spd: 1.0, crit: 0.5 },  // levels 1-5
+  { dmg: 3, spd: 1.5, crit: 1.0 },  // levels 6-10
+  { dmg: 4, spd: 2.0, crit: 1.5 },  // levels 11-15
+  { dmg: 5, spd: 2.5, crit: 2.0 },  // levels 16-20
+];
+
+const MASTERY_TIER_LABELS = [
+  'Novice',     // 1
+  'Apprentice', // 2
+  'Adept',      // 3
+  'Journeyman', // 4
+  'Skilled',    // 5
+  'Proficient', // 6
+  'Expert',     // 7
+  'Veteran',    // 8
+  'Master',     // 9
+  'Elite',      // 10
+  'Champion',   // 11
+  'Hero',       // 12
+  'Legend',     // 13
+  'Warlord',    // 14
+  'Conqueror',  // 15
+  'Warbringer', // 16
+  'Berserker',  // 17
+  'Dreadlord',  // 18
+  'Warchief',   // 19
+  'Grandmaster',// 20
+];
+
+/** Generate all 20 mastery levels for any weapon type. */
+export function generateMasteryLevels(): MasteryLevel[] {
+  let dmg = 0, spd = 0, crit = 0;
+  return Array.from({ length: 20 }, (_, i) => {
+    const lvl = i + 1;
+    const tierIdx = Math.floor(i / 5);
+    const gain = MASTERY_GAINS[tierIdx];
+    dmg  += gain.dmg;
+    spd  += gain.spd;
+    crit += gain.crit;
+    return {
+      level: lvl,
+      damagePct: Math.round(dmg * 10) / 10,
+      attackSpeedPct: Math.round(spd * 10) / 10,
+      critPct: Math.round(crit * 10) / 10,
+      label: MASTERY_TIER_LABELS[i],
+    };
+  });
+}
+
+export const MASTERY_LEVELS = generateMasteryLevels();
+
+/** Mastery level at which each class starts for their specialty weapons (head-start bonus). */
+export const CLASS_MASTERY_HEADSTART: Record<string, Record<string, number>> = {
+  warrior: { SWORD: 4, HAMMER: 4, AXE: 3, SPEAR: 2 },
+  mage:    { STAFF: 4, WAND: 4, MACE: 3 },
+  ranger:  { BOW: 4, DAGGER: 4, SPEAR: 3 },
+  worge:   { STAFF: 3, SPEAR: 3, DAGGER: 3, BOW: 3, HAMMER: 2, MACE: 2 },
+};
+
+/** Class specialty weapons used to display 'Class Bonus' label in the UI. */
+export const CLASS_SPECIALTY_WEAPONS: Record<string, string[]> = {
+  warrior: ['SWORD', 'AXE', 'HAMMER', 'SPEAR'],
+  mage:    ['STAFF', 'WAND', 'MACE'],
+  ranger:  ['BOW', 'DAGGER', 'SPEAR'],
+  worge:   ['STAFF', 'SPEAR', 'DAGGER', 'BOW', 'HAMMER', 'MACE'],
+};
+
+/** Get which classes have a mastery head-start for a given weapon type. */
+export function getClassBonusesForWeapon(weaponType: string): Array<{ cls: string; headstart: number }> {
+  return Object.entries(CLASS_MASTERY_HEADSTART)
+    .filter(([, weapons]) => weaponType in weapons)
+    .map(([cls, weapons]) => ({ cls, headstart: weapons[weaponType] }));
+}
+
+// ── Weapon Skill interfaces ────────────────────────────────────────────────
 export interface WeaponSkill {
   id: string;
   name: string;
