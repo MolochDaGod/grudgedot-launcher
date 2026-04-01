@@ -135,6 +135,61 @@ export function registerAccountRoutes(app: Express) {
     }
   });
 
+  // ─── PATCH /api/account/characters/:id ───
+  // Update character fields (name, customization, faction, etc.)
+  app.patch("/api/account/characters/:id", requireAuth, async (req, res) => {
+    try {
+      const grudgeId = req.grudgeUser?.grudgeId;
+      if (!grudgeId) return res.status(401).json({ error: "No grudgeId in token" });
+
+      const [acct] = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.grudgeId, grudgeId))
+        .limit(1);
+
+      if (!acct) return res.status(404).json({ error: "Account not found" });
+
+      const charId = req.params.id;
+      const [char] = await db
+        .select()
+        .from(grudgeCharacters)
+        .where(and(eq(grudgeCharacters.id, charId), eq(grudgeCharacters.accountId, acct.id)))
+        .limit(1);
+
+      if (!char) return res.status(404).json({ error: "Character not found" });
+
+      // Build update payload — only allow safe fields
+      const updates: Record<string, any> = { updatedAt: new Date() };
+      const { name, faction, customization, avatarUrl } = req.body;
+      if (name !== undefined) updates.name = String(name).slice(0, 50);
+      if (faction !== undefined) updates.faction = faction;
+      if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
+      if (customization !== undefined) {
+        // Store as jsonb — we trust the client schema but strip obviously bad keys
+        if (typeof customization === "object" && customization !== null) {
+          updates.customization = customization;
+        }
+      }
+
+      await db
+        .update(grudgeCharacters)
+        .set(updates)
+        .where(eq(grudgeCharacters.id, charId));
+
+      const [updated] = await db
+        .select()
+        .from(grudgeCharacters)
+        .where(eq(grudgeCharacters.id, charId))
+        .limit(1);
+
+      return res.json({ character: updated });
+    } catch (err: any) {
+      console.error("PATCH /api/account/characters/:id error:", err.message);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ─── GET /api/account/wallet ───
   // Returns the caller's wallet info (Crossmint custodial or external)
   app.get("/api/account/wallet", requireAuth, async (req, res) => {

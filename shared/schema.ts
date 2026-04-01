@@ -746,6 +746,8 @@ export const grudgeCharacters = pgTable("grudge_characters", {
   currentMana: integer("current_mana"),
   currentStamina: integer("current_stamina"),
   avatarUrl: text("avatar_url"),
+  // Body customization (height, skin color, proportions, armor tint)
+  customization: jsonb("customization").default(sql`'{}'::jsonb`),
   // NFT fields
   isNft: boolean("is_nft").default(false),
   nftMintAddress: varchar("nft_mint_address", { length: 255 }),

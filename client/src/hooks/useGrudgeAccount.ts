@@ -63,6 +63,7 @@ export interface GrudgeCharacterLocal {
   currentMana?: number;
   currentStamina?: number;
   avatarUrl?: string;
+  customization?: Record<string, any> | null;
   isNft: boolean;
   nftMintAddress?: string;
   nftCollection?: string;
@@ -142,6 +143,26 @@ export function useGrudgeAccount() {
     },
   });
 
+  // Update character (name, customization, faction, avatarUrl)
+  const updateCharacter = useMutation({
+    mutationFn: async (payload: { id: string; customization?: any; name?: string; faction?: string; avatarUrl?: string }) => {
+      const { id, ...body } = payload;
+      const res = await fetch(`/api/account/characters/${id}`, {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Update failed" }));
+        throw new Error(err.error || "Update failed");
+      }
+      return res.json() as Promise<{ character: GrudgeCharacterLocal }>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["grudge", "account", "characters"] });
+    },
+  });
+
   // Delete character
   const deleteCharacter = useMutation({
     mutationFn: async (characterId: string) => {
@@ -164,6 +185,7 @@ export function useGrudgeAccount() {
     characters: characters.data ?? [],
     charactersLoading: characters.isLoading,
     createCharacter,
+    updateCharacter,
     deleteCharacter,
     refetchAccount: account.refetch,
     refetchCharacters: characters.refetch,
