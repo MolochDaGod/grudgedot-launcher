@@ -8,7 +8,7 @@ interface GameEntry {
   image: string;
   route: string;
   tags: string[];
-  category: "games" | "tools" | "platform";
+  category: "pvp" | "pve" | "grudge" | "tools" | "platform";
   external?: boolean;
 }
 
