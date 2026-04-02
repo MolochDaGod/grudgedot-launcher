@@ -15,6 +15,7 @@ import { PuterProvider } from "@/contexts/puter-context";
 import { AuthGuard } from "@/components/AuthGuard";
 import { CharacterProvider } from "@/contexts/CharacterContext";
 import { initGrudgeSSO } from "@/lib/grudge-sso";
+import { RouteHealthBadge } from "@/components/RouteHealthBadge";
 
 // Enable cross-app SSO token relay for all outbound Grudge links
 initGrudgeSSO();
@@ -246,6 +247,7 @@ function AppLayout() {
           </main>
         </div>
       </div>
+      <RouteHealthBadge />
     </SidebarProvider>
   );
 }

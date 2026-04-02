@@ -1,0 +1,19 @@
+name = "grudge-route-monitor"
+main = "route-monitor.ts"
+compatibility_date = "2024-01-01"
+
+# Cron trigger: every 5 minutes
+[triggers]
+crons = ["*/5 * * * *"]
+
+# KV namespace for storing health check results
+# After creating the namespace with:
+#   wrangler kv:namespace create ROUTE_HEALTH
+# Replace the id below with the actual namespace ID
+[[kv_namespaces]]
+binding = "ROUTE_HEALTH"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# Optional: custom domain
+# [routes]
+# route = "monitor.grudge-studio.com/*"
