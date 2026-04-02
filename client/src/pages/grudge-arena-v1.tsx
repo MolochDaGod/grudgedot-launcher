@@ -300,6 +300,7 @@ export default function GrudgeArena() {
   
   const keysPressed = useRef<Set<string>>(new Set());
   const mousePosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const activeProjectilesRef = useRef<{ fireball: any; pos: THREE.Vector3; dir: THREE.Vector3; speed: number; maxDist: number; traveled: number; damage: number }[]>([]);
 
   const loadModel = useCallback(async (path: string, name: string): Promise<THREE.Group> => {
     if (loadedModelsRef.current.has(path)) {
@@ -990,6 +991,39 @@ export default function GrudgeArena() {
     const manaRegen = 8 * deltaTime;
     player.stats.mana = Math.min(player.stats.maxMana, player.stats.mana + manaRegen);
 
+    // ── Update fireball projectiles in main loop (no separate rAF) ──
+    for (let pi = activeProjectilesRef.current.length - 1; pi >= 0; pi--) {
+      const proj = activeProjectilesRef.current[pi];
+      const movement = proj.dir.clone().multiplyScalar(proj.speed * deltaTime);
+      proj.pos.add(movement);
+      proj.traveled += movement.length();
+      proj.fireball.setPosition(proj.pos.x, proj.pos.y, proj.pos.z);
+
+      // Check collision with enemies
+      let hit = false;
+      for (let ei = enemiesRef.current.length - 1; ei >= 0; ei--) {
+        const enemy = enemiesRef.current[ei];
+        if (enemy.state === 'dead') continue;
+        if (proj.pos.distanceTo(enemy.position.clone().add(new THREE.Vector3(0, 1, 0))) < 2) {
+          enemy.stats.health -= proj.damage;
+          particleSystem.spawnExplosion(enemy.position.clone().add(new THREE.Vector3(0, 1, 0)), '#ff4400');
+          if (enemy.stats.health <= 0) {
+            enemy.state = 'dead';
+            scene.remove(enemy.mesh);
+            collisionSystem.removeEntity(enemy.id);
+            setScore(prev => prev + 180);
+            setEnemiesRemaining(prev => prev - 1);
+          }
+          hit = true;
+          break;
+        }
+      }
+
+      if (hit || proj.traveled >= proj.maxDist) {
+        activeProjectilesRef.current.splice(pi, 1);
+      }
+    }
+
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, player.position.x, 3 * deltaTime);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, player.position.z + 25, 3 * deltaTime);
     camera.lookAt(player.position.x, 0, player.position.z);
@@ -1159,65 +1193,16 @@ export default function GrudgeArena() {
     const startPos = player.position.clone().add(new THREE.Vector3(0, 1.5, 0));
     const fireball = spellManager.spawnFireball(startPos, 0.6, 2.5);
 
-    let projectilePos = startPos.clone();
-    const projectileSpeed = 20;
-    const maxDistance = 30;
-    let distanceTraveled = 0;
-
-    const updateProjectile = () => {
-      if (gameState !== 'playing' || distanceTraveled >= maxDistance) return;
-
-      const delta = 1 / 60;
-      const movement = attackDirection.clone().multiplyScalar(projectileSpeed * delta);
-      projectilePos.add(movement);
-      distanceTraveled += movement.length();
-
-      fireball.setPosition(projectilePos.x, projectilePos.y, projectilePos.z);
-
-      for (let i = enemiesRef.current.length - 1; i >= 0; i--) {
-        const enemy = enemiesRef.current[i];
-        if (enemy.state === 'dead') continue;
-
-        const dist = projectilePos.distanceTo(enemy.position.clone().add(new THREE.Vector3(0, 1, 0)));
-        if (dist < 2) {
-          const damage = 50;
-          enemy.stats.health -= damage;
-
-          particleSystem.spawnExplosion(enemy.position.clone().add(new THREE.Vector3(0, 1, 0)), '#ff4400');
-
-          if (enemy.stats.health <= 0) {
-            enemy.state = 'dead';
-            scene.remove(enemy.mesh);
-            collisionSystem.removeEntity(enemy.id);
-            setScore(prev => prev + 180);
-            setEnemiesRemaining(prev => {
-              const newCount = prev - 1;
-              if (newCount <= 0) {
-                setTimeout(() => {
-                  setWave(w => {
-                    const newWave = w + 1;
-                    if (newWave > 5) {
-                      setGameState('victory');
-                    } else {
-                      spawnWave(scene, collisionSystem, newWave);
-                    }
-                    return newWave;
-                  });
-                }, 1500);
-              }
-              return newCount;
-            });
-          }
-          return;
-        }
-      }
-
-      if (distanceTraveled < maxDistance) {
-        requestAnimationFrame(updateProjectile);
-      }
-    };
-
-    requestAnimationFrame(updateProjectile);
+    // Store projectile data for main-loop update (no separate rAF!)
+    activeProjectilesRef.current.push({
+      fireball,
+      pos: startPos.clone(),
+      dir: attackDirection.clone(),
+      speed: 22,
+      maxDist: 30,
+      traveled: 0,
+      damage: 50,
+    });
   }, [gameState, playAnimation, spawnWave]);
 
   // Skill attacks for hotkeys 1-5 with different spell effects

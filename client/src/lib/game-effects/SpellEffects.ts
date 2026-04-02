@@ -9,89 +9,63 @@ export interface SpellConfig {
   duration: number;
 }
 
+// ── Shared geometry pool (prevents GC thrashing) ─────────────────────────────
+let _fireballGeom: THREE.SphereGeometry | null = null;
+function getFireballGeometry(size: number): THREE.SphereGeometry {
+  // Use low-poly sphere — 8x8 segments instead of 32x32 (8x fewer triangles)
+  if (!_fireballGeom) _fireballGeom = new THREE.SphereGeometry(1, 8, 8);
+  return _fireballGeom;
+}
+
 export class FireballEffect {
   private mesh: THREE.Mesh;
-  private material: THREE.ShaderMaterial;
-  private light: THREE.PointLight;
+  private material: THREE.MeshBasicMaterial;
+  private glowMesh: THREE.Mesh;
+  private glowMaterial: THREE.MeshBasicMaterial;
   private group: THREE.Group;
   private time: number = 0;
+  private size: number;
 
   constructor(size: number = 1, color: string = '#ff6600') {
+    this.size = size;
     this.group = new THREE.Group();
 
-    this.material = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uColor: { value: new THREE.Color(color) },
-        uColorCore: { value: new THREE.Color('#ffff00') },
-        uIntensity: { value: 1.5 },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        varying vec3 vPosition;
-        uniform float uTime;
-        
-        float noise(vec3 p) {
-          return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
-        }
-        
-        void main() {
-          vUv = uv;
-          vNormal = normal;
-          vPosition = position;
-          
-          vec3 pos = position;
-          float displacement = noise(position * 2.0 + uTime * 3.0) * 0.15;
-          pos += normal * displacement;
-          
-          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        uniform float uTime;
-        uniform vec3 uColor;
-        uniform vec3 uColorCore;
-        uniform float uIntensity;
-        
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        varying vec3 vPosition;
-        
-        float noise(vec3 p) {
-          return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
-        }
-        
-        void main() {
-          float n = noise(vPosition * 3.0 + uTime * 2.0);
-          float edge = 1.0 - length(vPosition);
-          
-          vec3 color = mix(uColor, uColorCore, edge * 0.8 + n * 0.2);
-          float alpha = (0.6 + n * 0.4) * uIntensity;
-          
-          gl_FragColor = vec4(color * uIntensity, alpha);
-        }
-      `,
+    // Core: cheap MeshBasicMaterial with additive blending (no shader compile)
+    this.material = new THREE.MeshBasicMaterial({
+      color: new THREE.Color('#ffdd00'),
       transparent: true,
+      opacity: 0.9,
       blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
       depthWrite: false,
     });
 
-    const geometry = new THREE.SphereGeometry(size, 32, 32);
-    this.mesh = new THREE.Mesh(geometry, this.material);
+    const geom = getFireballGeometry(size);
+    this.mesh = new THREE.Mesh(geom, this.material);
+    this.mesh.scale.setScalar(size * 0.6);
     this.group.add(this.mesh);
 
-    this.light = new THREE.PointLight(color, 2, size * 10);
-    this.group.add(this.light);
+    // Outer glow: slightly larger, lower opacity
+    this.glowMaterial = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(color),
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.glowMesh = new THREE.Mesh(geom, this.glowMaterial);
+    this.glowMesh.scale.setScalar(size * 1.2);
+    this.group.add(this.glowMesh);
+
+    // NO PointLight — saves a shadow pass per fireball
   }
 
   public update(deltaTime: number): void {
     this.time += deltaTime;
-    this.material.uniforms.uTime.value = this.time;
-    
-    this.light.intensity = 1.5 + Math.sin(this.time * 10) * 0.5;
+    // Pulsate scale for visual fire effect
+    const pulse = 1 + Math.sin(this.time * 12) * 0.15;
+    this.mesh.scale.setScalar(this.size * 0.6 * pulse);
+    this.glowMesh.scale.setScalar(this.size * 1.2 * (2 - pulse));
+    this.material.opacity = 0.8 + Math.sin(this.time * 8) * 0.2;
   }
 
   public getObject3D(): THREE.Group {
@@ -103,8 +77,9 @@ export class FireballEffect {
   }
 
   public dispose(): void {
-    this.mesh.geometry.dispose();
+    // Don't dispose shared geometry — only materials
     this.material.dispose();
+    this.glowMaterial.dispose();
   }
 }
 
