@@ -379,8 +379,9 @@ class MMOScene extends Phaser.Scene {
           this.worldGraphics.fillStyle(waterColor, 1);
         } else {
           let variation = 0.85 + Math.random() * 0.3;
-          if (zone === "hard") variation *= 0.85;
-          else if (zone === "medium") variation *= 0.92;
+          const zm = ZONE_MULT[zone];
+          if (zm >= 3.5) variation *= 0.85;       // volcanic / endgame — darker
+          else if (zm >= 1.8) variation *= 0.92;  // medium zones — slightly darker
           
           const r = ((colors.ground >> 16) & 0xff) * variation;
           const g = ((colors.ground >> 8) & 0xff) * variation;

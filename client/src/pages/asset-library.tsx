@@ -283,7 +283,7 @@ export default function AssetLibraryPage() {
 
           {/* Category filter */}
           {categories.length > 1 && (
-            <ScrollArea className="mt-2 max-h-10" orientation="horizontal">
+            <ScrollArea className="mt-2 max-h-10">
               <div className="flex gap-1.5 pb-1">
                 <Badge
                   variant={categoryFilter === "all" ? "default" : "outline"}

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Sword, Shield, Zap, Heart, Lock, Check, LogIn, Plus, Trash2, Users, Crown } from "lucide-react";
 import { useState } from "react";
+import React from "react";
 import { grudgeGameApi, type GrudgeCharacter, type GrudgeFaction } from "@/lib/grudgeBackendApi";
 import { useCharacter, CLASS_COLOR } from "@/contexts/CharacterContext";
 import { Coins } from "lucide-react";
@@ -66,7 +67,8 @@ export default function CharactersPage() {
   });
 
   const createGrudgeChar = useMutation({
-    mutationFn: (data: { name: string; race: string; class: string }) => grudgeGameApi.createCharacter(data).then(r => { if (!r) throw new Error('Failed to create'); return r; }),
+    mutationFn: (data: { name: string; race: string; class: string }) =>
+      grudgeGameApi.createCharacter({ name: data.name, raceId: data.race, classId: data.class }).then(r => { if (!r) throw new Error('Failed to create'); return r; }),
     onSuccess: () => {
       refetchGrudge();
       setShowCreate(false);
@@ -206,7 +208,7 @@ export default function CharactersPage() {
                 const isActive = activeCharacter?.id === ch.id;
                 return (
                 <Card key={ch.id} className={`hover-elevate transition-all ${isActive ? 'ring-2' : ''}`}
-                  style={{ ...(isActive ? { ringColor: classColor } : {}) }}
+                  style={{ ...(isActive ? { '--tw-ring-color': classColor } as React.CSSProperties : {}) }}
                   data-testid={`card-grudge-${ch.id}`}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">

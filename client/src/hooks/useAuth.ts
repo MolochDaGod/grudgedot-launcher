@@ -9,6 +9,12 @@ export interface AuthUser {
   username: string;
   role?: string;
   isPremium?: boolean;
+  // Profile fields (may come from Grudge ID backend)
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  createdAt?: string;
 }
 
 /**

@@ -103,7 +103,7 @@ export function useGameData<T = any>(category: string) {
 export function useCreateCharacter() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; race: string; class: string }) =>
+    mutationFn: (data: { name: string; raceId: string; classId: string }) =>
       grudgeGameApi.createCharacter(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['grudge', 'characters'] }),
   });

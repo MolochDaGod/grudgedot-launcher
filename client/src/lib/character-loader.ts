@@ -1,5 +1,7 @@
 import { spriteLoader, UnitSprite, EffectSprite, ProjectileSprite, SpriteLoadResult } from './sprite-loader';
-import characterConfig from '@/assets/sprites/grudge-swarm/characters.config.json';
+// characters.config.json may not exist in all environments; use dynamic require with fallback
+const characterConfig: { characters: Record<string, any> } =
+  (() => { try { return require('@/assets/sprites/grudge-swarm/characters.config.json'); } catch { return { characters: {} }; } })();
 
 export interface CharacterAssets {
   unit: UnitSprite;

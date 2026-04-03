@@ -4,8 +4,8 @@
  */
 
 import { db } from "../db";
+import { sql } from "../db";  // raw postgres.js client for tagged template queries
 import { eq, desc } from "drizzle-orm";
-import sql from "../db";
 
 // ============================================
 // OVERDRIVE RACING PERSISTENCE

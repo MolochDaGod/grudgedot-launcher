@@ -69,10 +69,6 @@ export default function ChatPage() {
     ? (CLASS_SUGGESTIONS[activeCharacter.class?.toLowerCase()] || DEFAULT_SUGGESTIONS)
     : DEFAULT_SUGGESTIONS;
 
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, aiResults]);
-
   const { data: conversation, isLoading: isLoadingConversation } = useQuery<ChatConversation>({
     queryKey: ["/api/conversations", currentConversationId],
     queryFn: async () => {
@@ -92,6 +88,12 @@ export default function ChatPage() {
     },
     enabled: !!currentConversationId,
   });
+
+  // Scroll to bottom when messages or AI results update
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, aiResults]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {

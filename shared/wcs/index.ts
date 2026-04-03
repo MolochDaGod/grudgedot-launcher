@@ -18,3 +18,9 @@ export type { EquipmentItem, EquipmentStats } from './definitions/equipmentData'
 
 // Game definitions
 export * from './gameDefinitions/professions';
+
+// Resolve duplicate-export ambiguity — gameConstants is the canonical source
+// attributeSystem also exports DIMINISHING_RETURNS; classSkillTrees also exports CLASS_IDS / ClassId
+export { DIMINISHING_RETURNS } from './gameConstants';
+export { CLASS_IDS } from './gameConstants';
+export type { ClassId } from './gameConstants';

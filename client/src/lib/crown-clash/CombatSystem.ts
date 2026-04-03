@@ -202,9 +202,11 @@ export class CombatSystem {
 
   private fireProjectile(from: THREE.Vector3, to: THREE.Vector3, damage: number, owner: 'player' | 'enemy'): void {
     const geo = new THREE.SphereGeometry(0.15, 6, 6);
-    const mat = new THREE.MeshBasicMaterial({
+    const mat = new THREE.MeshStandardMaterial({
       color: owner === 'player' ? 0x44aaff : 0xff4444,
       emissive: owner === 'player' ? 0x2266cc : 0xcc2222,
+      metalness: 0,
+      roughness: 0.5,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.copy(from);

@@ -73,6 +73,7 @@ import {
 import OpenAI from "openai";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import { users } from "../shared/schema";
 
 // This is using xAI's Grok API for game development assistance - reference: javascript_xai blueprint
 const xai = process.env.XAI_API_KEY
@@ -1998,12 +1999,13 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       }
       
       const result = await objectStorageService.getAssetById(req.params.id);
-      
+
       if (!result) {
         return res.status(404).json({ error: "Asset not found" });
       }
-      
-      await objectStorageService.downloadObject(result.file, res);
+
+      // result = { streamUrl, metadata } — pass a file-descriptor object to downloadObject
+      await objectStorageService.downloadObject({ name: req.params.id, streamUrl: result.streamUrl }, res);
     } catch (error: any) {
       console.error("Error fetching asset:", error);
       res.status(500).json({ error: "Failed to fetch asset", details: error.message });
@@ -2413,7 +2415,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // Saved characters API (MMO-style character creation)
   app.get("/api/saved-characters", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const userId = claims?.sub;
       const characters = await storage.getSavedCharacters(userId);
       res.json(characters);
@@ -2425,7 +2427,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/saved-characters", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const userId = claims?.sub;
       const { name, presetId, customization, colors } = req.body;
       
@@ -2451,7 +2453,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.patch("/api/saved-characters/:id/activate", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const userId = claims?.sub;
       const characterId = req.params.id;
       
@@ -2605,286 +2607,75 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   
   // ============================================
   // Admin Storage Management API Routes
+  // Backed by the Grudge backend asset-service
   // ============================================
-  
+
   // List storage contents
   app.get("/api/admin/storage", async (req, res) => {
     try {
+      const prefix = (req.query.path as string) || undefined;
       const objectStorageService = new ObjectStorageService();
-      const publicSearchPaths = objectStorageService.getPublicObjectSearchPaths();
-      
-      if (publicSearchPaths.length === 0) {
-        return res.json({ items: [], folders: [], currentPath: "", breadcrumbs: [] });
-      }
-      
-      const basePath = publicSearchPaths[0];
-      const requestedPath = (req.query.path as string) || "";
-      const { bucketName, objectName } = parseObjectPath(basePath);
-      
-      const bucket = objectStorageClient.bucket(bucketName);
-      const prefix = requestedPath ? `${objectName}/${requestedPath}/` : `${objectName}/`;
-      
-      const [files] = await bucket.getFiles({ 
-        prefix: prefix,
-        delimiter: "/"
-      });
-      
-      const [, , apiResponse] = await bucket.getFiles({ 
-        prefix: prefix,
-        delimiter: "/",
-        autoPaginate: false
-      });
-      
-      const prefixes = (apiResponse as any)?.prefixes || [];
-      
-      const items: any[] = [];
-      const foldersSet = new Set<string>();
-      
-      // Add folders from prefixes
-      for (const folderPrefix of prefixes) {
-        const folderName = folderPrefix.replace(prefix, "").replace(/\/$/, "");
-        if (folderName) {
-          foldersSet.add(folderName);
-          items.push({
-            name: folderName,
-            path: requestedPath ? `${requestedPath}/${folderName}` : folderName,
-            fullPath: `/${bucketName}/${folderPrefix}`,
-            type: "folder"
-          });
-        }
-      }
-      
-      // Add files
-      for (const file of files) {
-        const fileName = file.name.replace(prefix, "");
-        if (fileName && !fileName.includes("/")) {
-          const [metadata] = await file.getMetadata();
-          const ext = fileName.split(".").pop() || "";
-          items.push({
-            name: fileName,
-            path: requestedPath ? `${requestedPath}/${fileName}` : fileName,
-            fullPath: `/${bucketName}/${file.name}`,
-            type: "file",
-            size: metadata.size ? parseInt(String(metadata.size)) : undefined,
-            contentType: metadata.contentType,
-            createdAt: metadata.timeCreated,
-            extension: ext
-          });
-        }
-      }
-      
-      // Build breadcrumbs
-      const breadcrumbs: { name: string; path: string }[] = [];
-      if (requestedPath) {
-        const parts = requestedPath.split("/");
-        let currentBreadcrumbPath = "";
-        for (const part of parts) {
-          currentBreadcrumbPath = currentBreadcrumbPath ? `${currentBreadcrumbPath}/${part}` : part;
-          breadcrumbs.push({ name: part, path: currentBreadcrumbPath });
-        }
-      }
-      
+      const assets = await objectStorageService.listAllPublicAssets(prefix);
+
+      const items = assets.map(a => ({
+        name: a.name,
+        path: a.path,
+        fullPath: a.fullPath,
+        type: "file" as const,
+        extension: a.name.split(".").pop() || "",
+      }));
+
+      const parts = (prefix || "").split("/").filter(Boolean);
+      const breadcrumbs = parts.map((p, i) => ({
+        name: p,
+        path: parts.slice(0, i + 1).join("/"),
+      }));
+
       res.json({
-        items: items.sort((a, b) => {
-          if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
-          return a.name.localeCompare(b.name);
-        }),
-        folders: Array.from(foldersSet),
-        currentPath: requestedPath,
-        breadcrumbs
+        items: items.sort((a, b) => a.name.localeCompare(b.name)),
+        folders: [],
+        currentPath: prefix || "",
+        breadcrumbs,
       });
     } catch (error) {
       console.error("Storage list error:", error);
-      res.status(500).json({ error: "Failed to list storage" });
+      res.status(503).json({ error: "Storage list failed — backend may be unavailable" });
     }
   });
+
+  // Rename / move / delete — proxied to backend (not yet implemented; return 501)
+  app.post("/api/admin/storage/rename", (_req, res) => res.status(501).json({ error: "Use the Grudge backend asset-service to rename files" }));
+  app.post("/api/admin/storage/move",   (_req, res) => res.status(501).json({ error: "Use the Grudge backend asset-service to move files" }));
+  app.post("/api/admin/storage/delete", (_req, res) => res.status(501).json({ error: "Use the Grudge backend asset-service to delete files" }));
   
-  // Rename file/folder
-  app.post("/api/admin/storage/rename", async (req, res) => {
-    try {
-      const { oldPath, newName } = req.body;
-      if (!oldPath || !newName) {
-        return res.status(400).json({ error: "oldPath and newName are required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(oldPath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const pathParts = objectName.split("/");
-      pathParts[pathParts.length - 1] = newName;
-      const newObjectName = pathParts.join("/");
-      
-      await file.copy(bucket.file(newObjectName));
-      await file.delete();
-      
-      res.json({ success: true, newPath: `/${bucketName}/${newObjectName}` });
-    } catch (error) {
-      console.error("Rename error:", error);
-      res.status(500).json({ error: "Failed to rename" });
-    }
-  });
+  // Create folder
+  app.post("/api/admin/storage/create-folder", (_req, res) =>
+    res.status(501).json({ error: "Use the Grudge backend asset-service to create folders" })
+  );
   
-  // Move file/folder
-  app.post("/api/admin/storage/move", async (req, res) => {
-    try {
-      const { sourcePath, targetFolder } = req.body;
-      if (!sourcePath) {
-        return res.status(400).json({ error: "sourcePath is required" });
-      }
-      
-      const objectStorageService = new ObjectStorageService();
-      const publicSearchPaths = objectStorageService.getPublicObjectSearchPaths();
-      const basePath = publicSearchPaths[0];
-      const { bucketName: baseBucketName, objectName: baseObjectName } = parseObjectPath(basePath);
-      
-      const { bucketName, objectName } = parseObjectPath(sourcePath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const fileName = objectName.split("/").pop();
-      const targetObjectName = targetFolder 
-        ? `${baseObjectName}/${targetFolder}/${fileName}`
-        : `${baseObjectName}/${fileName}`;
-      
-      await file.copy(bucket.file(targetObjectName));
-      await file.delete();
-      
-      res.json({ success: true, newPath: `/${bucketName}/${targetObjectName}` });
-    } catch (error) {
-      console.error("Move error:", error);
-      res.status(500).json({ error: "Failed to move" });
-    }
-  });
-  
-  // Delete file/folder
-  app.post("/api/admin/storage/delete", async (req, res) => {
-    try {
-      const { path: filePath } = req.body;
-      if (!filePath) {
-        return res.status(400).json({ error: "path is required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      
-      // Check if it's a folder (ends with /) or if we need to delete by prefix
-      if (filePath.endsWith("/")) {
-        const [files] = await bucket.getFiles({ prefix: objectName });
-        await Promise.all(files.map(f => f.delete()));
-      } else {
-        const file = bucket.file(objectName);
-        await file.delete();
-      }
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Delete error:", error);
-      res.status(500).json({ error: "Failed to delete" });
-    }
-  });
-  
-  // Create folder (by creating a placeholder file)
-  app.post("/api/admin/storage/create-folder", async (req, res) => {
-    try {
-      const { parentPath, folderName } = req.body;
-      if (!folderName) {
-        return res.status(400).json({ error: "folderName is required" });
-      }
-      
-      const objectStorageService = new ObjectStorageService();
-      const publicSearchPaths = objectStorageService.getPublicObjectSearchPaths();
-      const basePath = publicSearchPaths[0];
-      const { bucketName, objectName: baseObjectName } = parseObjectPath(basePath);
-      
-      const bucket = objectStorageClient.bucket(bucketName);
-      const folderPath = parentPath 
-        ? `${baseObjectName}/${parentPath}/${folderName}/.keep`
-        : `${baseObjectName}/${folderName}/.keep`;
-      
-      const file = bucket.file(folderPath);
-      await file.save("", { contentType: "text/plain" });
-      
-      res.json({ success: true, path: folderPath });
-    } catch (error) {
-      console.error("Create folder error:", error);
-      res.status(500).json({ error: "Failed to create folder" });
-    }
-  });
-  
-  // Download file
+  // Download file — proxy to backend
   app.get("/api/admin/storage/download", async (req, res) => {
-    try {
-      const filePath = req.query.path as string;
-      if (!filePath) {
-        return res.status(400).json({ error: "path is required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const [exists] = await file.exists();
-      if (!exists) {
-        return res.status(404).json({ error: "File not found" });
-      }
-      
-      const [metadata] = await file.getMetadata();
-      res.set({
-        "Content-Type": metadata.contentType || "application/octet-stream",
-        "Content-Disposition": `inline; filename="${objectName.split("/").pop()}"`,
-      });
-      
-      file.createReadStream().pipe(res);
-    } catch (error) {
-      console.error("Download error:", error);
-      res.status(500).json({ error: "Failed to download" });
-    }
+    const filePath = req.query.path as string;
+    if (!filePath) return res.status(400).json({ error: "path is required" });
+    const svc = new ObjectStorageService();
+    const file = await svc.searchPublicObject(filePath);
+    if (!file) return res.status(404).json({ error: "File not found" });
+    await svc.downloadObject(file, res);
   });
-  
-  // Parse 3D model metadata
+
+  // Parse 3D model metadata — returns basic info from backend
   app.get("/api/admin/storage/parse-model", async (req, res) => {
-    try {
-      const filePath = req.query.path as string;
-      if (!filePath) {
-        return res.status(400).json({ error: "path is required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const [exists] = await file.exists();
-      if (!exists) {
-        return res.status(404).json({ error: "File not found" });
-      }
-      
-      const [metadata] = await file.getMetadata();
-      const fileName = objectName.split("/").pop() || "";
-      const ext = fileName.split(".").pop()?.toLowerCase() || "";
-      
-      // For now, return basic metadata. Full parsing would require loading the model server-side
-      const result = {
-        id: null,
-        storagePath: filePath,
-        filename: fileName,
-        fileType: ext,
-        fileSize: metadata.size ? parseInt(String(metadata.size)) : undefined,
-        meshes: [],
-        materials: [],
-        animations: [],
-        textures: [],
-        boundingBox: null,
-        sceneInfo: null,
-        folder: objectName.split("/").slice(0, -1).join("/"),
-        tags: []
-      };
-      
-      res.json(result);
-    } catch (error) {
-      console.error("Parse model error:", error);
-      res.status(500).json({ error: "Failed to parse model" });
-    }
+    const filePath = req.query.path as string;
+    if (!filePath) return res.status(400).json({ error: "path is required" });
+    const fileName = filePath.split("/").pop() || "";
+    res.json({
+      id: null, storagePath: filePath, filename: fileName,
+      fileType: fileName.split(".").pop()?.toLowerCase() || "",
+      meshes: [], materials: [], animations: [], textures: [],
+      boundingBox: null, sceneInfo: null,
+      folder: filePath.split("/").slice(0, -1).join("/"),
+      tags: [],
+    });
   });
   
   // Text to 3D generation (for creating new armor parts)

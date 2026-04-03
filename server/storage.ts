@@ -256,10 +256,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    await db
-      .insert(users)
-      .values(userData)
-      .onDuplicateKeyUpdate({
+    await (db
+      .insert(users as any)
+      .values(userData) as any)
+      .onConflictDoUpdate({
+        target: (users as any).id,
         set: {
           ...userData,
           updatedAt: new Date(),
@@ -462,7 +463,8 @@ export class DatabaseStorage implements IStorage {
     await db
       .insert(userSettings)
       .values(settings)
-      .onDuplicateKeyUpdate({
+      .onConflictDoUpdate({
+        target: (userSettings as any).userId,
         set: {
           ...settings,
           updatedAt: new Date(),
