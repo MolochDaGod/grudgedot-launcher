@@ -16,6 +16,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { CharacterProvider } from "@/contexts/CharacterContext";
 import { initGrudgeSSO } from "@/lib/grudge-sso";
 import { RouteHealthBadge } from "@/components/RouteHealthBadge";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Enable cross-app SSO token relay for all outbound Grudge links
 initGrudgeSSO();
@@ -73,6 +74,8 @@ const NexusNemesis = lazy(() => import("@/pages/nexus-nemesis"));
 const AssetLibrary = lazy(() => import("@/pages/asset-library"));
 const DungeonCrawler = lazy(() => import("@/pages/dungeon-crawler"));
 const SpriteCharEditor = lazy(() => import("@/pages/sprite-char-editor"));
+const ReefHunt = lazy(() => import("@/tabs/reef-hunt/index"));
+const GrudgeFactory = lazy(() => import("@/tabs/grudge-factory/index"));
 
 function PageLoader() {
   return (
@@ -137,6 +140,8 @@ function Router() {
         <Route path="/asset-library" component={AssetLibrary} />
         <Route path="/dungeon-crawler" component={DungeonCrawler} />
         <Route path="/sprite-editor" component={SpriteCharEditor} />
+        <Route path="/reef-hunt" component={ReefHunt} />
+        <Route path="/grudge-factory" component={GrudgeFactory} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -192,10 +197,12 @@ function Header() {
     if (location === "/asset-library") return "ObjectStore Library";
     if (location === "/dungeon-crawler") return "Dungeon Crawler";
     if (location === "/sprite-editor") return "2D Sprite Editor";
+    if (location === "/reef-hunt") return "Reef Hunt";
+    if (location === "/grudge-factory") return "Grudge Factory";
     return "Grudge Brawl";
   };
 
-  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/dungeon-crawler"].some(
+  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/dungeon-crawler", "/reef-hunt", "/grudge-factory"].some(
     path => location === path
   );
 
@@ -243,7 +250,9 @@ function AppLayout() {
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <Header />
           <main className="flex-1 overflow-auto scroll-touch no-pull-refresh">
-            <Router />
+            <ErrorBoundary>
+              <Router />
+            </ErrorBoundary>
           </main>
         </div>
       </div>

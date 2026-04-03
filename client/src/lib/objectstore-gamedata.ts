@@ -360,7 +360,7 @@ export function flattenOsWeapons(data: OsWeaponsData): (OsWeaponItem & { weaponC
 
 /** Build a URL for a character GLB model from animations.json characterModels list */
 export function getCharacterModelUrl(filename: string): string {
-  return `${OS_BASE}/characters/${filename}`;
+  return `${OS_BASE}/models/characters/${filename}`;
 }
 
 /** Build a URL for a sprite character animation frame */

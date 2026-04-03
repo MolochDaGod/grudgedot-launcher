@@ -13,6 +13,21 @@ import { registerCoolifyRoutes } from "./routes/coolifyProxy";
 
 const app = express();
 
+// ── Production security headers ──────────────────────────────────────────────
+if (process.env.NODE_ENV === "production") {
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+    );
+    next();
+  });
+}
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
@@ -83,12 +98,21 @@ app.use((req, res, next) => {
 
   const server = await registerRoutes(app);
 
+  // ── Health endpoint (used by RouteHealthBadge & uptime monitors) ──
+  app.get("/api/health", (_req: Request, res: Response) => {
+    res.json({
+      status: "ok",
+      version: process.env.npm_package_version || "2.0.0",
+      uptime: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
+    console.error(`[ERROR] ${status}: ${message}`, err.stack || "");
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after

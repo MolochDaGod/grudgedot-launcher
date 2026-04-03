@@ -235,6 +235,18 @@ const featured3DGames = [
     badge: "Dungeon",
   },
   {
+    title: "Reef Hunt",
+    url: "/reef-hunt",
+    icon: Fish,
+    badge: "3D",
+  },
+  {
+    title: "Grudge Factory",
+    url: "/grudge-factory",
+    icon: Hammer,
+    badge: "Sim",
+  },
+  {
     title: "All Games",
     url: "/games",
     icon: Gamepad2,
