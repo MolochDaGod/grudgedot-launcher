@@ -172,7 +172,7 @@ function Header() {
     if (location === "/decay") return "Decay";
     if (location === "/admin-storage") return "Storage Admin";
     if (location === "/skill-tree") return "Skill Tree Editor";
-    if (location === "/swarm-rts") return "Swarm RTS";
+    if (location === "/swarm-rts") return "Grudge Warlords RTS";
     if (location === "/swarm-galactic") return "Galactic Conquest";
     if (location === "/warlords") return "Grudge Warlords";
     if (location === "/grudge-swarm") return "Grudge Swarm";

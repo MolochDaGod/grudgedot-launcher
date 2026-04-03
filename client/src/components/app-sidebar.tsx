@@ -199,7 +199,7 @@ const featured3DGames = [
     badge: "FPS",
   },
   {
-    title: "Swarm RTS",
+    title: "Warlords RTS",
     url: "/swarm-rts",
     icon: Hexagon,
     badge: "RTS",
