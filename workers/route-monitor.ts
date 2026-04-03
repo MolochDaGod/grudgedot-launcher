@@ -6,20 +6,43 @@
  *
  * Deploy:
  *   1. `npm install -g wrangler`
- *   2. `wrangler kv:namespace create ROUTE_HEALTH`
+ *   2. `wrangler kv namespace create ROUTE_HEALTH`
  *   3. Update wrangler.toml with the KV namespace ID
- *   4. `wrangler deploy workers/route-monitor.ts`
+ *   4. `wrangler deploy`
  *
  * Endpoints:
  *   GET /status         — Full health report (JSON)
  *   GET /status/:service — Single service health
  *   GET /badge          — SVG shield badge for README
+ *   GET /check          — Force re-check (requires MONITOR_SECRET)
  *
  * Cron: Runs every 5 minutes via Cloudflare Cron Triggers
  */
 
 export interface Env {
   ROUTE_HEALTH: KVNamespace;
+  MONITOR_SECRET: string; // wrangler secret put MONITOR_SECRET
+}
+
+const ALLOWED_ORIGINS = [
+  'https://grudge-studio.com',
+  'https://dev.grudge-studio.com',
+  'https://dash.grudge-studio.com',
+  'https://grudgewarlords.com',
+  'https://gdevelop-assistant.vercel.app',
+];
+
+function getCorsOrigin(request: Request): string {
+  const origin = request.headers.get('Origin') ?? '';
+  // Allow any *.grudge-studio.com subdomain or exact matches
+  if (
+    ALLOWED_ORIGINS.includes(origin) ||
+    /^https:\/\/[a-z0-9-]+\.grudge-studio\.com$/.test(origin) ||
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin)
+  ) {
+    return origin;
+  }
+  return ALLOWED_ORIGINS[0]; // default — won't match random callers
 }
 
 interface ServiceCheck {
@@ -44,19 +67,22 @@ const SERVICES: ServiceCheck[] = [
   { name: 'Game API', url: 'https://api.grudge-studio.com/health', expectedStatus: [200], category: 'backend' },
   { name: 'Auth (grudge-id)', url: 'https://id.grudge-studio.com/health', expectedStatus: [200], category: 'backend' },
   { name: 'Account API', url: 'https://account.grudge-studio.com/health', expectedStatus: [200], category: 'backend' },
-  { name: 'Launcher API', url: 'https://launcher.grudge-studio.com/health', expectedStatus: [200], category: 'backend' },
+  { name: 'Asset Service', url: 'https://assets.grudge-studio.com/health', expectedStatus: [200], category: 'backend' },
+
+  // Cloudflare Workers
+  { name: 'ObjectStore', url: 'https://objectstore.grudge-studio.com/health', expectedStatus: [200], category: 'backend' },
+  { name: 'ObjectStore API', url: 'https://molochdagod.github.io/ObjectStore/api/v1/classes.json', expectedStatus: [200], category: 'backend' },
 
   // Frontend deployments (Vercel)
-  { name: 'GDevelop (dev)', url: 'https://dev.grudge-studio.com/api/health', expectedStatus: [200], category: 'frontend' },
-  { name: 'GDevelop (vercel)', url: 'https://gdevelop-assistant.vercel.app/api/health', expectedStatus: [200], category: 'frontend' },
   { name: 'Grudge Warlords', url: 'https://grudgewarlords.com', expectedStatus: [200], category: 'frontend' },
+  { name: 'GDevelop Assistant', url: 'https://gdevelop-assistant.vercel.app', expectedStatus: [200], category: 'frontend' },
+  { name: 'Grudge Engine Web', url: 'https://grudge-engine-web.vercel.app', expectedStatus: [200], category: 'frontend' },
   { name: 'Dashboard', url: 'https://dash.grudge-studio.com', expectedStatus: [200], category: 'frontend' },
 
-  // Proxy routes (through GDevelop serverless)
-  { name: 'Auth Proxy', url: 'https://dev.grudge-studio.com/api/auth/verify', expectedStatus: [200, 401], category: 'proxy' },
-  { name: 'Leaderboard', url: 'https://dev.grudge-studio.com/api/leaderboard/games', expectedStatus: [200], category: 'proxy' },
-  { name: 'Coolify Status', url: 'https://dev.grudge-studio.com/api/coolify/status', expectedStatus: [200], category: 'proxy' },
-  { name: 'Characters Proxy', url: 'https://dev.grudge-studio.com/api/characters', expectedStatus: [200, 401], category: 'proxy' },
+  // Proxy routes (through Vercel rewrites to VPS)
+  { name: 'Characters API', url: 'https://api.grudge-studio.com/characters', expectedStatus: [401], category: 'proxy' },
+  { name: 'Crafting API', url: 'https://api.grudge-studio.com/crafting/recipes', expectedStatus: [401], category: 'proxy' },
+  { name: 'Missions API', url: 'https://api.grudge-studio.com/missions', expectedStatus: [401], category: 'proxy' },
 ];
 
 async function checkService(svc: ServiceCheck): Promise<CheckResult> {
@@ -91,8 +117,7 @@ async function checkService(svc: ServiceCheck): Promise<CheckResult> {
 async function runAllChecks(env: Env): Promise<CheckResult[]> {
   const results = await Promise.all(SERVICES.map(checkService));
 
-  // Store in KV
-  await env.ROUTE_HEALTH.put('latest', JSON.stringify({
+  const payload = JSON.stringify({
     results,
     timestamp: new Date().toISOString(),
     summary: {
@@ -101,12 +126,21 @@ async function runAllChecks(env: Env): Promise<CheckResult[]> {
       degraded: results.filter(r => r.status === 'degraded').length,
       down: results.filter(r => r.status === 'down').length,
     },
-  }), { expirationTtl: 600 }); // 10 min TTL
+  });
 
-  // Also store per-service for quick lookups
-  for (const r of results) {
-    const key = r.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    await env.ROUTE_HEALTH.put(`service:${key}`, JSON.stringify(r), { expirationTtl: 600 });
+  try {
+    // Store aggregate result
+    await env.ROUTE_HEALTH.put('latest', payload, { expirationTtl: 600 });
+
+    // Per-service writes in parallel (non-blocking if one fails)
+    await Promise.allSettled(
+      results.map(r => {
+        const key = r.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        return env.ROUTE_HEALTH.put(`service:${key}`, JSON.stringify(r), { expirationTtl: 600 });
+      })
+    );
+  } catch (err) {
+    console.error('KV write failed:', err);
   }
 
   return results;
@@ -116,14 +150,23 @@ async function runAllChecks(env: Env): Promise<CheckResult[]> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const origin = getCorsOrigin(request);
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Vary': 'Origin',
     };
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
+    }
+
+    // Only allow GET requests
+    if (request.method !== 'GET') {
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // GET /status — full report
@@ -144,6 +187,11 @@ export default {
     // GET /status/:service
     if (url.pathname.startsWith('/status/')) {
       const key = url.pathname.replace('/status/', '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+      if (!key || key.length > 64) {
+        return new Response(JSON.stringify({ error: 'Invalid service key' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const data = await env.ROUTE_HEALTH.get(`service:${key}`);
       if (data) {
         return new Response(data, {
@@ -184,8 +232,18 @@ export default {
       });
     }
 
-    // GET /check — force re-check now
+    // GET /check — force re-check (requires MONITOR_SECRET)
     if (url.pathname === '/check') {
+      const auth = request.headers.get('Authorization');
+      const token = url.searchParams.get('token');
+      const secret = env.MONITOR_SECRET;
+
+      if (!secret || (auth !== `Bearer ${secret}` && token !== secret)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const results = await runAllChecks(env);
       return new Response(JSON.stringify({ results, timestamp: new Date().toISOString(), forced: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
