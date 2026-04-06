@@ -5,6 +5,7 @@
  */
 
 import type { Express } from "express";
+import { randomUUID } from "node:crypto";
 import { requireAuth } from "../middleware/grudgeJwt";
 import { db } from "../db";
 import { accounts, grudgeCharacters } from "../../shared/schema";
@@ -97,9 +98,11 @@ export function registerAccountRoutes(app: Express) {
         .from(grudgeCharacters)
         .where(eq(grudgeCharacters.accountId, acct.id));
 
-      const [newChar] = await db
+      const newCharId = randomUUID();
+      await db
         .insert(grudgeCharacters)
         .values({
+          id: newCharId,
           accountId: acct.id,
           grudgeId,
           name,
@@ -108,8 +111,13 @@ export function registerAccountRoutes(app: Express) {
           faction: faction || acct.faction || null,
           slotIndex: existing.length,
           isGuest: acct.isGuest ?? false,
-        })
-        .returning();
+        });
+
+      const [newChar] = await db
+        .select()
+        .from(grudgeCharacters)
+        .where(eq(grudgeCharacters.id, newCharId))
+        .limit(1);
 
       // Bump totalCharacters on account
       await db
@@ -123,6 +131,61 @@ export function registerAccountRoutes(app: Express) {
       return res.status(201).json({ character: newChar });
     } catch (err: any) {
       console.error("POST /api/account/characters error:", err.message);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ─── PATCH /api/account/characters/:id ───
+  // Update character fields (name, customization, faction, etc.)
+  app.patch("/api/account/characters/:id", requireAuth, async (req, res) => {
+    try {
+      const grudgeId = req.grudgeUser?.grudgeId;
+      if (!grudgeId) return res.status(401).json({ error: "No grudgeId in token" });
+
+      const [acct] = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.grudgeId, grudgeId))
+        .limit(1);
+
+      if (!acct) return res.status(404).json({ error: "Account not found" });
+
+      const charId = req.params.id;
+      const [char] = await db
+        .select()
+        .from(grudgeCharacters)
+        .where(and(eq(grudgeCharacters.id, charId), eq(grudgeCharacters.accountId, acct.id)))
+        .limit(1);
+
+      if (!char) return res.status(404).json({ error: "Character not found" });
+
+      // Build update payload — only allow safe fields
+      const updates: Record<string, any> = { updatedAt: new Date() };
+      const { name, faction, customization, avatarUrl } = req.body;
+      if (name !== undefined) updates.name = String(name).slice(0, 50);
+      if (faction !== undefined) updates.faction = faction;
+      if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
+      if (customization !== undefined) {
+        // Store as jsonb — we trust the client schema but strip obviously bad keys
+        if (typeof customization === "object" && customization !== null) {
+          updates.customization = customization;
+        }
+      }
+
+      await db
+        .update(grudgeCharacters)
+        .set(updates)
+        .where(eq(grudgeCharacters.id, charId));
+
+      const [updated] = await db
+        .select()
+        .from(grudgeCharacters)
+        .where(eq(grudgeCharacters.id, charId))
+        .limit(1);
+
+      return res.json({ character: updated });
+    } catch (err: any) {
+      console.error("PATCH /api/account/characters/:id error:", err.message);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -246,6 +309,52 @@ export function registerAccountRoutes(app: Express) {
       });
     } catch (err: any) {
       console.error("POST /api/account/wallet/ensure error:", err.message);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ─── DELETE /api/account/characters/:id ───
+  // Delete a character belonging to the caller's account
+  app.delete("/api/account/characters/:id", requireAuth, async (req, res) => {
+    try {
+      const grudgeId = req.grudgeUser?.grudgeId;
+      if (!grudgeId) return res.status(401).json({ error: "No grudgeId in token" });
+
+      const [acct] = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.grudgeId, grudgeId))
+        .limit(1);
+
+      if (!acct) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+
+      const charId = req.params.id;
+      const [char] = await db
+        .select()
+        .from(grudgeCharacters)
+        .where(and(eq(grudgeCharacters.id, charId), eq(grudgeCharacters.accountId, acct.id)))
+        .limit(1);
+
+      if (!char) {
+        return res.status(404).json({ error: "Character not found" });
+      }
+
+      await db.delete(grudgeCharacters).where(eq(grudgeCharacters.id, charId));
+
+      // Decrement totalCharacters
+      await db
+        .update(accounts)
+        .set({
+          totalCharacters: Math.max(0, (acct.totalCharacters ?? 1) - 1),
+          updatedAt: new Date(),
+        })
+        .where(eq(accounts.id, acct.id));
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("DELETE /api/account/characters/:id error:", err.message);
       return res.status(500).json({ error: "Internal server error" });
     }
   });

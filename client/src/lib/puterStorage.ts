@@ -7,6 +7,12 @@ declare global {
         signOut: () => Promise<void>;
         getUser: () => Promise<{ username: string; uuid: string; email?: string }>;
       };
+      ai: {
+        chat: (prompt: string, options?: { model?: string; stream?: boolean }) => Promise<any>;
+        txt2img: (prompt: string, options?: { model?: string }) => Promise<HTMLImageElement>;
+        txt2speech: (text: string, options?: { voice?: string }) => Promise<HTMLAudioElement>;
+        img2txt: (imageUrl: string) => Promise<string>;
+      };
       fs: {
         write: (path: string, content: Blob | string | File, options?: { dedupeName?: boolean; createMissingParents?: boolean }) => Promise<{ name: string; path: string }>;
         read: (path: string) => Promise<Blob>;
@@ -25,6 +31,16 @@ declare global {
         list: (pattern?: string, returnValues?: boolean) => Promise<string[]>;
         flush: () => Promise<void>;
       };
+      ui: {
+        showOpenFilePicker: () => Promise<any>;
+        showSaveFilePicker: (content: string | Blob, filename: string) => Promise<any>;
+      };
+      hosting?: {
+        create: (subdomain: string, dirPath: string) => Promise<any>;
+        list: () => Promise<any[]>;
+        delete: (subdomain: string) => Promise<void>;
+      };
+      randName?: () => string;
     };
   }
 }

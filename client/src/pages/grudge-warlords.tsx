@@ -130,6 +130,9 @@ export default function GrudgeWarlords() {
     return presetModel?.path || AVAILABLE_MODELS[0].path;
   };
 
+  // Grudge Engine external URL (deployed editor)
+  const GRUDGE_ENGINE_URL = 'https://grudge-engine-web.vercel.app';
+
   const getIframeSrc = () => {
     const params = new URLSearchParams();
     params.set("scene", selectedScene);
@@ -150,7 +153,13 @@ export default function GrudgeWarlords() {
       params.set("biome", selectedBiome);
     }
     
-    return `/grudge-warlords/index.html?${params.toString()}`;
+    // Try local first, fall back to external Grudge Engine
+    // Local: /grudge-warlords/index.html (if bundled)
+    // External: Grudge Engine deployment
+    const localSrc = `/grudge-warlords/index.html?${params.toString()}`;
+    const externalSrc = `${GRUDGE_ENGINE_URL}?${params.toString()}`;
+    // Use external engine as primary — more reliable than local static file
+    return externalSrc;
   };
   
   // Listen for messages from Asset Viewer iframe

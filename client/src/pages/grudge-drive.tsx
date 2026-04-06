@@ -357,6 +357,22 @@ export default function GrudgeDrive() {
 
     const theme = getTheme(selectedTrack?.id ?? "");
 
+    // ── Preload craftpix bike sprites ──
+    const SPRITE_BASE = '/assets/racing/PNG';
+    const playerBikeImg = new Image();
+    playerBikeImg.src = `${SPRITE_BASE}/Motorcycle Body/1.png`;
+    const opponentBikeImg = new Image();
+    opponentBikeImg.src = `${SPRITE_BASE}/Motorcycle Body/5.png`;
+    const startLineImg = new Image();
+    startLineImg.src = `${SPRITE_BASE}/RoadTile/Start.png`;
+    const finishLineImg = new Image();
+    finishLineImg.src = `${SPRITE_BASE}/RoadTile/Finish.png`;
+    const obstacleImgs = [1, 2, 3, 4, 5].map(i => {
+      const img = new Image();
+      img.src = `${SPRITE_BASE}/Obstacle/${i}.png`;
+      return img;
+    });
+
     let carX = canvas.width / 2 - 20;
     const carY = canvas.height - 150;
     let carSpeed = 0;
@@ -585,59 +601,77 @@ export default function GrudgeDrive() {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      /* Finish line */
+      /* Starting line (sprite or fallback) */
+      if (offset < 80 && startLineImg.complete && startLineImg.naturalWidth > 0) {
+        ctx.drawImage(startLineImg, stripX, canvas.height - 125 + offset, 240, 20);
+      } else if (offset < 50) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(stripX, canvas.height - 120, 240, 8);
+      }
+
+      /* Finish line (sprite or fallback) */
       const finishY = canvas.height - 150 - (raceDistance * 1.5);
       if (finishY + offset > 0 && finishY + offset < canvas.height) {
-        for (let i = 0; i < 12; i++) {
-          ctx.fillStyle = i % 2 === 0 ? '#fff' : '#000';
-          ctx.fillRect(stripX + i * 20, finishY + offset, 20, 15);
+        if (finishLineImg.complete && finishLineImg.naturalWidth > 0) {
+          ctx.drawImage(finishLineImg, stripX, finishY + offset, 240, 20);
+        } else {
+          for (let i = 0; i < 12; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#fff' : '#000';
+            ctx.fillRect(stripX + i * 20, finishY + offset, 20, 15);
+          }
+        }
+      }
+
+      /* Scrolling obstacles from craftpix pack */
+      for (let o = 0; o < 5; o++) {
+        const obsY = ((o * 180 + offset * 0.8) % (canvas.height + 100)) - 50;
+        if (obsY < -40 || obsY > canvas.height) continue;
+        const obsImg = obstacleImgs[o % obstacleImgs.length];
+        const obsX = o % 2 === 0 ? stripX + 15 : stripX + 175;
+        if (obsImg.complete && obsImg.naturalWidth > 0) {
+          ctx.drawImage(obsImg, obsX, obsY, 40, 40);
         }
       }
     };
 
-    /* ── Car with exhaust & speed lines ─────────────────── */
+    /* ── Draw bike using craftpix sprite (fallback to rectangle) ── */
     const drawCar = (x: number, y: number, color: string, speed: number, isPlayer: boolean) => {
-      /* Speed streaks behind car at high speed */
+      const bikeImg = isPlayer ? playerBikeImg : opponentBikeImg;
+      const bikeW = 50;
+      const bikeH = 90;
+
+      /* Speed streaks behind bike at high speed */
       if (speed > 4 && isPlayer) {
         const streakAlpha = Math.min(0.5, (speed - 4) / 20);
         ctx.strokeStyle = `rgba(255,255,255,${streakAlpha})`;
         ctx.lineWidth = 1;
         for (let s = 0; s < 4; s++) {
-          const sx = x + 4 + Math.random() * 32;
+          const sx = x + 4 + Math.random() * bikeW;
           const sLen = 12 + speed * 3;
           ctx.beginPath();
-          ctx.moveTo(sx, y + 70);
-          ctx.lineTo(sx + (Math.random() - 0.5) * 3, y + 70 + sLen);
+          ctx.moveTo(sx, y + bikeH);
+          ctx.lineTo(sx + (Math.random() - 0.5) * 3, y + bikeH + sLen);
           ctx.stroke();
         }
       }
 
-      /* Car body */
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, 40, 70);
-      /* Roof highlight */
-      ctx.fillStyle = `rgba(255,255,255,0.08)`;
-      ctx.fillRect(x + 4, y + 4, 32, 30);
-
-      /* Windshield */
-      ctx.fillStyle = '#00ccff';
-      ctx.fillRect(x + 5, y + 10, 30, 20);
-
-      /* Wheels */
-      ctx.fillStyle = '#111';
-      ctx.fillRect(x - 5, y + 10, 8, 15);
-      ctx.fillRect(x + 37, y + 10, 8, 15);
-      ctx.fillRect(x - 5, y + 45, 8, 15);
-      ctx.fillRect(x + 37, y + 45, 8, 15);
-      /* Wheel shine */
-      ctx.fillStyle = '#333';
-      ctx.fillRect(x - 4, y + 12, 6, 4);
-      ctx.fillRect(x + 38, y + 12, 6, 4);
-
-      /* Headlights */
-      ctx.fillStyle = '#ffff00';
-      ctx.fillRect(x + 5, y + 65, 10, 4);
-      ctx.fillRect(x + 25, y + 65, 10, 4);
+      /* Draw sprite if loaded, otherwise fallback to colored rectangle */
+      if (bikeImg.complete && bikeImg.naturalWidth > 0) {
+        ctx.drawImage(bikeImg, x - 5, y - 10, bikeW, bikeH);
+      } else {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, 40, 70);
+        ctx.fillStyle = '#00ccff';
+        ctx.fillRect(x + 5, y + 10, 30, 20);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(x - 5, y + 10, 8, 15);
+        ctx.fillRect(x + 37, y + 10, 8, 15);
+        ctx.fillRect(x - 5, y + 45, 8, 15);
+        ctx.fillRect(x + 37, y + 45, 8, 15);
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(x + 5, y + 65, 10, 4);
+        ctx.fillRect(x + 25, y + 65, 10, 4);
+      }
 
       /* Taillights glow at speed */
       if (speed > 2) {

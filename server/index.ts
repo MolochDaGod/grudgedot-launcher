@@ -7,6 +7,8 @@ import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import { isDatabaseConfigured } from "./db";
 import { setupGrudgeAuth } from "./grudgeAuth";
+import { setupGrudgeProxy } from "./routes/grudgeProxy";
+import { registerBridgeRoutes } from "./routes/bridgeProxy";
 
 const app = express();
 
@@ -55,7 +57,11 @@ app.use((req, res, next) => {
 (async () => {
   // Auth routes proxy to auth-gateway — no DB required
   setupGrudgeAuth(app);
+  setupGrudgeProxy(app);
+  registerBridgeRoutes(app);
   log("Grudge Authentication configured (gateway proxy mode)");
+  log("Grudge Backend proxy configured (game / account / id / launcher)");
+  log("Grudge Bridge proxy configured (backups / dumps / deploy / mesh)");
 
   // Seed database if configured (optional)
   if (isDatabaseConfigured()) {

@@ -8,5 +8,7 @@
   { "slug": "reef-hunt", "title": "Reef Hunt", "entry": "tabs/reef-hunt/index.tsx" },
   { "slug": "grudge-arena", "title": "Grudge Arena", "entry": "tabs/grudge-arena/index.tsx" },
   { "slug": "grudge-factory", "title": "Grudge Factory", "entry": "tabs/grudge-factory/index.tsx" },
-  { "slug": "grudge-crafting", "title": "Grudge Crafting", "entry": "tabs/grudge-crafting/index.tsx" }
+  { "slug": "grudge-crafting", "title": "Grudge Crafting", "entry": "tabs/grudge-crafting/index.tsx" },
+  { "slug": "nexus-nemesis", "title": "Nexus Nemesis", "entry": "tabs/nexus-nemesis/index.tsx" },
+  { "slug": "grudge-engine", "title": "Grudge Engine", "entry": "tabs/grudge-engine/index.tsx" }
 ]

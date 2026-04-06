@@ -447,3 +447,252 @@
     letter-spacing: 0.05em;
   }
 }
+
+/* ===== WCS FANTASY MMO UI UTILITIES ===== */
+
+/* Animations */
+@keyframes gem-glow {
+  0% { box-shadow: 0 0 0px currentColor; border-color: currentColor; }
+  50% { box-shadow: 0 0 15px currentColor; border-color: #fff; }
+  100% { box-shadow: 0 0 0px currentColor; border-color: currentColor; }
+}
+.animate-gem-glow { animation: gem-glow 2s infinite; }
+
+@keyframes arcane-pulse {
+  0% { box-shadow: 0 0 0px currentColor; border-color: currentColor; }
+  50% { box-shadow: 0 0 20px currentColor; border-color: #fff; transform: rotate(-45deg) scale(1.1); }
+  100% { box-shadow: 0 0 0px currentColor; border-color: currentColor; }
+}
+.animate-arcane-pulse { animation: arcane-pulse 3s infinite; }
+
+@keyframes glow-pulse {
+  0% { box-shadow: 0 0 0px currentColor; transform: scale(1); }
+  50% { box-shadow: 0 0 15px currentColor; transform: scale(1.1); }
+  100% { box-shadow: 0 0 0px currentColor; transform: scale(1); }
+}
+.animate-glow-pulse { animation: glow-pulse 2s infinite; }
+
+@keyframes simmer {
+  0% { transform: scale(1); box-shadow: 0 0 0px red; }
+  50% { transform: scale(1.05); box-shadow: 0 0 15px currentColor; }
+  100% { transform: scale(1); box-shadow: 0 0 0px red; }
+}
+.animate-simmer { animation: simmer 2.5s infinite; }
+
+.text-shadow-glow { text-shadow: 0 0 10px currentColor; }
+
+/* Fantasy Panel — Gold bordered like WoW/Diablo */
+.fantasy-panel {
+  position: relative;
+  background: linear-gradient(180deg,
+    hsl(225 25% 14%) 0%,
+    hsl(225 28% 10%) 50%,
+    hsl(225 25% 8%) 100%
+  );
+  border: 2px solid hsl(43 60% 35%);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 -1px 0 rgba(0,0,0,0.3),
+    0 4px 12px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(0,0,0,0.3);
+}
+.fantasy-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  padding: 1px;
+  background: linear-gradient(180deg,
+    rgba(212, 175, 55, 0.3) 0%,
+    rgba(160, 120, 40, 0.1) 50%,
+    rgba(100, 80, 30, 0.2) 100%
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Ornate Frame — Double gold border */
+.ornate-frame {
+  position: relative;
+  background: linear-gradient(180deg,
+    hsl(225 22% 16%) 0%,
+    hsl(225 25% 11%) 100%
+  );
+  border: 3px solid transparent;
+  border-image: linear-gradient(180deg,
+    hsl(43 80% 60%) 0%,
+    hsl(43 70% 40%) 50%,
+    hsl(35 60% 30%) 100%
+  ) 1;
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,0.5),
+    0 0 0 1px hsl(35 50% 25%),
+    0 8px 24px rgba(0,0,0,0.6);
+}
+
+/* Stone Panel — Inventory backgrounds */
+.stone-panel {
+  background:
+    linear-gradient(180deg, rgba(40,45,55,0.95) 0%, rgba(30,35,45,0.98) 100%);
+  border: 2px solid hsl(220 15% 30%);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.4),
+    inset 0 -1px 0 rgba(255,255,255,0.03),
+    0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* Parchment Panel — Readable content */
+.parchment-panel {
+  background: linear-gradient(180deg,
+    hsl(40 30% 22%) 0%,
+    hsl(38 25% 18%) 50%,
+    hsl(35 20% 15%) 100%
+  );
+  border: 2px solid hsl(40 40% 30%);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,235,180,0.1),
+    0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* Inset Panel */
+.inset-panel {
+  background: linear-gradient(180deg,
+    hsl(225 28% 8%) 0%,
+    hsl(225 25% 10%) 100%
+  );
+  border: 1px solid hsl(220 15% 20%);
+  border-radius: 2px;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+}
+
+/* Gilded Button — Gold RPG action button */
+.gilded-button {
+  position: relative;
+  background: linear-gradient(180deg,
+    hsl(43 70% 45%) 0%,
+    hsl(38 65% 35%) 50%,
+    hsl(35 60% 28%) 100%
+  );
+  border: 2px solid hsl(43 50% 50%);
+  border-radius: 4px;
+  color: hsl(225 30% 10%);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    inset 0 -2px 4px rgba(0,0,0,0.2),
+    0 2px 4px rgba(0,0,0,0.4);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.gilded-button:hover {
+  background: linear-gradient(180deg,
+    hsl(43 80% 55%) 0%,
+    hsl(43 70% 45%) 50%,
+    hsl(38 65% 35%) 100%
+  );
+  border-color: hsl(43 60% 60%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    0 0 12px rgba(212, 175, 55, 0.4),
+    0 4px 8px rgba(0,0,0,0.4);
+}
+.gilded-button:active {
+  background: linear-gradient(180deg,
+    hsl(35 60% 30%) 0%,
+    hsl(38 65% 35%) 100%
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.4),
+    0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Dark Button — Secondary RPG button */
+.dark-button {
+  background: linear-gradient(180deg,
+    hsl(225 25% 22%) 0%,
+    hsl(225 28% 15%) 100%
+  );
+  border: 2px solid hsl(43 50% 35%);
+  border-radius: 4px;
+  color: hsl(43 70% 65%);
+  font-family: var(--font-heading);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 -1px 0 rgba(0,0,0,0.3),
+    0 2px 4px rgba(0,0,0,0.4);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.dark-button:hover {
+  background: linear-gradient(180deg,
+    hsl(225 25% 26%) 0%,
+    hsl(225 28% 18%) 100%
+  );
+  border-color: hsl(43 60% 45%);
+  color: hsl(43 80% 70%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 8px rgba(212, 175, 55, 0.2),
+    0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* Rune Glow */
+.rune-glow {
+  box-shadow:
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    inset 0 0 10px rgba(255,255,255,0.1);
+}
+
+/* Gold Text Gradient */
+.gold-text {
+  background: linear-gradient(180deg,
+    hsl(43 90% 75%) 0%,
+    hsl(43 85% 55%) 40%,
+    hsl(35 70% 40%) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Rarity Colors (WoW-style) */
+.rarity-common { color: hsl(0 0% 70%); }
+.rarity-uncommon { color: hsl(120 60% 50%); }
+.rarity-rare { color: hsl(220 80% 60%); }
+.rarity-epic { color: hsl(280 70% 60%); }
+.rarity-legendary { color: hsl(35 100% 55%); }
+
+/* Vignette overlay */
+.vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+}
+
+/* Fantasy Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(225 25% 10%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(43 50% 30%);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(43 60% 40%);
+}

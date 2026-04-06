@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { captureAuthCallback, getAuthData, type AuthData } from '@/lib/auth';
+import { captureAuthCallback, getAuthData, verifyToken, logoutSilent, type AuthData } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
 interface AuthGuardProps {
@@ -9,39 +9,76 @@ interface AuthGuardProps {
 
 /**
  * AuthGuard component that checks for authentication before rendering children.
- * Redirects unauthenticated users to /auth (in-app login page).
- * Navigates to /onboarding on first visit (no grudge_onboarded in localStorage).
+ * - Captures OAuth callback tokens from URL
+ * - Checks for non-expired JWT in localStorage
+ * - Verifies token with server (async, non-blocking after first paint)
+ * - Redirects unauthenticated users to /auth
+ * - Navigates to /onboarding on first visit
+ * - Re-validates token when the tab regains focus
  */
 export function AuthGuard({ children }: AuthGuardProps) {
   const [auth, setAuth] = useState<AuthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [, navigate] = useLocation();
-  
+
+  const redirectToAuth = useCallback(() => {
+    const returnUrl = encodeURIComponent(window.location.pathname);
+    navigate(`/auth?return=${returnUrl}`, { replace: true });
+  }, [navigate]);
+
+  // ── Initial check on mount ──
   useEffect(() => {
-    // Capture auth data from URL params (after OAuth callback)
     captureAuthCallback();
 
-    // Check if we have auth data (either from URL capture or prior session)
-    const authData = getAuthData();
-    
+    const authData = getAuthData(); // already rejects expired tokens
     if (!authData) {
-      // No auth — redirect to in-app auth page
-      const returnUrl = encodeURIComponent(window.location.pathname);
-      navigate(`/auth?return=${returnUrl}`, { replace: true });
+      redirectToAuth();
       setLoading(false);
       return;
     }
-    
+
+    // Optimistic: render immediately with the local token
     setAuth(authData);
     setLoading(false);
 
-    // If user hasn't completed onboarding, navigate client-side
+    // Background verify with server — if token is actually invalid, boot the user
+    verifyToken().then((profile) => {
+      if (!profile) {
+        logoutSilent();
+        redirectToAuth();
+      }
+    }).catch(() => {
+      // Network error — keep user logged in (offline-friendly)
+    });
+
+    // Onboarding redirect
     const onboarded = localStorage.getItem('grudge_onboarded');
     if (!onboarded && !window.location.pathname.startsWith('/onboarding')) {
       navigate('/onboarding');
     }
-  }, [navigate]);
-  
+  }, [navigate, redirectToAuth]);
+
+  // ── Re-validate when tab regains focus ──
+  useEffect(() => {
+    const onFocus = () => {
+      const current = getAuthData();
+      if (!current) {
+        redirectToAuth();
+        return;
+      }
+      // Lightweight server verify in background
+      verifyToken().then((profile) => {
+        if (!profile) {
+          logoutSilent();
+          redirectToAuth();
+        }
+      }).catch(() => {});
+    };
+
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [redirectToAuth]);
+
   if (loading || !auth) {
     return (
       <div className="flex items-center justify-center h-screen w-screen bg-background">
@@ -55,7 +92,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
       </div>
     );
   }
-  
-  // User is authenticated, render the app
+
   return <>{children}</>;
 }

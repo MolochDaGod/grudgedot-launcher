@@ -1,10 +1,14 @@
 import type { Express } from "express";
+import { randomUUID } from "node:crypto";
 import express from "express";
 import path from "path";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
+import { registerObjectstoreProxy } from "./routes/objectstoreProxy";
+import { registerDeviceRoutes } from "./routes/deviceRoutes";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
+import { r2Client } from "./objectStoreR2";
 import {
   ASSET_RULES,
   validateAssetUpload,
@@ -196,6 +200,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.use(express.static(path.join(process.cwd(), "public")));
   }
   
+  // ObjectStore R2 proxy — /api/objectstore/*  (reads public, writes server-key-gated)
+  registerObjectstoreProxy(app);
+
+  // Device registration — /api/devices/* (ESP32-GRD17 + browser firmware)
+  registerDeviceRoutes(app);
+
   // Gruda Wars routes (hero sync, GRUDACHAIN status, WCS config)
   registerGrudaWarsRoutes(app);
 
@@ -323,16 +333,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (fileSize) updateData.fileSize = fileSize;
       if (objectKey) updateData.uploadedAt = new Date();
 
-      const updatedAsset = await db.update(gdevelopAssets)
+      await db.update(gdevelopAssets)
         .set(updateData)
-        .where(eq(gdevelopAssets.id, id))
-        .returning();
+        .where(eq(gdevelopAssets.id, id));
 
-      if (updatedAsset.length === 0) {
+      const [updatedAsset] = await db.select().from(gdevelopAssets).where(eq(gdevelopAssets.id, id)).limit(1);
+      if (!updatedAsset) {
         return res.status(404).json({ error: "Asset not found" });
       }
 
-      res.json(updatedAsset[0]);
+      res.json(updatedAsset);
     } catch (error) {
       console.error("Error updating asset:", error);
       return res.status(500).json({ error: "Internal server error" });
@@ -1340,8 +1350,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Units
   app.get("/api/openrts/units", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsUnits.findMany();
+      const result = await db.select().from(openrtsUnits);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS units:", error);
@@ -1351,7 +1360,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/openrts/units", async (req, res) => {
     try {
-      const [unit] = await db.insert(openrtsUnits).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsUnits).values({ ...req.body, id: newId });
+      const [unit] = await db.select().from(openrtsUnits).where(eq(openrtsUnits.id, newId)).limit(1);
       res.status(201).json(unit);
     } catch (error) {
       console.error("Error creating OpenRTS unit:", error);
@@ -1372,8 +1383,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Weapons
   app.get("/api/openrts/weapons", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsWeapons.findMany();
+      const result = await db.select().from(openrtsWeapons);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS weapons:", error);
@@ -1383,7 +1393,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/openrts/weapons", async (req, res) => {
     try {
-      const [weapon] = await db.insert(openrtsWeapons).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsWeapons).values({ ...req.body, id: newId });
+      const [weapon] = await db.select().from(openrtsWeapons).where(eq(openrtsWeapons.id, newId)).limit(1);
       res.status(201).json(weapon);
     } catch (error) {
       console.error("Error creating OpenRTS weapon:", error);
@@ -1404,8 +1416,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Movers
   app.get("/api/openrts/movers", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsMover.findMany();
+      const result = await db.select().from(openrtsMover);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS movers:", error);
@@ -1416,8 +1427,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Effects
   app.get("/api/openrts/effects", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsEffects.findMany();
+      const result = await db.select().from(openrtsEffects);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS effects:", error);
@@ -1427,7 +1437,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/openrts/effects", async (req, res) => {
     try {
-      const [effect] = await db.insert(openrtsEffects).values(req.body).returning();
+      const newId = randomUUID();
+      await db.insert(openrtsEffects).values({ ...req.body, id: newId });
+      const [effect] = await db.select().from(openrtsEffects).where(eq(openrtsEffects.id, newId)).limit(1);
       res.status(201).json(effect);
     } catch (error) {
       console.error("Error creating OpenRTS effect:", error);
@@ -1448,8 +1460,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Actors
   app.get("/api/openrts/actors", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsActors.findMany();
+      const result = await db.select().from(openrtsActors);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS actors:", error);
@@ -1460,8 +1471,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Projectiles
   app.get("/api/openrts/projectiles", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsProjectiles.findMany();
+      const result = await db.select().from(openrtsProjectiles);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS projectiles:", error);
@@ -1472,8 +1482,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Trinkets
   app.get("/api/openrts/trinkets", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsTrinkets.findMany();
+      const result = await db.select().from(openrtsTrinkets);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS trinkets:", error);
@@ -1484,8 +1493,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // OpenRTS Map Styles
   app.get("/api/openrts/map-styles", async (req, res) => {
     try {
-      // @ts-expect-error db.query proxy types are resolved at runtime via drizzle schema
-      const result = await db.query.openrtsMapStyles.findMany();
+      const result = await db.select().from(openrtsMapStyles);
       res.json(result);
     } catch (error) {
       console.error("Error fetching OpenRTS map styles:", error);
@@ -1503,7 +1511,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.get("/api/players/me", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1519,7 +1527,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/players/profile", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       
       const existing = await storage.getPlayerProfile(claims.sub);
       if (existing) {
@@ -1552,7 +1560,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.patch("/api/players/me", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1582,7 +1590,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.get("/api/players/me/characters", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1598,7 +1606,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/players/me/characters/:characterId", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1637,7 +1645,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.get("/api/players/me/wallet", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1679,7 +1687,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.get("/api/players/me/achievements", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1722,7 +1730,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/lobbies", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1758,7 +1766,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/lobbies/:id/join", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1794,7 +1802,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/lobbies/:id/leave", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1810,7 +1818,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.patch("/api/lobbies/:id/player", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1826,7 +1834,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.delete("/api/lobbies/:id", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const profile = await storage.getPlayerProfile(claims.sub);
       
       if (!profile) {
@@ -1868,7 +1876,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.get("/api/settings", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const settings = await storage.getUserSettings(claims.sub);
       res.json(settings || {});
     } catch (error) {
@@ -1878,7 +1886,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.put("/api/settings", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const settings = await storage.upsertUserSettings({
         userId: claims.sub,
         ...req.body,
@@ -2402,7 +2410,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
         return res.status(404).json({ error: "Asset not found" });
       }
       
-      await objectStorageService.downloadObject(result.file, res);
+      await objectStorageService.downloadObject((result as any).file, res);
     } catch (error: any) {
       console.error("Error fetching asset:", error);
       res.status(500).json({ error: "Failed to fetch asset", details: error.message });
@@ -2490,10 +2498,12 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/viewport-assets/sync-from-storage", async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const storageFiles = await objectStorageService.listFiles('public/');
+      // Fetch all assets from ObjectStore R2 Worker
+      const r2Assets = await r2Client.listAssets({ limit: 200 });
       
-      const glbFiles = storageFiles.filter((f: { name: string; size?: number }) => f.name.toLowerCase().endsWith('.glb'));
+      const glbItems = r2Assets.items.filter(a =>
+        a.filename.toLowerCase().endsWith('.glb') || a.mime === 'model/gltf-binary'
+      );
       
       const results = {
         added: 0,
@@ -2501,44 +2511,40 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
         errors: [] as { file: string; error: string }[],
       };
       
-      for (const file of glbFiles) {
+      for (const asset of glbItems) {
         try {
-          const fileName = file.name.split('/').pop() || '';
-          const pathParts = file.name.split('/');
+          const fileName = asset.filename;
+          const key = asset.key;
           
-          let category = 'misc';
+          // Derive category from R2 metadata or key path
+          let category = asset.category || 'misc';
           let subcategory: string | undefined;
-          const tags: string[] = [];
+          const tags: string[] = [...(asset.tags || [])];
           
-          if (file.name.includes('/animations/')) {
+          if (key.includes('/animations/')) {
             category = 'animation';
-            tags.push('animation');
-          } else if (file.name.includes('/characters/') || file.name.includes('/Characters/')) {
+            if (!tags.includes('animation')) tags.push('animation');
+          } else if (key.includes('/characters/') || key.includes('/Characters/')) {
             category = 'unit';
             subcategory = 'character';
-            tags.push('character');
-          } else if (file.name.includes('/weapons/') || file.name.includes('/Weapons/')) {
+            if (!tags.includes('character')) tags.push('character');
+          } else if (key.includes('/weapons/') || key.includes('/Weapons/')) {
             category = 'weapon';
-            tags.push('weapon');
-          } else if (file.name.includes('/buildings/') || file.name.includes('/Buildings/')) {
+            if (!tags.includes('weapon')) tags.push('weapon');
+          } else if (key.includes('/buildings/') || key.includes('/Buildings/')) {
             category = 'building';
-            tags.push('building');
-          } else if (file.name.includes('/props/')) {
+            if (!tags.includes('building')) tags.push('building');
+          } else if (key.includes('/props/')) {
             category = 'prop';
-            if (file.name.includes('/nature/')) {
-              subcategory = 'nature';
-              tags.push('nature');
-            } else if (file.name.includes('/items/')) {
-              subcategory = 'item';
-              tags.push('item');
-            }
-          } else if (file.name.includes('/Vehicles/') || file.name.includes('/vehicles/')) {
+            if (key.includes('/nature/')) { subcategory = 'nature'; tags.push('nature'); }
+            else if (key.includes('/items/')) { subcategory = 'item'; tags.push('item'); }
+          } else if (key.includes('/vehicles/') || key.includes('/Vehicles/')) {
             category = 'vehicle';
-            tags.push('vehicle');
-          } else if (file.name.includes('/effects/')) {
+            if (!tags.includes('vehicle')) tags.push('vehicle');
+          } else if (key.includes('/effects/')) {
             category = 'effect';
             tags.push('effect', 'vfx');
-          } else if (file.name.includes('/Worlds/')) {
+          } else if (key.includes('/Worlds/')) {
             category = 'environment';
             tags.push('world', 'environment');
           }
@@ -2561,39 +2567,40 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
             continue;
           }
           
-          const storagePath = `/public-objects/${file.name}`;
+          // Use R2 file URL (CDN-cached, immutable)
+          const filePath = r2Client.getAssetFileUrl(asset.id);
           
           await storage.createViewportAsset({
             name: baseName.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             slug,
-            sourceType: 'object-storage',
+            sourceType: 'objectstore-r2',
             assetType: 'glb',
             category,
             subcategory,
-            filePath: storagePath,
+            filePath,
             tags,
-            isAnimated: category === 'animation' || file.name.includes('animation'),
-            fileSize: file.size || undefined,
-            metadata: { storageKey: file.name },
+            isAnimated: category === 'animation' || key.includes('animation'),
+            fileSize: asset.size || undefined,
+            metadata: { r2Id: asset.id, r2Key: asset.key, ...asset.metadata },
             viewportConfig: { cameraPosition: { x: 3, y: 2, z: 5 }, autoRotate: true },
           });
           
           results.added++;
         } catch (error) {
-          results.errors.push({ file: file.name, error: String(error) });
+          results.errors.push({ file: asset.filename, error: String(error) });
         }
       }
       
       res.json({
-        message: `Synced ${results.added} GLB files from Object Storage`,
+        message: `Synced ${results.added} GLB files from ObjectStore R2`,
         added: results.added,
         skipped: results.skipped,
-        total: glbFiles.length,
+        total: glbItems.length,
         errors: results.errors,
       });
     } catch (error) {
-      console.error("Error syncing from storage:", error);
-      res.status(500).json({ error: "Failed to sync from Object Storage" });
+      console.error("Error syncing from ObjectStore R2:", error);
+      res.status(500).json({ error: "Failed to sync from ObjectStore R2" });
     }
   });
 
@@ -2603,6 +2610,96 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete asset" });
+    }
+  });
+
+  // ============================================
+  // ObjectStore R2 Proxy Routes
+  // Server-side proxy keeps API key secure. Public reads can also go
+  // direct to the Worker, but writes MUST go through this proxy.
+  // Best-practice example for all Grudge Studio projects.
+  // ============================================
+
+  app.get("/api/objectstore/health", async (_req, res) => {
+    try {
+      const health = await r2Client.healthCheck();
+      res.json({ ...health, workerUrl: r2Client.getWorkerUrl(), hasApiKey: r2Client.hasApiKey() });
+    } catch (error: any) {
+      res.status(502).json({ status: "error", error: error.message });
+    }
+  });
+
+  app.get("/api/objectstore/assets", async (req, res) => {
+    try {
+      const { category, tag, q, prefix, limit, offset } = req.query;
+      const result = await r2Client.listAssets({
+        category: category as string | undefined,
+        tag: tag as string | undefined,
+        q: q as string | undefined,
+        prefix: prefix as string | undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
+        offset: offset ? parseInt(offset as string, 10) : undefined,
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error("ObjectStore list error:", error.message);
+      res.status(error.status || 502).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/objectstore/assets/:id", async (req, res) => {
+    try {
+      const asset = await r2Client.getAsset(req.params.id);
+      res.json(asset);
+    } catch (error: any) {
+      res.status(error.status || 502).json({ error: error.message });
+    }
+  });
+
+  // Upload proxy — streams the raw multipart body to the Worker with the API key.
+  // No multipart parsing needed on this server; the Worker handles it.
+  app.post("/api/objectstore/assets", async (req, res) => {
+    try {
+      if (!r2Client.hasApiKey()) {
+        return res.status(503).json({ error: "ObjectStore API key not configured" });
+      }
+
+      const contentType = req.headers["content-type"] || "";
+      const workerUrl = `${r2Client.getWorkerUrl()}/v1/assets`;
+
+      // Collect the raw body into a buffer
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      const body = Buffer.concat(chunks);
+
+      const workerRes = await fetch(workerUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": contentType,
+          "X-API-Key": process.env.OBJECTSTORE_API_KEY || "",
+        },
+        body,
+      });
+
+      const data = await workerRes.json();
+      res.status(workerRes.status).json(data);
+    } catch (error: any) {
+      console.error("ObjectStore upload proxy error:", error.message);
+      res.status(502).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/objectstore/assets/:id", async (req, res) => {
+    try {
+      if (!r2Client.hasApiKey()) {
+        return res.status(503).json({ error: "ObjectStore API key not configured" });
+      }
+      const result = await r2Client.deleteAsset(req.params.id);
+      res.json(result);
+    } catch (error: any) {
+      res.status(error.status || 502).json({ error: error.message });
     }
   });
 
@@ -2723,7 +2820,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   // Saved characters API (MMO-style character creation)
   app.get("/api/saved-characters", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const userId = claims?.sub;
       const characters = await storage.getSavedCharacters(userId);
       res.json(characters);
@@ -2735,7 +2832,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.post("/api/saved-characters", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const userId = claims?.sub;
       const { name, presetId, customization, colors } = req.body;
       
@@ -2761,7 +2858,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
 
   app.patch("/api/saved-characters/:id/activate", async (req, res) => {
     try {
-      const claims = (req.user as any)?.claims;
+      const claims = (req as any).user?.claims;
       const userId = claims?.sub;
       const characterId = req.params.id;
       
@@ -2931,7 +3028,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       const requestedPath = (req.query.path as string) || "";
       const { bucketName, objectName } = parseObjectPath(basePath);
       
-      const bucket = objectStorageClient.bucket(bucketName);
+      const bucket = (objectStorageClient as any).bucket(bucketName);
       const prefix = requestedPath ? `${objectName}/${requestedPath}/` : `${objectName}/`;
       
       const [files] = await bucket.getFiles({ 
@@ -3018,7 +3115,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       }
       
       const { bucketName, objectName } = parseObjectPath(oldPath);
-      const bucket = objectStorageClient.bucket(bucketName);
+      const bucket = (objectStorageClient as any).bucket(bucketName);
       const file = bucket.file(objectName);
       
       const pathParts = objectName.split("/");
@@ -3049,7 +3146,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       const { bucketName: baseBucketName, objectName: baseObjectName } = parseObjectPath(basePath);
       
       const { bucketName, objectName } = parseObjectPath(sourcePath);
-      const bucket = objectStorageClient.bucket(bucketName);
+      const bucket = (objectStorageClient as any).bucket(bucketName);
       const file = bucket.file(objectName);
       
       const fileName = objectName.split("/").pop();
@@ -3076,12 +3173,12 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       }
       
       const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = objectStorageClient.bucket(bucketName);
+      const bucket = (objectStorageClient as any).bucket(bucketName);
       
       // Check if it's a folder (ends with /) or if we need to delete by prefix
       if (filePath.endsWith("/")) {
         const [files] = await bucket.getFiles({ prefix: objectName });
-        await Promise.all(files.map(f => f.delete()));
+        await Promise.all(files.map((f: any) => f.delete()));
       } else {
         const file = bucket.file(objectName);
         await file.delete();
@@ -3107,7 +3204,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       const basePath = publicSearchPaths[0];
       const { bucketName, objectName: baseObjectName } = parseObjectPath(basePath);
       
-      const bucket = objectStorageClient.bucket(bucketName);
+      const bucket = (objectStorageClient as any).bucket(bucketName);
       const folderPath = parentPath 
         ? `${baseObjectName}/${parentPath}/${folderName}/.keep`
         : `${baseObjectName}/${folderName}/.keep`;
@@ -3131,7 +3228,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       }
       
       const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = objectStorageClient.bucket(bucketName);
+      const bucket = (objectStorageClient as any).bucket(bucketName);
       const file = bucket.file(objectName);
       
       const [exists] = await file.exists();
@@ -3161,7 +3258,7 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       }
       
       const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = objectStorageClient.bucket(bucketName);
+      const bucket = (objectStorageClient as any).bucket(bucketName);
       const file = bucket.file(objectName);
       
       const [exists] = await file.exists();
@@ -3325,7 +3422,9 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   app.post("/api/skill-trees", async (req, res) => {
     try {
       const data = insertSkillTreeSchema.parse(req.body);
-      const [tree] = await db.insert(skillTrees).values(data).returning();
+      const newId = randomUUID();
+      await db.insert(skillTrees).values({ ...data, id: newId });
+      const [tree] = await db.select().from(skillTrees).where(eq(skillTrees.id, newId)).limit(1);
       res.status(201).json(tree);
     } catch (error) {
       console.error("Error creating skill tree:", error);
@@ -3338,10 +3437,10 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
     try {
       const { id } = req.params;
       const data = req.body;
-      const [tree] = await db.update(skillTrees)
+      await db.update(skillTrees)
         .set({ ...data, updatedAt: new Date() })
-        .where(eq(skillTrees.id, id))
-        .returning();
+        .where(eq(skillTrees.id, id));
+      const [tree] = await db.select().from(skillTrees).where(eq(skillTrees.id, id)).limit(1);
       if (!tree) {
         return res.status(404).json({ error: "Skill tree not found" });
       }
@@ -3356,10 +3455,11 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   app.delete("/api/skill-trees/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const [tree] = await db.delete(skillTrees).where(eq(skillTrees.id, id)).returning();
+      const [tree] = await db.select().from(skillTrees).where(eq(skillTrees.id, id)).limit(1);
       if (!tree) {
         return res.status(404).json({ error: "Skill tree not found" });
       }
+      await db.delete(skillTrees).where(eq(skillTrees.id, id));
       res.json({ success: true });
     } catch (error) {
       console.error("Error deleting skill tree:", error);
@@ -3418,15 +3518,17 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
       
       if (existing && existing.worldId === data.worldId) {
         // Update last online
-        const [updated] = await db.update(mmoCharacters)
+        await db.update(mmoCharacters)
           .set({ lastOnline: new Date() })
-          .where(eq(mmoCharacters.id, existing.id))
-          .returning();
+          .where(eq(mmoCharacters.id, existing.id));
+        const [updated] = await db.select().from(mmoCharacters).where(eq(mmoCharacters.id, existing.id)).limit(1);
         return res.json(updated);
       }
 
       // Create new character
-      const [character] = await db.insert(mmoCharacters).values(data).returning();
+      const newCharId = randomUUID();
+      await db.insert(mmoCharacters).values({ ...data, id: newCharId });
+      const [character] = await db.select().from(mmoCharacters).where(eq(mmoCharacters.id, newCharId)).limit(1);
       res.status(201).json(character);
     } catch (error) {
       console.error("Error creating MMO character:", error);
@@ -3467,10 +3569,10 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
     try {
       const { id } = req.params;
       const { posX, posY } = req.body;
-      const [character] = await db.update(mmoCharacters)
+      await db.update(mmoCharacters)
         .set({ posX, posY, lastOnline: new Date() })
-        .where(eq(mmoCharacters.id, id))
-        .returning();
+        .where(eq(mmoCharacters.id, id));
+      const [character] = await db.select().from(mmoCharacters).where(eq(mmoCharacters.id, id)).limit(1);
       if (!character) {
         return res.status(404).json({ error: "Character not found" });
       }
@@ -3961,6 +4063,97 @@ const { gdevelopToolsSchema } = await import("../shared/schema");
   setInterval(() => {
     // Future: Update NPC positions, AI, etc.
   }, 100);
+
+  // ============================================
+  // GRUDGE ENGINE BRIDGE — Scene Export + Deploy
+  // ============================================
+  // Allows GDevelop to save/load scenes from the Grudge Engine editor,
+  // check engine availability, and list ObjectStore models.
+
+  const ENGINE_EDITOR_URL = process.env.GRUDGE_ENGINE_URL || 'https://grudge-engine-web.vercel.app';
+  const OBJECTSTORE_WORKER_URL = process.env.OBJECTSTORE_WORKER_URL || 'https://objectstore.grudge-studio.com';
+
+  // In-memory scene store (keyed by projectId:sceneId)
+  const engineSceneStore = new Map<string, { scene: any; savedAt: string }>();
+
+  // Engine connection status
+  app.get("/api/engine/status", async (_req, res) => {
+    let engineAvailable = false;
+    try {
+      const r = await fetch(`${ENGINE_EDITOR_URL}/api/engine/status`, { signal: AbortSignal.timeout(5000) });
+      engineAvailable = r.ok;
+    } catch { /* offline */ }
+
+    let objectStoreOnline = false;
+    try {
+      const r = await fetch(`${OBJECTSTORE_WORKER_URL}/v1/health`, { signal: AbortSignal.timeout(5000) });
+      objectStoreOnline = r.ok;
+    } catch { /* offline */ }
+
+    res.json({
+      editorUrl: ENGINE_EDITOR_URL,
+      objectStoreUrl: OBJECTSTORE_WORKER_URL,
+      engineAvailable,
+      objectStoreOnline,
+    });
+  });
+
+  // Save a scene exported from the engine
+  app.post("/api/engine/scenes", (req, res) => {
+    try {
+      const { projectId, scene } = req.body;
+      if (!projectId || !scene?.id) {
+        return res.status(400).json({ error: 'projectId and scene.id are required' });
+      }
+      const key = `${projectId}:${scene.id}`;
+      const entry = { scene, savedAt: new Date().toISOString() };
+      engineSceneStore.set(key, entry);
+      res.status(201).json({ key, savedAt: entry.savedAt });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to save scene' });
+    }
+  });
+
+  // Load a scene for the engine
+  app.get("/api/engine/scenes/:projectId/:sceneId", (req, res) => {
+    const key = `${req.params.projectId}:${req.params.sceneId}`;
+    const entry = engineSceneStore.get(key);
+    if (!entry) {
+      return res.status(404).json({ error: 'Scene not found' });
+    }
+    res.json(entry);
+  });
+
+  // List all saved engine scenes for a project
+  app.get("/api/engine/scenes/:projectId", (req, res) => {
+    const prefix = `${req.params.projectId}:`;
+    const scenes: Array<{ sceneId: string; name: string; savedAt: string }> = [];
+    engineSceneStore.forEach((entry, key) => {
+      if (key.startsWith(prefix)) {
+        scenes.push({
+          sceneId: entry.scene.id,
+          name: entry.scene.name || 'Untitled',
+          savedAt: entry.savedAt,
+        });
+      }
+    });
+    res.json({ scenes });
+  });
+
+  // Proxy ObjectStore model listing for GDevelop (avoids client CORS)
+  app.get("/api/engine/objectstore/models", async (req, res) => {
+    try {
+      const prefix = (req.query.prefix as string) || '';
+      const limit = parseInt((req.query.limit as string) || '1000', 10);
+      let url = `${OBJECTSTORE_WORKER_URL}/v1/assets?limit=${limit}`;
+      if (prefix) url += `&prefix=${encodeURIComponent(prefix)}`;
+      const r2Res = await fetch(url);
+      const data = await r2Res.json();
+      res.json(data);
+    } catch {
+      res.status(502).json({ error: 'Failed to fetch from ObjectStore' });
+    }
+  });
   
   return httpServer;
 }

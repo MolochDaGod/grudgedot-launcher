@@ -1,10 +1,13 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, Star, Swords, Package, LogIn, Check, Lock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trophy, Star, Swords, Package, LogIn, Check, Lock, Crown, Award } from "lucide-react";
+import { grudgeAccountApi, type GrudgeAchievementDef, type GrudgePlayerAchievement } from "@/lib/grudgeBackendApi";
 import type { Achievement, PlayerAchievement } from "@shared/schema";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -25,6 +28,18 @@ export default function AchievementsPage() {
     ["/api/players/me/achievements"],
     { ttlMs: 60_000, enabled: isAuthenticated },
   );
+
+  // Grudge backend achievements
+  const { data: grudgeDefs = [] } = useQuery<GrudgeAchievementDef[]>({
+    queryKey: ['grudge', 'achievementDefs'],
+    queryFn: () => grudgeAccountApi.getAchievementDefs(),
+  });
+
+  const { data: grudgeProgress } = useQuery<{ achievements: GrudgePlayerAchievement[]; total_points: number } | null>({
+    queryKey: ['grudge', 'myAchievements'],
+    queryFn: () => grudgeAccountApi.getMyAchievements(),
+    enabled: isAuthenticated,
+  });
 
   const getPlayerProgress = (achievementId: string) => {
     return playerAchievements?.find(pa => pa.achievementId === achievementId);
@@ -57,6 +72,8 @@ export default function AchievementsPage() {
 
   const completedCount = playerAchievements?.filter(pa => pa.completedAt).length || 0;
   const totalCount = achievements?.length || 0;
+  const grudgeEarned = grudgeProgress?.achievements?.length || 0;
+  const grudgePoints = grudgeProgress?.total_points || 0;
 
   return (
     <div className="flex flex-col min-h-full p-4 sm:p-6">
@@ -66,13 +83,74 @@ export default function AchievementsPage() {
             <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-achievements-title">Achievements</h1>
             <p className="text-sm text-muted-foreground">Track your progress and earn rewards</p>
           </div>
-          <Badge variant="secondary" className="text-base sm:text-lg px-3 py-1 w-fit">
-            <Trophy className="mr-1 h-4 w-4" />
-            {completedCount}/{totalCount}
-          </Badge>
+          <div className="flex gap-2">
+            <Badge variant="secondary" className="text-base sm:text-lg px-3 py-1 w-fit">
+              <Trophy className="mr-1 h-4 w-4" />
+              {completedCount}/{totalCount}
+            </Badge>
+            {grudgePoints > 0 && (
+              <Badge variant="outline" className="text-base sm:text-lg px-3 py-1 w-fit">
+                <Award className="mr-1 h-4 w-4" />
+                {grudgePoints} pts
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
 
+      <Tabs defaultValue={grudgeDefs.length > 0 ? 'grudge' : 'local'} className="flex-1">
+        <TabsList className="mb-4">
+          {grudgeDefs.length > 0 && (
+            <TabsTrigger value="grudge">
+              <Crown className="mr-1 h-4 w-4" /> Grudge ({grudgeEarned}/{grudgeDefs.length})
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="local">Local ({completedCount}/{totalCount})</TabsTrigger>
+        </TabsList>
+
+        {/* Grudge achievements tab */}
+        <TabsContent value="grudge" className="mt-0">
+          {grudgeDefs.length === 0 ? (
+            <Card className="flex flex-col items-center justify-center p-8 text-center">
+              <Award className="h-12 w-12 text-muted-foreground mb-4" />
+              <CardTitle className="mb-2">No Grudge Achievements</CardTitle>
+              <CardDescription>Achievements from the Grudge backend will appear here.</CardDescription>
+            </Card>
+          ) : (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              {grudgeDefs.map((def) => {
+                const earned = grudgeProgress?.achievements?.find(a => a.achievement_key === def.key);
+                return (
+                  <Card key={def.key} className={`hover-elevate ${earned ? 'ring-2 ring-primary' : ''}`}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${earned ? 'bg-primary' : 'bg-muted'}`}>
+                            {earned ? <Check className="h-5 w-5 text-primary-foreground" /> : <Trophy className="h-5 w-5 text-muted-foreground" />}
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{def.name}</CardTitle>
+                            <CardDescription>{def.description}</CardDescription>
+                          </div>
+                        </div>
+                        <Badge variant="outline">{def.points} pts</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between text-sm">
+                        <Badge variant="secondary" className="capitalize">{def.category}</Badge>
+                        {earned && <span className="text-xs text-muted-foreground">Earned {new Date(earned.earned_at).toLocaleDateString()}</span>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Local achievements tab */}
+        <TabsContent value="local" className="mt-0">
       {!achievements || achievements.length === 0 ? (
         <Card className="flex flex-col items-center justify-center p-6 sm:p-8 text-center">
           <Trophy className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-4" />
@@ -156,6 +234,8 @@ export default function AchievementsPage() {
           })}
         </div>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

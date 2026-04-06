@@ -1,4 +1,5 @@
 import { type Express } from "express";
+import { randomUUID } from "node:crypto";
 import { requireAuth } from "../middleware/grudgeJwt";
 import { db } from "../db";
 import { users, playerProfiles, playerWallets, playerCharacters } from "../../shared/schema";
@@ -37,19 +38,24 @@ export function registerUserRoutes(app: Express) {
 
       if (profile.length === 0) {
         // Create default profile
-        const newProfile = await db
+        const newProfileId = randomUUID();
+        await db
           .insert(playerProfiles)
           .values({
+            id: newProfileId,
             userId: reqUser.id,
             displayName: userData[0].username,
             level: 1,
             xp: 0,
             totalGamesPlayed: 0,
             totalWins: 0,
-          })
-          .returning();
+          });
 
-        profile = newProfile;
+        profile = await db
+          .select()
+          .from(playerProfiles)
+          .where(eq(playerProfiles.id, newProfileId))
+          .limit(1);
       }
 
       // Get wallet balances

@@ -107,24 +107,31 @@ export function useCachedQuery<T = unknown>(
     });
   }, [key, enabled]);
 
-  const result = useQuery<T>({
+  const result = useQuery({
     queryKey: queryKey as string[],
+    queryFn: async () => {
+      // Default fetch for string-array queryKeys like ['/api/settings']
+      const url = Array.isArray(queryKey) ? String(queryKey[0]) : String(queryKey);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json() as Promise<T>;
+    },
     enabled,
     retry,
-    // Use KV data as placeholder until Neon responds
-    ...(kvData !== undefined ? { placeholderData: kvData } : {}),
+    // Use KV data as placeholder until server responds
+    ...(kvData !== undefined ? { placeholderData: kvData as any } : {}),
   });
 
-  // Write successful Neon response back to Puter KV
+  // Write successful response back to Puter KV
   const prevDataRef = useRef<T | undefined>(undefined);
   useEffect(() => {
     if (result.data !== undefined && result.data !== prevDataRef.current) {
-      prevDataRef.current = result.data;
+      prevDataRef.current = result.data as T;
       writeToKV(key, result.data, ttlMs);
     }
   }, [result.data, key, ttlMs]);
 
-  return result;
+  return result as UseQueryResult<T>;
 }
 
 export default useCachedQuery;

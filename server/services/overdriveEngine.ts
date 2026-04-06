@@ -4,7 +4,8 @@
  * Features: Vehicle physics, track collision, obstacle courses, multiplayer support
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
+const uuidv4 = randomUUID;
 
 export interface Vehicle {
   id: string;

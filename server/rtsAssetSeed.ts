@@ -302,4 +302,144 @@ export const rtsAssetSeeds: RtsAssetSeedData[] = [
   }))
 ];
 
+// ═══════════════════════════════════════════════════════════════
+// TOON_RTS RACE UNITS — Real modular character + cavalry models
+// Sourced from GRUDGE-sourse/GRUDGE-NFT-Island-2026/source/Assets/Toon_RTS/
+// ═══════════════════════════════════════════════════════════════
+
+interface ToonRtsFaction {
+  raceKey: string;
+  prefix: string;
+  displayName: string;
+  faction: string;
+  characterGlb: string;
+  cavalryGlb: string;
+  siegeGlb?: string;
+  mountType: string;
+  equipment: { name: string; glb: string; type: string }[];
+}
+
+const TOON_RTS_FACTIONS: ToonRtsFaction[] = [
+  {
+    raceKey: 'barbarians', prefix: 'BRB', displayName: 'Barbarians', faction: 'Crusade',
+    characterGlb: '/models/toon-rts/barbarians/BRB_Characters_customizable.glb',
+    cavalryGlb: '/models/toon-rts/barbarians/BRB_Cavalry_customizable.glb',
+    mountType: 'War Bear',
+    equipment: [
+      { name: 'BRB Hammer', glb: '/models/toon-rts/barbarians/equipment/BRB_weapon_hammer_B.glb', type: 'weapon' },
+      { name: 'BRB Spear', glb: '/models/toon-rts/barbarians/equipment/BRB_weapon_spear.glb', type: 'weapon' },
+      { name: 'BRB Staff', glb: '/models/toon-rts/barbarians/equipment/BRB_weapon_staff_B.glb', type: 'weapon' },
+      { name: 'BRB Sword', glb: '/models/toon-rts/barbarians/equipment/BRB_weapon_sword_B.glb', type: 'weapon' },
+    ],
+  },
+  {
+    raceKey: 'dwarves', prefix: 'DWF', displayName: 'Dwarves', faction: 'Fabled',
+    characterGlb: '/models/toon-rts/dwarves/DWF_Characters_customizable.glb',
+    cavalryGlb: '/models/toon-rts/dwarves/DWF_Cavalry_customizable.glb',
+    mountType: 'War Ram',
+    equipment: [],
+  },
+  {
+    raceKey: 'elves', prefix: 'ELF', displayName: 'Elves', faction: 'Fabled',
+    characterGlb: '/models/toon-rts/elves/ELF_Characters_customizable.glb',
+    cavalryGlb: '/models/toon-rts/elves/ELF_Cavalry_customizable.glb',
+    siegeGlb: '/models/toon-rts/elves/ELF_BoltThrower.glb',
+    mountType: 'Elven Stag',
+    equipment: [
+      { name: 'ELF Spear', glb: '/models/toon-rts/elves/equipment/ELF_weapon_spear.glb', type: 'weapon' },
+      { name: 'ELF Staff', glb: '/models/toon-rts/elves/equipment/ELF_weapon_staff_C.glb', type: 'weapon' },
+    ],
+  },
+  {
+    raceKey: 'orcs', prefix: 'ORC', displayName: 'Orcs', faction: 'Legion',
+    characterGlb: '/models/toon-rts/orcs/ORC_Characters_Customizable.glb',
+    cavalryGlb: '/models/toon-rts/orcs/ORC_Cavalry_Customizable.glb',
+    siegeGlb: '/models/toon-rts/orcs/ORC_Catapult.glb',
+    mountType: 'War Wolf',
+    equipment: [
+      { name: 'ORC Shield', glb: '/models/toon-rts/orcs/equipment/ORC_Shield_D.glb', type: 'shield' },
+      { name: 'ORC Axe', glb: '/models/toon-rts/orcs/equipment/ORC_weapon_Axe_A.glb', type: 'weapon' },
+      { name: 'ORC Staff', glb: '/models/toon-rts/orcs/equipment/ORC_weapon_staff_B.glb', type: 'weapon' },
+    ],
+  },
+  {
+    raceKey: 'undead', prefix: 'UD', displayName: 'Undead', faction: 'Legion',
+    characterGlb: '/models/toon-rts/undead/UD_Characters_customizable.glb',
+    cavalryGlb: '/models/toon-rts/undead/UD_Cavalry_customizable.glb',
+    mountType: 'Skeletal Horse',
+    equipment: [
+      { name: 'UD Shield', glb: '/models/toon-rts/undead/equipment/UD_Shield_C.glb', type: 'shield' },
+      { name: 'UD Spear', glb: '/models/toon-rts/undead/equipment/UD_weapon_Spear.glb', type: 'weapon' },
+      { name: 'UD Staff', glb: '/models/toon-rts/undead/equipment/UD_weapon_staff_B.glb', type: 'weapon' },
+      { name: 'UD Sword', glb: '/models/toon-rts/undead/equipment/UD_weapon_Sword_C.glb', type: 'weapon' },
+    ],
+  },
+  {
+    raceKey: 'western_kingdoms', prefix: 'WK', displayName: 'Western Kingdoms', faction: 'Crusade',
+    characterGlb: '/models/toon-rts/western_kingdoms/WK_Characters_customizable.glb',
+    cavalryGlb: '/models/toon-rts/western_kingdoms/WK_Cavalry_customizable.glb',
+    siegeGlb: '/models/toon-rts/western_kingdoms/WK_Catapult.glb',
+    mountType: 'War Horse',
+    equipment: [
+      { name: 'WK Staff', glb: '/models/toon-rts/western_kingdoms/equipment/WK_weapon_staff_B.glb', type: 'weapon' },
+      { name: 'WK Sword', glb: '/models/toon-rts/western_kingdoms/equipment/WK_weapon_sword_A.glb', type: 'weapon' },
+    ],
+  },
+];
+
+// Generate seed entries for each Toon_RTS faction
+for (const f of TOON_RTS_FACTIONS) {
+  // Infantry unit
+  rtsAssetSeeds.push({
+    name: `${f.displayName} Infantry (Customizable)`,
+    type: '3d_model',
+    category: 'units',
+    fileUrl: f.characterGlb,
+    previewUrl: f.characterGlb.replace('.glb', '_preview.png'),
+    metadata: { pack: 'Toon_RTS', collection: f.displayName, faction: f.faction, polycount: 'medium' },
+    tags: ['toon_rts', 'unit', 'infantry', 'modular', f.raceKey, f.faction.toLowerCase()],
+    source: 'toon_rts',
+  });
+
+  // Cavalry unit
+  rtsAssetSeeds.push({
+    name: `${f.displayName} ${f.mountType} Cavalry`,
+    type: '3d_model',
+    category: 'units',
+    fileUrl: f.cavalryGlb,
+    previewUrl: f.cavalryGlb.replace('.glb', '_preview.png'),
+    metadata: { pack: 'Toon_RTS', collection: f.displayName, faction: f.faction, polycount: 'medium' },
+    tags: ['toon_rts', 'unit', 'cavalry', 'mount', f.raceKey, f.faction.toLowerCase()],
+    source: 'toon_rts',
+  });
+
+  // Siege (if present)
+  if (f.siegeGlb) {
+    rtsAssetSeeds.push({
+      name: `${f.displayName} Siege Engine`,
+      type: '3d_model',
+      category: 'units',
+      fileUrl: f.siegeGlb,
+      previewUrl: f.siegeGlb.replace('.glb', '_preview.png'),
+      metadata: { pack: 'Toon_RTS', collection: f.displayName, faction: f.faction, polycount: 'medium' },
+      tags: ['toon_rts', 'unit', 'siege', f.raceKey, f.faction.toLowerCase()],
+      source: 'toon_rts',
+    });
+  }
+
+  // Equipment
+  for (const eq of f.equipment) {
+    rtsAssetSeeds.push({
+      name: eq.name,
+      type: '3d_model',
+      category: 'equipment',
+      fileUrl: eq.glb,
+      previewUrl: eq.glb.replace('.glb', '_preview.png'),
+      metadata: { pack: 'Toon_RTS', collection: `${f.displayName} Equipment`, faction: f.faction, polycount: 'low' },
+      tags: ['toon_rts', 'equipment', eq.type, f.raceKey, f.faction.toLowerCase()],
+      source: 'toon_rts',
+    });
+  }
+}
+
 console.log(`Total RTS assets in seed: ${rtsAssetSeeds.length}`);

@@ -84,9 +84,25 @@ import {
 import { db } from "./db";
 import { eq, desc, like, or, sql, and } from "drizzle-orm";
 import { THREEJS_EXAMPLES, ASSET_TYPES } from "./threejsExamples";
+import { randomUUID } from "crypto";
+
+// MySQL doesn't support .returning() — insert with app-generated UUID, then select back
+async function insertAndGet<T>(table: any, idCol: any, data: any): Promise<T> {
+  const id = randomUUID();
+  await db.insert(table).values({ ...data, id });
+  const [row] = await db.select().from(table).where(eq(idCol, id));
+  return row as T;
+}
+
+// MySQL update + re-select helper
+async function updateAndGet<T>(table: any, idCol: any, id: string, updates: any): Promise<T | undefined> {
+  await db.update(table).set(updates).where(eq(idCol, id));
+  const [row] = await db.select().from(table).where(eq(idCol, id));
+  return (row as T) || undefined;
+}
 
 export interface IStorage {
-  // User methods (Replit Auth)
+  // User methods (Grudge ID Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
 
@@ -233,14 +249,14 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User methods (Replit Auth)
+  // User methods (Grudge ID Auth)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
+    await db
       .insert(users)
       .values(userData)
       .onConflictDoUpdate({
@@ -249,8 +265,8 @@ export class DatabaseStorage implements IStorage {
           ...userData,
           updatedAt: new Date(),
         },
-      })
-      .returning();
+      });
+    const [user] = await db.select().from(users).where(eq(users.id, userData.id!));
     return user;
   }
 
@@ -261,17 +277,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPlayerProfile(profile: InsertPlayerProfile): Promise<PlayerProfile> {
-    const [created] = await db.insert(playerProfiles).values(profile).returning();
-    return created;
+    return insertAndGet(playerProfiles, playerProfiles.id, profile);
   }
 
   async updatePlayerProfile(id: string, updates: Partial<InsertPlayerProfile>): Promise<PlayerProfile | undefined> {
-    const [updated] = await db
-      .update(playerProfiles)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(playerProfiles.id, id))
-      .returning();
-    return updated || undefined;
+    return updateAndGet(playerProfiles, playerProfiles.id, id, { ...updates, updatedAt: new Date() });
   }
 
   // Character methods
@@ -285,8 +295,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCharacter(character: InsertCharacter): Promise<Character> {
-    const [created] = await db.insert(characters).values(character).returning();
-    return created;
+    return insertAndGet(characters, characters.id, character);
   }
 
   async getPlayerCharacters(playerId: string): Promise<PlayerCharacter[]> {
@@ -294,8 +303,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addCharacterToPlayer(data: InsertPlayerCharacter): Promise<PlayerCharacter> {
-    const [created] = await db.insert(playerCharacters).values(data).returning();
-    return created;
+    return insertAndGet(playerCharacters, playerCharacters.id, data);
   }
 
   // Currency & Wallet methods
@@ -325,13 +333,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(playerWallets.id, walletId));
     
     // Create transaction record
-    const [transaction] = await db.insert(walletTransactions).values({
-      walletId,
-      amount,
-      reason,
-    }).returning();
-    
-    return transaction;
+    return insertAndGet(walletTransactions, walletTransactions.id, { walletId, amount, reason });
   }
 
   async createPlayerWallet(wallet: InsertPlayerWallet): Promise<PlayerWallet> {
@@ -340,8 +342,7 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       return existing;
     }
-    const [created] = await db.insert(playerWallets).values(wallet).returning();
-    return created;
+    return insertAndGet(playerWallets, playerWallets.id, wallet);
   }
 
   // Store methods
@@ -355,8 +356,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStoreItem(item: InsertStoreItem): Promise<StoreItem> {
-    const [created] = await db.insert(storeItems).values(item).returning();
-    return created;
+    return insertAndGet(storeItems, storeItems.id, item);
   }
 
   // Achievement methods
@@ -374,21 +374,11 @@ export class DatabaseStorage implements IStorage {
     );
 
     if (existing.length > 0) {
-      const [updated] = await db
-        .update(playerAchievements)
-        .set({ progress })
-        .where(eq(playerAchievements.id, existing[0].id))
-        .returning();
-      return updated;
+      return (await updateAndGet(playerAchievements, playerAchievements.id, existing[0].id, { progress }))!;
     } else {
-      const [created] = await db.insert(playerAchievements).values({
-        playerId,
-        achievementId,
-        progress,
-      }).returning();
-      return created;
+      return insertAndGet(playerAchievements, playerAchievements.id, { playerId, achievementId, progress });
     }
-  }
+    }
 
   // Lobby methods
   async getAllLobbies(): Promise<GameLobby[]> {
@@ -401,23 +391,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createLobby(lobby: InsertGameLobby): Promise<GameLobby> {
-    const [created] = await db.insert(gameLobbies).values(lobby).returning();
-    return created;
+    return insertAndGet(gameLobbies, gameLobbies.id, lobby);
   }
 
   async updateLobby(id: string, updates: Partial<InsertGameLobby>): Promise<GameLobby | undefined> {
-    const [updated] = await db
-      .update(gameLobbies)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(gameLobbies.id, id))
-      .returning();
-    return updated || undefined;
+    return updateAndGet(gameLobbies, gameLobbies.id, id, { ...updates, updatedAt: new Date() });
   }
 
   async deleteLobby(id: string): Promise<boolean> {
     await db.delete(lobbyPlayers).where(eq(lobbyPlayers.lobbyId, id));
     const result = await db.delete(gameLobbies).where(eq(gameLobbies.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 
   async getLobbyPlayers(lobbyId: string): Promise<LobbyPlayer[]> {
@@ -425,30 +409,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async joinLobby(data: InsertLobbyPlayer): Promise<LobbyPlayer> {
-    const [created] = await db.insert(lobbyPlayers).values(data).returning();
-    return created;
+    return insertAndGet(lobbyPlayers, lobbyPlayers.id, data);
   }
 
   async leaveLobby(lobbyId: string, playerId: string): Promise<boolean> {
     const result = await db.delete(lobbyPlayers).where(
       and(eq(lobbyPlayers.lobbyId, lobbyId), eq(lobbyPlayers.playerId, playerId))
     );
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 
   async updateLobbyPlayer(lobbyId: string, playerId: string, updates: Partial<InsertLobbyPlayer>): Promise<LobbyPlayer | undefined> {
-    const [updated] = await db
-      .update(lobbyPlayers)
-      .set(updates)
-      .where(and(eq(lobbyPlayers.lobbyId, lobbyId), eq(lobbyPlayers.playerId, playerId)))
-      .returning();
+    await db.update(lobbyPlayers).set(updates).where(and(eq(lobbyPlayers.lobbyId, lobbyId), eq(lobbyPlayers.playerId, playerId)));
+    const [updated] = await db.select().from(lobbyPlayers).where(and(eq(lobbyPlayers.lobbyId, lobbyId), eq(lobbyPlayers.playerId, playerId)));
     return updated || undefined;
   }
 
   // Game Session methods
   async createGameSession(session: InsertGameSession): Promise<GameSession> {
-    const [created] = await db.insert(gameSessions).values(session).returning();
-    return created;
+    return insertAndGet(gameSessions, gameSessions.id, session);
   }
 
   async getGameSession(id: string): Promise<GameSession | undefined> {
@@ -457,12 +436,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGameSession(id: string, updates: Partial<InsertGameSession>): Promise<GameSession | undefined> {
-    const [updated] = await db
-      .update(gameSessions)
-      .set(updates)
-      .where(eq(gameSessions.id, id))
-      .returning();
-    return updated || undefined;
+    return updateAndGet(gameSessions, gameSessions.id, id, updates);
   }
 
   // AI Behavior methods
@@ -476,8 +450,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAiBehavior(behavior: InsertAiBehavior): Promise<AiBehavior> {
-    const [created] = await db.insert(aiBehaviors).values(behavior).returning();
-    return created;
+    return insertAndGet(aiBehaviors, aiBehaviors.id, behavior);
   }
 
   // User Settings methods
@@ -487,7 +460,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUserSettings(settings: InsertUserSettings): Promise<UserSettings> {
-    const [upserted] = await db
+    await db
       .insert(userSettings)
       .values(settings)
       .onConflictDoUpdate({
@@ -496,8 +469,8 @@ export class DatabaseStorage implements IStorage {
           ...settings,
           updatedAt: new Date(),
         },
-      })
-      .returning();
+      });
+    const [upserted] = await db.select().from(userSettings).where(eq(userSettings.userId, settings.userId));
     return upserted;
   }
 
@@ -522,22 +495,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(insertProject: InsertGameProject): Promise<GameProject> {
-    const [project] = await db.insert(gameProjects).values(insertProject).returning();
-    return project;
+    return insertAndGet(gameProjects, gameProjects.id, insertProject);
   }
 
   async updateProject(id: string, updates: Partial<InsertGameProject>): Promise<GameProject | undefined> {
-    const [project] = await db
-      .update(gameProjects)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(gameProjects.id, id))
-      .returning();
-    return project || undefined;
+    return updateAndGet(gameProjects, gameProjects.id, id, { ...updates, updatedAt: new Date() });
   }
 
   async deleteProject(id: string): Promise<boolean> {
     const result = await db.delete(gameProjects).where(eq(gameProjects.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 
   // Conversation methods
@@ -551,14 +518,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createConversation(insertConversation: InsertChatConversation): Promise<ChatConversation> {
-    const [conversation] = await db.insert(chatConversations).values(insertConversation).returning();
-    return conversation;
+    return insertAndGet(chatConversations, chatConversations.id, insertConversation);
   }
 
   async deleteConversation(id: string): Promise<boolean> {
     await db.delete(chatMessages).where(eq(chatMessages.conversationId, id));
     const result = await db.delete(chatConversations).where(eq(chatConversations.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 
   // Message methods
@@ -569,14 +535,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const [message] = await db.insert(chatMessages).values(insertMessage).returning();
-    
-    await db
-      .update(chatConversations)
-      .set({ updatedAt: new Date() })
-      .where(eq(chatConversations.id, insertMessage.conversationId));
-    
-    return message;
+    const msg = await insertAndGet<ChatMessage>(chatMessages, chatMessages.id, insertMessage);
+    await db.update(chatConversations).set({ updatedAt: new Date() }).where(eq(chatConversations.id, insertMessage.conversationId));
+    return msg;
   }
 
   // Asset methods
@@ -599,8 +560,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAsset(insertAsset: InsertGdevelopAsset): Promise<GDevelopAsset> {
-    const [asset] = await db.insert(gdevelopAssets).values(insertAsset).returning();
-    return asset;
+    return insertAndGet(gdevelopAssets, gdevelopAssets.id, insertAsset);
   }
 
   async seedAssets(): Promise<void> {
@@ -994,24 +954,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRtsProject(insertProject: InsertRtsProject): Promise<RtsProject> {
-    const [project] = await db.insert(rtsProjects).values(insertProject as any).returning();
-    return project;
+    return insertAndGet(rtsProjects, rtsProjects.id, insertProject as any);
   }
 
   async updateRtsProject(id: string, updates: Partial<InsertRtsProject>): Promise<RtsProject | undefined> {
-    const [project] = await db
-      .update(rtsProjects)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(rtsProjects.id, id))
-      .returning();
-    return project || undefined;
+    return updateAndGet(rtsProjects, rtsProjects.id, id, { ...updates, updatedAt: new Date() });
   }
 
   async deleteRtsProject(id: string): Promise<boolean> {
     await db.delete(rtsUnitTemplates).where(eq(rtsUnitTemplates.projectId, id));
     await db.delete(rtsBuildingTemplates).where(eq(rtsBuildingTemplates.projectId, id));
     const result = await db.delete(rtsProjects).where(eq(rtsProjects.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 
   // RTS Asset methods
@@ -1024,8 +978,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRtsAsset(insertAsset: InsertRtsAsset): Promise<RtsAsset> {
-    const [asset] = await db.insert(rtsAssets).values(insertAsset).returning();
-    return asset;
+    return insertAndGet(rtsAssets, rtsAssets.id, insertAsset);
   }
 
   async seedRtsAssets(): Promise<void> {
@@ -1054,22 +1007,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUnitTemplate(insertTemplate: InsertRtsUnitTemplate): Promise<RtsUnitTemplate> {
-    const [template] = await db.insert(rtsUnitTemplates).values(insertTemplate).returning();
-    return template;
+    return insertAndGet(rtsUnitTemplates, rtsUnitTemplates.id, insertTemplate);
   }
 
   async updateUnitTemplate(id: string, updates: Partial<InsertRtsUnitTemplate>): Promise<RtsUnitTemplate | undefined> {
-    const [template] = await db
-      .update(rtsUnitTemplates)
-      .set(updates)
-      .where(eq(rtsUnitTemplates.id, id))
-      .returning();
-    return template || undefined;
+    return updateAndGet(rtsUnitTemplates, rtsUnitTemplates.id, id, updates);
   }
 
   async deleteUnitTemplate(id: string): Promise<boolean> {
     const result = await db.delete(rtsUnitTemplates).where(eq(rtsUnitTemplates.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 
   // RTS Building Template methods
@@ -1078,22 +1025,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBuildingTemplate(insertTemplate: InsertRtsBuildingTemplate): Promise<RtsBuildingTemplate> {
-    const [template] = await db.insert(rtsBuildingTemplates).values(insertTemplate).returning();
-    return template;
+    return insertAndGet(rtsBuildingTemplates, rtsBuildingTemplates.id, insertTemplate);
   }
 
   async updateBuildingTemplate(id: string, updates: Partial<InsertRtsBuildingTemplate>): Promise<RtsBuildingTemplate | undefined> {
-    const [template] = await db
-      .update(rtsBuildingTemplates)
-      .set(updates)
-      .where(eq(rtsBuildingTemplates.id, id))
-      .returning();
-    return template || undefined;
+    return updateAndGet(rtsBuildingTemplates, rtsBuildingTemplates.id, id, updates);
   }
 
   async deleteBuildingTemplate(id: string): Promise<boolean> {
     const result = await db.delete(rtsBuildingTemplates).where(eq(rtsBuildingTemplates.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 
   // Seed game data (currencies, characters, AI behaviors, level requirements)
@@ -1291,17 +1232,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createViewportAsset(asset: InsertViewportAsset): Promise<ViewportAsset> {
-    const [created] = await db.insert(viewportAssets).values(asset).returning();
-    return created;
+    return insertAndGet(viewportAssets, viewportAssets.id, asset);
   }
 
   async updateViewportAsset(id: string, updates: Partial<InsertViewportAsset>): Promise<ViewportAsset | undefined> {
-    const [updated] = await db
-      .update(viewportAssets)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(viewportAssets.id, id))
-      .returning();
-    return updated || undefined;
+    return updateAndGet(viewportAssets, viewportAssets.id, id, { ...updates, updatedAt: new Date() });
   }
 
   async deleteViewportAsset(id: string): Promise<boolean> {
@@ -1994,10 +1929,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSavedCharacter(character: InsertSavedCharacter): Promise<SavedCharacter> {
-    const [newCharacter] = await db.insert(savedCharacters)
-      .values(character)
-      .returning();
-    return newCharacter;
+    return insertAndGet(savedCharacters, savedCharacters.id, character);
   }
 
   async setActiveCharacter(userId: string, characterId: string): Promise<void> {
@@ -2057,22 +1989,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUnifiedAsset(asset: InsertUnifiedAsset): Promise<UnifiedAsset> {
-    const [created] = await db.insert(unifiedAssets).values(asset).returning();
-    return created;
+    return insertAndGet(unifiedAssets, unifiedAssets.id, asset);
   }
 
   async updateUnifiedAsset(id: string, updates: Partial<InsertUnifiedAsset>): Promise<UnifiedAsset | undefined> {
-    const [updated] = await db
-      .update(unifiedAssets)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(unifiedAssets.id, id))
-      .returning();
-    return updated || undefined;
+    return updateAndGet(unifiedAssets, unifiedAssets.id, id, { ...updates, updatedAt: new Date() });
   }
 
   async deleteUnifiedAsset(id: string): Promise<boolean> {
     const result = await db.delete(unifiedAssets).where(eq(unifiedAssets.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return (result as any)[0]?.affectedRows > 0;
   }
 }
 

@@ -1,5 +1,11 @@
 import { spriteLoader, UnitSprite, EffectSprite, ProjectileSprite, SpriteLoadResult } from './sprite-loader';
-import characterConfig from '@/assets/sprites/grudge-swarm/characters.config.json';
+
+// Character config loaded at runtime; fallback to empty if asset not bundled
+let characterConfig: any = { characters: {} };
+try {
+  // @ts-ignore — JSON asset may not exist in all environments
+  characterConfig = require('@/assets/sprites/grudge-swarm/characters.config.json');
+} catch {}
 
 export interface CharacterAssets {
   unit: UnitSprite;

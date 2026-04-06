@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Box, Layers, Palette, Film } from "lucide-react";
+import {
+  Engine, Scene, ArcRotateCamera, Vector3,
+  HemisphericLight, DirectionalLight,
+  Color3, Color4, SceneLoader,
+  MeshBuilder, StandardMaterial
+} from "@babylonjs/core";
+import "@babylonjs/loaders/glTF";
 
 interface ModelViewerProps {
   /** Direct URL to a .glb/.gltf file, OR /api/models/:grudgeId/file */
@@ -29,32 +36,22 @@ export function ModelViewer({
   className,
   height = "400px",
 }: ModelViewerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<any>(null);
-  const animFrameRef = useRef<number>(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const engineRef = useRef<Engine | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<ModelMetadata | null>(null);
   const [modelName, setModelName] = useState<string>("");
 
-  // Resolve the actual URL
   const resolvedUrl = grudgeId
     ? `/api/models/${grudgeId}/file`
     : modelUrl || null;
 
   const cleanup = useCallback(() => {
-    if (animFrameRef.current) {
-      cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = 0;
-    }
-    if (rendererRef.current) {
-      rendererRef.current.dispose();
-      rendererRef.current = null;
-    }
-    if (containerRef.current) {
-      const canvas = containerRef.current.querySelector("canvas");
-      if (canvas) containerRef.current.removeChild(canvas);
+    if (engineRef.current) {
+      engineRef.current.dispose();
+      engineRef.current = null;
     }
   }, []);
 
@@ -71,186 +68,118 @@ export function ModelViewer({
   }, [grudgeId]);
 
   useEffect(() => {
-    if (!resolvedUrl || !containerRef.current) return;
+    if (!resolvedUrl || !canvasRef.current) return;
 
     cleanup();
     setLoading(true);
     setError(null);
 
-    const container = containerRef.current;
-    const width = container.clientWidth;
-    const h = container.clientHeight || parseInt(height);
+    try {
+      const canvas = canvasRef.current;
+      const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+      engineRef.current = engine;
 
-    (async () => {
-      try {
-        const THREE = await import("three");
-        const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
-        const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+      const scene = new Scene(engine);
+      scene.clearColor = new Color4(0.1, 0.1, 0.18, 1);
 
-        // Scene
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a2e);
-
-        // Camera
-        const camera = new THREE.PerspectiveCamera(45, width / h, 0.01, 1000);
-        camera.position.set(3, 2, 3);
-
-        // Renderer
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(width, h);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        rendererRef.current = renderer;
-        container.appendChild(renderer.domElement);
-
-        // Controls
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 1;
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x404060, 1.5);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight.position.set(5, 8, 5);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        scene.add(dirLight);
-
-        const fillLight = new THREE.DirectionalLight(0x8888ff, 0.5);
-        fillLight.position.set(-3, 2, -3);
-        scene.add(fillLight);
-
-        // Ground grid
-        const gridHelper = new THREE.GridHelper(10, 20, 0x333366, 0x222244);
-        scene.add(gridHelper);
-
-        // Ground plane (for shadow)
-        const groundGeo = new THREE.PlaneGeometry(10, 10);
-        const groundMat = new THREE.ShadowMaterial({ opacity: 0.3 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        // Load model
-        const loader = new GLTFLoader();
-        loader.load(
-          resolvedUrl,
-          (gltf) => {
-            const model = gltf.scene;
-
-            // Auto-scale to fit view
-            const box = new THREE.Box3().setFromObject(model);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 2 / maxDim;
-            model.scale.setScalar(scale);
-            model.position.sub(center.multiplyScalar(scale));
-            model.position.y -= box.min.y * scale;
-
-            // Enable shadows
-            model.traverse((child: any) => {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
-
-            scene.add(model);
-
-            // Fit camera
-            const scaledBox = new THREE.Box3().setFromObject(model);
-            const scaledSize = scaledBox.getSize(new THREE.Vector3());
-            const maxScaled = Math.max(scaledSize.x, scaledSize.y, scaledSize.z);
-            camera.position.set(maxScaled * 1.5, maxScaled * 1, maxScaled * 1.5);
-            controls.target.set(0, scaledSize.y * 0.4, 0);
-            controls.update();
-
-            // Extract metadata from loaded model
-            let meshCount = 0;
-            const materialSet = new Set<string>();
-            model.traverse((child: any) => {
-              if (child.isMesh) {
-                meshCount++;
-                if (child.material) {
-                  const mat = Array.isArray(child.material)
-                    ? child.material
-                    : [child.material];
-                  mat.forEach((m: any) => materialSet.add(m.uuid));
-                }
-              }
-            });
-
-            const animNames = gltf.animations?.map((a) => a.name || "unnamed") || [];
-
-            // Play first animation if available
-            if (gltf.animations.length > 0) {
-              const mixer = new THREE.AnimationMixer(model);
-              const clip = gltf.animations[0];
-              mixer.clipAction(clip).play();
-              (scene as any).__mixer = mixer;
-            }
-
-            setMetadata((prev) => ({
-              ...prev,
-              meshCount,
-              materialCount: materialSet.size,
-              animationCount: gltf.animations.length,
-              animationNames: animNames,
-            }));
-
-            setLoading(false);
-          },
-          undefined,
-          (err) => {
-            console.error("Model load error:", err);
-            setError("Failed to load model");
-            setLoading(false);
-          }
-        );
-
-        // Animation loop
-        const clock = new THREE.Clock();
-        const animate = () => {
-          animFrameRef.current = requestAnimationFrame(animate);
-          const delta = clock.getDelta();
-          controls.update();
-          const mixer = (scene as any).__mixer;
-          if (mixer) mixer.update(delta);
-          renderer.render(scene, camera);
-        };
-        animate();
-
-        // Resize handler
-        const handleResize = () => {
-          if (!container) return;
-          const w = container.clientWidth;
-          const newH = container.clientHeight || parseInt(height);
-          camera.aspect = w / newH;
-          camera.updateProjectionMatrix();
-          renderer.setSize(w, newH);
-        };
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-          window.removeEventListener("resize", handleResize);
-          cleanup();
-        };
-      } catch (err: any) {
-        console.error("Failed to init 3D viewer:", err);
-        setError(err.message || "WebGL not available");
-        setLoading(false);
+      // Camera with built-in orbit controls
+      const camera = new ArcRotateCamera("camera", Math.PI / 4, Math.PI / 3, 5, Vector3.Zero(), scene);
+      camera.attachControl(canvas, true);
+      camera.lowerRadiusLimit = 0.5;
+      camera.upperRadiusLimit = 50;
+      camera.wheelPrecision = 50;
+      camera.useAutoRotationBehavior = true;
+      if (camera.autoRotationBehavior) {
+        camera.autoRotationBehavior.idleRotationSpeed = 0.3;
       }
-    })();
+
+      // Lighting
+      const hemiLight = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
+      hemiLight.intensity = 0.6;
+
+      const dirLight = new DirectionalLight("dir", new Vector3(-1, -2, -1), scene);
+      dirLight.position = new Vector3(5, 8, 5);
+      dirLight.intensity = 1.5;
+
+      const fillLight = new DirectionalLight("fill", new Vector3(1, -0.5, 1), scene);
+      fillLight.intensity = 0.4;
+
+      // Ground
+      const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
+      const groundMat = new StandardMaterial("groundMat", scene);
+      groundMat.alpha = 0.2;
+      groundMat.diffuseColor = new Color3(0.2, 0.2, 0.27);
+      ground.material = groundMat;
+      ground.receiveShadows = true;
+      ground.isPickable = false;
+
+      // Load model
+      SceneLoader.ImportMesh("", "", resolvedUrl, scene,
+        (meshes, _particleSystems, _skeletons, animationGroups) => {
+          // Auto-frame camera on loaded model
+          const worldExtends = scene.getWorldExtends((m) => m !== ground);
+          const center = worldExtends.min.add(worldExtends.max).scale(0.5);
+          const size = worldExtends.max.subtract(worldExtends.min);
+          const maxDim = Math.max(size.x, size.y, size.z);
+
+          camera.target = center;
+          camera.radius = maxDim * 2;
+
+          meshes.forEach((mesh) => {
+            mesh.receiveShadows = true;
+          });
+
+          // Play first animation
+          if (animationGroups.length > 0) {
+            animationGroups[0].start(true);
+          }
+
+          // Collect metadata
+          const materialSet = new Set<string>();
+          let meshCount = 0;
+          meshes.forEach((mesh) => {
+            if (mesh.getTotalVertices() > 0) {
+              meshCount++;
+              if (mesh.material) {
+                materialSet.add(mesh.material.uniqueId.toString());
+              }
+            }
+          });
+
+          const animNames = animationGroups.map((ag) => ag.name || "unnamed");
+
+          setMetadata((prev) => ({
+            ...prev,
+            meshCount,
+            materialCount: materialSet.size,
+            animationCount: animationGroups.length,
+            animationNames: animNames,
+          }));
+
+          setLoading(false);
+        },
+        null,
+        (_scene, message, exception) => {
+          console.error("Model load error:", message, exception);
+          setError("Failed to load model");
+          setLoading(false);
+        }
+      );
+
+      engine.runRenderLoop(() => scene.render());
+
+      const handleResize = () => engine.resize();
+      window.addEventListener("resize", handleResize);
+
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        cleanup();
+      };
+    } catch (err: any) {
+      console.error("Failed to init 3D viewer:", err);
+      setError(err.message || "WebGL not available");
+      setLoading(false);
+    }
 
     return cleanup;
   }, [resolvedUrl, height, cleanup]);
@@ -276,7 +205,7 @@ export function ModelViewer({
     <div className={className}>
       {/* Viewer canvas */}
       <div className="relative rounded-lg overflow-hidden border border-border" style={{ height }}>
-        <div ref={containerRef} className="w-full h-full" data-testid="canvas-3d-viewer" />
+        <canvas ref={canvasRef} className="w-full h-full" style={{ width: "100%", height: "100%" }} data-testid="canvas-3d-viewer" />
 
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">

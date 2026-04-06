@@ -9,7 +9,7 @@ interface Unit {
   id: number;
   x: number;
   y: number;
-  type: "paladin" | "ranger" | "rogue" | "wizard" | "goblin" | "skeleton" | "ogre" | "wall";
+  type: "paladin" | "ranger" | "scout" | "wizard" | "goblin" | "skeleton" | "ogre" | "wall";
   team: "player" | "enemy";
   health: number;
   maxHealth: number;
@@ -27,7 +27,7 @@ interface Unit {
 const UNIT_STATS = {
   paladin: { health: 150, attack: 20, range: 40, speed: 1.5, color: "#ffd700", size: 16 },
   ranger: { health: 80, attack: 25, range: 150, speed: 2, color: "#228b22", size: 14 },
-  rogue: { health: 60, attack: 35, range: 35, speed: 3, color: "#4b0082", size: 12 },
+  scout: { health: 60, attack: 35, range: 35, speed: 3, color: "#4b0082", size: 12 },
   wizard: { health: 50, attack: 40, range: 120, speed: 1, color: "#9932cc", size: 14 },
   goblin: { health: 40, attack: 10, range: 30, speed: 2.5, color: "#32cd32", size: 10 },
   skeleton: { health: 50, attack: 15, range: 35, speed: 2, color: "#f5f5dc", size: 12 },
@@ -112,7 +112,7 @@ export default function RealmProtectorPage() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    const cost = selectedUnit === "paladin" ? 50 : selectedUnit === "ranger" ? 40 : selectedUnit === "rogue" ? 35 : selectedUnit === "wall" ? 30 : 60;
+    const cost = selectedUnit === "paladin" ? 50 : selectedUnit === "ranger" ? 40 : selectedUnit === "scout" ? 35 : selectedUnit === "wall" ? 30 : 60;
     
     if (gold >= cost) {
       spawnUnit(selectedUnit, "player", x, y);
@@ -429,8 +429,8 @@ export default function RealmProtectorPage() {
                   <p className="text-muted-foreground">Long range archer</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-purple-500">Rogue (35g)</p>
-                  <p className="text-muted-foreground">Fast assassin</p>
+                  <p className="font-semibold text-purple-500">Scout (35g)</p>
+                  <p className="text-muted-foreground">Fast skirmisher</p>
                 </div>
                 <div>
                   <p className="font-semibold text-pink-500">Wizard (60g)</p>
@@ -497,15 +497,15 @@ export default function RealmProtectorPage() {
                   Ranger (40g)
                 </Button>
                 <Button
-                  variant={selectedUnit === "rogue" ? "default" : "outline"}
+                  variant={selectedUnit === "scout" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedUnit("rogue")}
+                  onClick={() => setSelectedUnit("scout")}
                   disabled={gold < 35}
                   className="gap-1"
-                  data-testid="button-rogue"
+                  data-testid="button-scout"
                 >
                   <div className="w-3 h-3 rounded-full bg-purple-800" />
-                  Rogue (35g)
+                  Scout (35g)
                 </Button>
                 <Button
                   variant={selectedUnit === "wizard" ? "default" : "outline"}

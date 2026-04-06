@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ViewportAssetViewer, ImageViewport } from "@/components/viewport-asset-viewer";
+// ViewportAssetViewer removed (Three.js) — will rebuild on BabylonJS
+const ViewportAssetViewer = ({ asset, ...props }: any) => (
+  <div className="flex items-center justify-center h-full bg-muted text-muted-foreground text-sm">3D Preview (BabylonJS rebuild pending)</div>
+);
+const ImageViewport = ({ src, ...props }: any) => (
+  <img src={src} className="max-w-full max-h-full object-contain" alt="" />
+);
 import { 
   Search, 
   RefreshCw, 
@@ -32,13 +38,25 @@ import {
   Music,
   Grid3X3,
   Film,
-  Layers
+  Layers,
+  Upload,
+  Database,
+  CheckCircle2,
+  XCircle
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ViewportAsset } from "@shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+import {
+  useObjectStoreAssets,
+  useObjectStoreUpload,
+  useObjectStoreHealth,
+  getR2FileUrl,
+  type R2Asset,
+  type R2ListQuery,
+} from "@/lib/objectstore";
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   unit: <Users className="h-4 w-4" />,
@@ -303,72 +321,78 @@ function ImagePreview({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+/** Derive a display-friendly asset type from R2 mime/filename */
+function deriveAssetType(asset: R2Asset): string {
+  const ext = asset.filename.split(".").pop()?.toLowerCase() || "";
+  if (["glb", "gltf"].includes(ext)) return ext;
+  if (["fbx", "obj"].includes(ext)) return ext;
+  if (["png", "jpg", "jpeg", "gif", "webp", "tga"].includes(ext)) return ext;
+  if (["mp3", "wav", "ogg", "flac"].includes(ext)) return "audio";
+  if (asset.mime.startsWith("audio/")) return "audio";
+  if (asset.mime.startsWith("image/")) return ext || "png";
+  if (asset.mime.includes("gltf")) return "glb";
+  return ext || "file";
+}
+
+/** Derive a URL-safe slug from filename */
+function slugify(name: string): string {
+  return name
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+}
+
+/** Format bytes to human-readable */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function AssetGallery() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedAsset, setSelectedAsset] = useState<ViewportAsset | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<R2Asset | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const { data: assets = [], isLoading, isError, error, refetch } = useQuery<ViewportAsset[]>({
-    queryKey: ["/api/viewport-assets", searchQuery, selectedCategory],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (searchQuery) params.set("search", searchQuery);
-      if (selectedCategory !== "all") params.set("category", selectedCategory);
-      
-      const response = await fetch(`/api/viewport-assets?${params.toString()}`);
-      if (!response.ok) throw new Error("Failed to fetch assets");
-      return response.json();
-    },
-    retry: 2,
-  });
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
-  const seedMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/viewport-assets/seed", {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Failed to seed assets");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Assets Seeded",
-        description: `Successfully loaded ${(data as any).count} viewport assets`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/viewport-assets"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Seed Failed",
-        description: String(error),
-        variant: "destructive",
-      });
-    },
-  });
+  // ── ObjectStore R2 data layer ─────────────────────────────────────
+  const r2Query: R2ListQuery = {
+    limit: 100,
+    ...(selectedCategory !== "all" ? { category: selectedCategory } : {}),
+    ...(debouncedSearch ? { q: debouncedSearch } : {}),
+  };
 
+  const { data: r2Data, isLoading, isError, error, refetch } = useObjectStoreAssets(r2Query);
+  const health = useObjectStoreHealth();
+  const uploadMutation = useObjectStoreUpload();
+
+  const assets = r2Data?.items ?? [];
+
+  // Sync R2 → local viewport_assets DB (for 3D viewer compatibility)
   const syncFromStorageMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch("/api/viewport-assets/sync-from-storage", {
         method: "POST",
       });
-      if (!response.ok) throw new Error("Failed to sync assets from storage");
+      if (!response.ok) throw new Error("Failed to sync assets from R2");
       return response.json();
     },
     onSuccess: (data: any) => {
       toast({
-        title: "GLB Models Synced",
+        title: "R2 Models Synced",
         description: `Added ${data.added} new models, ${data.skipped} already exist`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/viewport-assets"] });
-      if (data.errors && data.errors.length > 0) {
-        toast({
-          title: "Some files failed",
-          description: `${data.errors.length} file(s) had issues`,
-          variant: "destructive",
-        });
-      }
     },
     onError: (error) => {
       toast({
@@ -379,82 +403,82 @@ export default function AssetGallery() {
     },
   });
 
-  const categories = ["all", ...Array.from(new Set(assets.map(a => a.category)))];
-  const filteredAssets = assets.filter(asset => {
-    if (selectedCategory !== "all" && asset.category !== selectedCategory) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        asset.name.toLowerCase().includes(query) ||
-        asset.tags?.some(t => t.toLowerCase().includes(query)) ||
-        asset.subcategory?.toLowerCase().includes(query)
-      );
+  // ── Upload handler ────────────────────────────────────────────────
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    let category = "uncategorized";
+    if (["glb", "gltf", "fbx", "obj"].includes(ext)) category = "3d-models";
+    else if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) category = "images";
+    else if (["mp3", "wav", "ogg", "flac"].includes(ext)) category = "audio";
+
+    uploadMutation.mutate(
+      { file, category, tags: [ext] },
+      {
+        onSuccess: (result) => {
+          toast({ title: "Uploaded", description: `${result.filename} uploaded to ObjectStore R2` });
+          setShowUpload(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        },
+        onError: (err) => {
+          toast({ title: "Upload Failed", description: String(err), variant: "destructive" });
+        },
+      },
+    );
+  }, [uploadMutation, toast]);
+
+  // ── Asset type helpers ────────────────────────────────────────────
+  const isSupported3DModel = (t: string) => ["gltf", "glb"].includes(t.toLowerCase());
+  const isUnsupported3D = (t: string) => ["obj", "fbx"].includes(t.toLowerCase());
+  const isImage = (t: string) => ["png", "jpg", "jpeg", "gif", "webp", "tga", "sprite", "background"].includes(t.toLowerCase());
+  const isAudio = (t: string) => ["audio", "sound", "mp3", "wav", "ogg", "flac"].includes(t.toLowerCase());
+  const isTileset = (t: string) => t.toLowerCase() === "tileset";
+  const isSpritesheet = (t: string) => ["spritesheet", "animation"].includes(t.toLowerCase());
+
+  const renderR2AssetPreview = (asset: R2Asset, isLarge = false) => {
+    const fileUrl = getR2FileUrl(asset.id);
+    const assetType = deriveAssetType(asset);
+    const slug = slugify(asset.filename);
+
+    if (isAudio(assetType)) {
+      return <AudioPlayer src={fileUrl} name={slug} />;
     }
-    return true;
-  });
 
-  const isSupported3DModel = (assetType: string) => {
-    return ["gltf", "glb"].includes(assetType.toLowerCase());
-  };
-
-  const isUnsupported3D = (assetType: string) => {
-    return ["obj", "fbx"].includes(assetType.toLowerCase());
-  };
-
-  const isImage = (assetType: string) => {
-    return ["png", "jpg", "jpeg", "gif", "webp", "tga", "sprite", "background"].includes(assetType.toLowerCase());
-  };
-
-  const isAudio = (assetType: string) => {
-    return ["audio", "sound", "mp3", "wav", "ogg"].includes(assetType.toLowerCase());
-  };
-
-  const isTileset = (assetType: string) => {
-    return ["tileset"].includes(assetType.toLowerCase());
-  };
-
-  const isSpritesheet = (assetType: string) => {
-    return ["spritesheet", "animation"].includes(assetType.toLowerCase());
-  };
-
-  const renderAssetPreview = (asset: ViewportAsset, isLarge = false) => {
-    if (isAudio(asset.assetType)) {
-      return <AudioPlayer src={asset.filePath} name={asset.slug} />;
+    if (isSpritesheet(assetType) && asset.metadata) {
+      return <AnimatedSpritePreview src={fileUrl} metadata={asset.metadata} />;
     }
-    
-    if (isSpritesheet(asset.assetType) && asset.isAnimated) {
-      return <AnimatedSpritePreview src={asset.filePath} metadata={asset.metadata as Record<string, unknown>} />;
+
+    if (isTileset(assetType)) {
+      return <TilesetPreview src={fileUrl} />;
     }
-    
-    if (isTileset(asset.assetType)) {
-      return <TilesetPreview src={asset.filePath} />;
-    }
-    
-    if (isSupported3DModel(asset.assetType)) {
+
+    if (isSupported3DModel(assetType)) {
       return (
         <ViewportAssetViewer
-          filePath={asset.filePath}
+          filePath={fileUrl}
           className="w-full h-full"
-          viewportConfig={asset.viewportConfig as any}
+          viewportConfig={{ cameraPosition: { x: 3, y: 2, z: 5 } }}
           showControls={isLarge}
           autoRotate={true}
         />
       );
     }
-    
-    if (isUnsupported3D(asset.assetType)) {
+
+    if (isUnsupported3D(assetType)) {
       return (
         <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
           <FileBox className="h-12 w-12 mb-2" />
-          <span className="text-xs">{asset.assetType.toUpperCase()} (Preview N/A)</span>
+          <span className="text-xs">{assetType.toUpperCase()} (Preview N/A)</span>
         </div>
       );
     }
-    
-    if (isImage(asset.assetType)) {
-      return <ImagePreview src={asset.filePath} alt={asset.name} />;
+
+    if (isImage(assetType)) {
+      return <ImagePreview src={fileUrl} alt={asset.filename} />;
     }
-    
+
     return (
       <div className="w-full h-full flex items-center justify-center">
         <FileBox className="h-12 w-12 text-muted-foreground" />
@@ -467,11 +491,21 @@ export default function AssetGallery() {
       <div className="p-6 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-white" data-testid="text-page-title">
-              3D Asset Gallery
+            <h1 className="text-2xl font-bold text-white flex items-center gap-3" data-testid="text-page-title">
+              <Database className="h-6 w-6" />
+              ObjectStore Asset Gallery
+              {health.data ? (
+                <Badge className="bg-green-600 text-white text-xs font-normal">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> R2 Connected
+                </Badge>
+              ) : health.isError ? (
+                <Badge className="bg-red-600 text-white text-xs font-normal">
+                  <XCircle className="h-3 w-3 mr-1" /> R2 Offline
+                </Badge>
+              ) : null}
             </h1>
             <p className="text-muted-foreground">
-              Browse 3D models and animations for game development
+              Browse assets stored in ObjectStore R2 — {assets.length} asset{assets.length !== 1 ? "s" : ""} loaded
             </p>
           </div>
           <div className="flex gap-2">
@@ -495,21 +529,28 @@ export default function AssetGallery() {
               ) : (
                 <CloudUpload className="h-4 w-4 mr-2" />
               )}
-              Sync GLB Models
+              Sync R2 → DB
             </Button>
             <Button
-              onClick={() => seedMutation.mutate()}
-              disabled={seedMutation.isPending}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
-              data-testid="button-seed-assets"
+              data-testid="button-upload"
             >
-              {seedMutation.isPending ? (
+              {uploadMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2" />
               )}
-              Load Assets
+              Upload to R2
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".glb,.gltf,.fbx,.obj,.png,.jpg,.jpeg,.gif,.webp,.mp3,.wav,.ogg"
+              onChange={handleFileUpload}
+            />
           </div>
         </div>
 
@@ -517,7 +558,7 @@ export default function AssetGallery() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, tag, or category..."
+              placeholder="Search ObjectStore assets by filename..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -529,7 +570,7 @@ export default function AssetGallery() {
             <TabsList className="bg-black/50 flex-wrap">
               <TabsTrigger value="all" data-testid="tab-all">
                 <Box className="h-4 w-4 mr-1" />
-                All 3D
+                All
               </TabsTrigger>
               <TabsTrigger value="unit" data-testid="tab-unit">
                 <Users className="h-4 w-4 mr-1" />
@@ -547,9 +588,13 @@ export default function AssetGallery() {
                 <Shield className="h-4 w-4 mr-1" />
                 Equipment
               </TabsTrigger>
-              <TabsTrigger value="animation" data-testid="tab-animation">
-                <Film className="h-4 w-4 mr-1" />
-                Animations
+              <TabsTrigger value="3d-models" data-testid="tab-3d-models">
+                <FileBox className="h-4 w-4 mr-1" />
+                3D Models
+              </TabsTrigger>
+              <TabsTrigger value="images" data-testid="tab-images">
+                <ImageIcon className="h-4 w-4 mr-1" />
+                Images
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -560,9 +605,9 @@ export default function AssetGallery() {
         {isError ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-            <h3 className="text-lg font-medium mb-2">Failed to Load Assets</h3>
+            <h3 className="text-lg font-medium mb-2">Failed to Load Assets from ObjectStore</h3>
             <p className="text-muted-foreground mb-4">
-              {error instanceof Error ? error.message : "An error occurred"}
+              {error instanceof Error ? error.message : "Could not reach ObjectStore R2 Worker"}
             </p>
             <Button
               variant="outline"
@@ -585,108 +630,120 @@ export default function AssetGallery() {
               </Card>
             ))}
           </div>
-        ) : filteredAssets.length === 0 ? (
+        ) : assets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <Box className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Assets Found</h3>
+            <Database className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Assets in ObjectStore</h3>
             <p className="text-muted-foreground mb-4">
-              {searchQuery ? "Try a different search term" : "Click 'Load Assets' to populate the gallery with free game assets"}
+              {debouncedSearch
+                ? "No assets match your search. Try a different term."
+                : "Upload assets using the 'Upload to R2' button to get started."}
             </p>
-            {!searchQuery && assets.length === 0 && (
+            {!debouncedSearch && (
               <Button
-                onClick={() => seedMutation.mutate()}
-                disabled={seedMutation.isPending}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
-                data-testid="button-seed-empty"
+                data-testid="button-upload-empty"
               >
-                {seedMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-2" />
-                )}
-                Load Assets
+                <Upload className="h-4 w-4 mr-2" />
+                Upload First Asset
               </Button>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredAssets.map((asset) => (
-              <Card 
-                key={asset.id} 
-                className="bg-card/50 hover-elevate cursor-pointer group overflow-visible"
-                onClick={() => {
-                  setSelectedAsset(asset);
-                  setShowPreview(true);
-                }}
-                data-testid={`card-asset-${asset.slug}`}
-              >
-                <CardContent className="p-4">
-                  <div className="aspect-square w-full rounded-lg overflow-hidden bg-black/50 mb-3 relative">
-                    {renderAssetPreview(asset)}
-                    
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-8 w-8 bg-black/70"
-                        data-testid={`button-preview-${asset.slug}`}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+            {assets.map((asset) => {
+              const assetType = deriveAssetType(asset);
+              const slug = slugify(asset.filename);
+              return (
+                <Card 
+                  key={asset.id} 
+                  className="bg-card/50 hover-elevate cursor-pointer group overflow-visible"
+                  onClick={() => {
+                    setSelectedAsset(asset);
+                    setShowPreview(true);
+                  }}
+                  data-testid={`card-asset-${slug}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="aspect-square w-full rounded-lg overflow-hidden bg-black/50 mb-3 relative">
+                      {renderR2AssetPreview(asset)}
+                      
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-8 w-8 bg-black/70"
+                          data-testid={`button-preview-${slug}`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {isAudio(assetType) && (
+                        <Badge className="absolute top-2 left-2 bg-amber-600 text-white text-xs">
+                          Audio
+                        </Badge>
+                      )}
+                      
+                      {isSupported3DModel(assetType) && (
+                        <Badge className="absolute top-2 left-2 bg-blue-600 text-white text-xs">
+                          3D
+                        </Badge>
+                      )}
                     </div>
                     
-                    {asset.isAnimated && (
-                      <Badge className="absolute top-2 left-2 bg-red-600 text-white text-xs">
-                        Animated
-                      </Badge>
-                    )}
+                    <h3 className="font-medium text-white truncate mb-1" data-testid={`text-asset-name-${slug}`}>
+                      {asset.filename}
+                    </h3>
                     
-                    {isAudio(asset.assetType) && (
-                      <Badge className="absolute top-2 left-2 bg-amber-600 text-white text-xs">
-                        Audio
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <Badge variant="outline" className="text-xs">
+                        {CATEGORY_ICONS[asset.category] || <Box className="h-3 w-3" />}
+                        <span className="ml-1">{asset.category}</span>
                       </Badge>
+                      <Badge variant="outline" className="text-xs uppercase">
+                        {assetType}
+                      </Badge>
+                      {asset.size > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {formatBytes(asset.size)}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {asset.tags && asset.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {asset.tags.slice(0, 3).map((tag, i) => (
+                          <Badge 
+                            key={i}
+                            className={`text-xs ${FACTION_COLORS[tag] || "bg-gray-600 text-white"}`}
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
-                  </div>
-                  
-                  <h3 className="font-medium text-white truncate mb-1" data-testid={`text-asset-name-${asset.slug}`}>
-                    {asset.name}
-                  </h3>
-                  
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <Badge variant="outline" className="text-xs">
-                      {CATEGORY_ICONS[asset.category] || <Box className="h-3 w-3" />}
-                      <span className="ml-1">{asset.category}</span>
-                    </Badge>
-                    <Badge variant="outline" className="text-xs uppercase">
-                      {asset.assetType}
-                    </Badge>
-                  </div>
-                  
-                  {asset.subcategory && (
-                    <Badge 
-                      className={`text-xs ${FACTION_COLORS[asset.subcategory] || "bg-gray-600 text-white"}`}
-                      data-testid={`badge-faction-${asset.slug}`}
-                    >
-                      {asset.subcategory}
-                    </Badge>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </ScrollArea>
 
+      {/* Detail preview dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl bg-background border-border">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
-              {selectedAsset?.name}
-              {selectedAsset?.isAnimated && (
-                <Badge className="bg-red-600 text-white">Animated</Badge>
-              )}
-              {selectedAsset && isAudio(selectedAsset.assetType) && (
+              {selectedAsset?.filename}
+              {selectedAsset && isAudio(deriveAssetType(selectedAsset)) && (
                 <Badge className="bg-amber-600 text-white">Audio</Badge>
+              )}
+              {selectedAsset && isSupported3DModel(deriveAssetType(selectedAsset)) && (
+                <Badge className="bg-blue-600 text-white">3D Model</Badge>
               )}
             </DialogTitle>
           </DialogHeader>
@@ -694,14 +751,21 @@ export default function AssetGallery() {
           {selectedAsset && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="aspect-square rounded-lg overflow-hidden bg-black/50">
-                {renderAssetPreview(selectedAsset, true)}
+                {renderR2AssetPreview(selectedAsset, true)}
               </div>
               
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">File Path</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">R2 File URL</h4>
                   <code className="text-xs bg-black/50 p-2 rounded block overflow-x-auto">
-                    {selectedAsset.filePath}
+                    {getR2FileUrl(selectedAsset.id)}
+                  </code>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Storage Key</h4>
+                  <code className="text-xs bg-black/50 p-2 rounded block overflow-x-auto">
+                    {selectedAsset.key}
                   </code>
                 </div>
                 
@@ -709,22 +773,21 @@ export default function AssetGallery() {
                   <h4 className="text-sm font-medium text-muted-foreground mb-1">Category</h4>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline">
-                      {CATEGORY_ICONS[selectedAsset.category]}
+                      {CATEGORY_ICONS[selectedAsset.category] || <Box className="h-3 w-3" />}
                       <span className="ml-1">{selectedAsset.category}</span>
                     </Badge>
-                    {selectedAsset.subcategory && (
-                      <Badge className={FACTION_COLORS[selectedAsset.subcategory] || "bg-gray-600"}>
-                        {selectedAsset.subcategory}
-                      </Badge>
-                    )}
                   </div>
                 </div>
                 
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Asset Type</h4>
-                  <Badge variant="secondary" className="uppercase">
-                    {selectedAsset.assetType}
-                  </Badge>
+                <div className="flex gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">MIME</h4>
+                    <Badge variant="secondary">{selectedAsset.mime}</Badge>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Size</h4>
+                    <Badge variant="secondary">{formatBytes(selectedAsset.size)}</Badge>
+                  </div>
                 </div>
                 
                 {selectedAsset.tags && selectedAsset.tags.length > 0 && (
@@ -740,34 +803,36 @@ export default function AssetGallery() {
                   </div>
                 )}
                 
-                {(() => {
-                  const meta = selectedAsset.metadata as Record<string, unknown> | null | undefined;
-                  if (meta && typeof meta === "object" && Object.keys(meta).length > 0) {
-                    return (
-                      <div>
-                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Metadata</h4>
-                        <pre className="text-xs bg-black/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-                          {JSON.stringify(meta, null, 2)}
-                        </pre>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {selectedAsset.metadata && Object.keys(selectedAsset.metadata).length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Metadata</h4>
+                    <pre className="text-xs bg-black/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                      {JSON.stringify(selectedAsset.metadata, null, 2)}
+                    </pre>
+                  </div>
+                )}
                 
-                <div className="pt-4">
+                <div className="pt-4 flex gap-2">
                   <Button 
-                    className="w-full bg-red-600 hover:bg-red-700"
+                    className="flex-1 bg-red-600 hover:bg-red-700"
                     onClick={() => {
-                      navigator.clipboard.writeText(selectedAsset.filePath);
-                      toast({
-                        title: "Copied",
-                        description: "File path copied to clipboard",
-                      });
+                      navigator.clipboard.writeText(getR2FileUrl(selectedAsset.id));
+                      toast({ title: "Copied", description: "R2 file URL copied to clipboard" });
                     }}
-                    data-testid="button-copy-path"
+                    data-testid="button-copy-url"
                   >
-                    Copy File Path
+                    Copy R2 URL
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedAsset.id);
+                      toast({ title: "Copied", description: "Asset ID copied to clipboard" });
+                    }}
+                    data-testid="button-copy-id"
+                  >
+                    Copy ID
                   </Button>
                 </div>
               </div>

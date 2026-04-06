@@ -15,7 +15,7 @@ GGE has three AI layers:
 
 ### GRUDA Legion (Railway Proxy)
 - **Location**: `server/services/grudaLegion.ts` + `shared/grudachain.ts`
-- **Production URL**: `https://gruda-legion-production.up.railway.app`
+- **Production URL**: `https://api.grudge-studio.com`
 - **Endpoints**: `/api/chat`, `/api/generate-code`, `/api/analyze-file`, `/api/vibe/chat`
 - **Role**: Server-side AI proxy — keeps API keys off the client. Proxies to Railway-deployed GRUDA Legion node system.
 - **Best practice**: Always proxy through server routes (`/api/gruda-legion/*`), never call Railway directly from client.
@@ -197,7 +197,29 @@ Follow the tab system in `docs/TABS_AND_APPS.md`:
 6. Read player's cNFT via Crossmint API to load their universal hero
 7. Same hero, same stats, same gear — different game mechanics
 
-## 8. API Patterns
+## 8. Backend Connection Architecture
+
+> Full details: [BACKEND_CONNECTION_GUIDE.md](BACKEND_CONNECTION_GUIDE.md)
+
+### Proxy Pattern (Critical for All Grudge Apps)
+
+All client-side API calls go through `setupGrudgeProxy(app)` in Express, which forwards
+to the correct backend service. **This proxy must be registered in both dev and Vercel entry points.**
+
+```
+Client → /api/grudge/game/*     → api.grudge-studio.com
+Client → /api/grudge/account/*  → account.grudge-studio.com
+Client → /api/grudge/id/*       → id.grudge-studio.com
+Client → /api/grudge/launcher/* → launcher.grudge-studio.com
+```
+
+**AI agents and services should always use relative `/api/grudge/*` paths** — never call
+backend URLs directly. The proxy handles auth header forwarding and CORS.
+
+### Connections Page (`/connections`)
+
+Live health probe dashboard for all 4 backend services. Source: `client/src/pages/connections.tsx`.
+AI agents can use the health endpoint at `/api/health` to check backend reachability.
 
 ### Game State Persistence
 - `server/services/gameStatePersistence.ts` — save/load game state per user
@@ -205,11 +227,15 @@ Follow the tab system in `docs/TABS_AND_APPS.md`:
 - Database: Drizzle ORM → Neon PostgreSQL
 
 ### Authentication
-- JWT via Grudge Auth Gateway (`auth-gateway-flax.vercel.app`)
+- JWT via Grudge Auth Gateway (`id.grudge-studio.com`)
 - Token stored as `grudge_auth_token` in localStorage
 - All API routes verify via `server/middleware/grudgeJwt.ts`
+- Dynamic OAuth redirect domains — supports any `*.vercel.app` or `*.grudge-studio.com` deployment
 
 ### Rate Limiting
 - Grok AI: 5 requests/minute (built-in)
 - GRUDA Legion proxy: 15s timeout per request
 - Game APIs: No explicit rate limit — rely on auth + session management
+
+### Domain Convention
+**Always use `grudge-studio.com` (with hyphen)** — never `grudgestudio.com` (legacy).

@@ -11,7 +11,6 @@
  *
  * Excluded (serverless-incompatible):
  *  - Socket.IO / real-time multiplayer lobby
- *  - Replit Object Storage (sidecar not available)
  *  - Vite dev middleware
  *  - File-system upload/sync routes
  */
@@ -19,27 +18,48 @@
 import "./env";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { setupGrudgeAuth } from "./grudgeAuth";
+import { setupGrudgeProxy } from "./routes/grudgeProxy";
 import { registerGrudaLegionRoutes } from "./services/grudaLegion";
 import { registerGrudaWarsRoutes } from "./routes/grudaWars";
 import { registerUserRoutes } from "./routes/user";
 import { registerAccountRoutes } from "./routes/accountRoutes";
 import { registerOpenRTSRoutes } from "./routes/openrts";
+import { registerCoolifyRoutes } from "./routes/coolifyProxy";
+import { registerEconomyRoutes } from "./routes/economyRoutes";
+import { registerNftRoutes } from "./routes/nftRoutes";
 import { overdriveEngine } from "./services/overdriveEngine";
-import { isDatabaseConfigured } from "./db";
-import { storage } from "./storage";
-import {
-  insertGameProjectSchema,
-  insertChatConversationSchema,
-  insertChatMessageSchema,
-  insertGdevelopAssetSchema,
-  insertRtsProjectSchema,
-  insertSkillTreeSchema,
-  insertPlayerProfileSchema,
-  skillTrees,
-} from "../shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
 import OpenAI from "openai";
+
+const BACKEND = process.env.GRUDGE_BACKEND_URL || "https://api.grudge-studio.com";
+
+/** Check if the Grudge backend URL is configured */
+function isBackendConfigured(): boolean {
+  return !!process.env.GRUDGE_BACKEND_URL;
+}
+
+/** Proxy a request to the Grudge backend */
+async function proxyGet(path: string, req: Request, res: Response) {
+  try {
+    const headers: Record<string, string> = {};
+    if (req.headers.authorization) headers["Authorization"] = req.headers.authorization as string;
+    const r = await fetch(`${BACKEND}${path}`, { headers });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch { res.status(502).json({ error: "Backend unavailable" }); }
+}
+
+async function proxyMutate(method: string, path: string, req: Request, res: Response) {
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (req.headers.authorization) headers["Authorization"] = req.headers.authorization as string;
+    const r = await fetch(`${BACKEND}${path}`, {
+      method, headers, body: JSON.stringify(req.body || {}),
+    });
+    if (r.status === 204) return res.status(204).send();
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch { res.status(502).json({ error: "Backend unavailable" }); }
+}
 
 const app = express();
 
@@ -78,38 +98,42 @@ const xai = process.env.XAI_API_KEY
 const GDEVELOP_SYSTEM_PROMPT = `You are an expert GDevelop game development assistant powered by xAI's Grok. You help with game design, mechanics, GDevelop event systems, asset recommendations, and integration with tools like Three.js, Babylon.js, and LUME. Be practical, actionable, and encouraging.`;
 
 // ════════════════════════════════════════════
-// Auth routes (proxy to auth-gateway)
+// Auth routes (proxy to Grudge backend)
 // ════════════════════════════════════════════
 setupGrudgeAuth(app);
+
+// ════════════════════════════════════════════
+// Grudge backend proxy (/api/grudge/game|account|id|launcher)
+// ════════════════════════════════════════════
+setupGrudgeProxy(app);
 
 // ════════════════════════════════════════════
 // Health check
 // ════════════════════════════════════════════
 app.get("/api/health", async (_req: Request, res: Response) => {
-  // Quick auth-gateway ping (non-blocking, 3s timeout)
-  let gatewayOk = false;
+  // Quick Grudge backend ping (non-blocking, 3s timeout)
+  let backendOk = false;
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 3000);
-    const gw = await fetch(
-      `${process.env.AUTH_GATEWAY_URL || "https://auth-gateway-flax.vercel.app"}/api/health`,
-      { signal: ctrl.signal },
-    );
+    const r = await fetch(`${BACKEND}/health`, { signal: ctrl.signal });
     clearTimeout(t);
-    gatewayOk = gw.ok;
+    backendOk = r.ok;
   } catch { /* unreachable */ }
 
   res.json({
     status: "healthy",
-    service: "GDevelop Assistant (Vercel)",
+    service: "GDevelop Assistant",
     timestamp: new Date().toISOString(),
     runtime: process.version,
     env: {
-      hasDatabase: isDatabaseConfigured(),
+      grudgeBackend: backendOk ? "reachable" : "unreachable",
+      backendUrl: BACKEND,
       hasSessionSecret: !!process.env.SESSION_SECRET,
       hasXaiKey: !!process.env.XAI_API_KEY,
       hasMeshyKey: !!process.env.MESHY_API_KEY,
-      authGateway: gatewayOk ? "reachable" : "unreachable",
+      hasCoolify: !!(process.env.COOLIFY_API_URL && process.env.COOLIFY_API_TOKEN),
+      coolifyUrl: process.env.COOLIFY_API_URL || null,
       nodeEnv: process.env.NODE_ENV || "not-set",
     },
   });
@@ -122,103 +146,52 @@ registerGrudaLegionRoutes(app);
 registerGrudaWarsRoutes(app);
 registerAccountRoutes(app);
 registerOpenRTSRoutes(app);
+registerCoolifyRoutes(app);
+registerEconomyRoutes(app);
+registerNftRoutes(app);
 
 // ════════════════════════════════════════════
-// DB-backed routes (only when DATABASE_URL is set)
+// DB-backed routes → proxy to Grudge backend
 // ════════════════════════════════════════════
-
-function requireDb(_req: Request, res: Response, next: NextFunction) {
-  if (!isDatabaseConfigured()) {
-    return res.status(503).json({
-      error: "Database not configured",
-      hint: "Set DATABASE_URL in Vercel Environment Variables",
-    });
-  }
-  next();
-}
 
 // ── Projects ──
-app.get("/api/projects", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllProjects()); }
-  catch (e) { res.status(500).json({ error: "Failed to fetch projects" }); }
-});
-
-app.get("/api/projects/:id", requireDb, async (req, res) => {
-  try {
-    const p = await storage.getProject(req.params.id);
-    p ? res.json(p) : res.status(404).json({ error: "Project not found" });
-  } catch { res.status(500).json({ error: "Failed to fetch project" }); }
-});
-
-app.post("/api/projects", requireDb, async (req, res) => {
-  try {
-    const data = insertGameProjectSchema.parse(req.body);
-    res.status(201).json(await storage.createProject(data));
-  } catch { res.status(400).json({ error: "Invalid project data" }); }
-});
-
-app.patch("/api/projects/:id", requireDb, async (req, res) => {
-  try {
-    const p = await storage.updateProject(req.params.id, req.body);
-    p ? res.json(p) : res.status(404).json({ error: "Project not found" });
-  } catch { res.status(500).json({ error: "Failed to update project" }); }
-});
-
-app.delete("/api/projects/:id", requireDb, async (req, res) => {
-  try {
-    const ok = await storage.deleteProject(req.params.id);
-    ok ? res.status(204).send() : res.status(404).json({ error: "Project not found" });
-  } catch { res.status(500).json({ error: "Failed to delete project" }); }
-});
+app.get("/api/projects", (req, res) => proxyGet("/api/gdevelop/projects", req, res));
+app.get("/api/projects/:id", (req, res) => proxyGet(`/api/gdevelop/projects/${req.params.id}`, req, res));
+app.post("/api/projects", (req, res) => proxyMutate("POST", "/api/gdevelop/projects", req, res));
+app.patch("/api/projects/:id", (req, res) => proxyMutate("PATCH", `/api/gdevelop/projects/${req.params.id}`, req, res));
+app.delete("/api/projects/:id", (req, res) => proxyMutate("DELETE", `/api/gdevelop/projects/${req.params.id}`, req, res));
 
 // ── Conversations ──
-app.get("/api/conversations", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllConversations()); }
-  catch { res.status(500).json({ error: "Failed to fetch conversations" }); }
-});
-
-app.get("/api/conversations/:id", requireDb, async (req, res) => {
-  try {
-    const c = await storage.getConversation(req.params.id);
-    c ? res.json(c) : res.status(404).json({ error: "Conversation not found" });
-  } catch { res.status(500).json({ error: "Failed to fetch conversation" }); }
-});
-
-app.post("/api/conversations", requireDb, async (req, res) => {
-  try {
-    const data = insertChatConversationSchema.parse(req.body);
-    res.status(201).json(await storage.createConversation(data));
-  } catch { res.status(400).json({ error: "Invalid conversation data" }); }
-});
-
-app.delete("/api/conversations/:id", requireDb, async (req, res) => {
-  try {
-    const ok = await storage.deleteConversation(req.params.id);
-    ok ? res.status(204).send() : res.status(404).json({ error: "Conversation not found" });
-  } catch { res.status(500).json({ error: "Failed to delete conversation" }); }
-});
+app.get("/api/conversations", (req, res) => proxyGet("/api/gdevelop/conversations", req, res));
+app.get("/api/conversations/:id", (req, res) => proxyGet(`/api/gdevelop/conversations/${req.params.id}`, req, res));
+app.post("/api/conversations", (req, res) => proxyMutate("POST", "/api/gdevelop/conversations", req, res));
+app.delete("/api/conversations/:id", (req, res) => proxyMutate("DELETE", `/api/gdevelop/conversations/${req.params.id}`, req, res));
 
 // ── Messages + AI Chat ──
-app.get("/api/conversations/:id/messages", requireDb, async (req, res) => {
-  try { res.json(await storage.getMessagesByConversation(req.params.id)); }
-  catch { res.status(500).json({ error: "Failed to fetch messages" }); }
-});
+app.get("/api/conversations/:id/messages", (req, res) => proxyGet(`/api/gdevelop/conversations/${req.params.id}/messages`, req, res));
 
-app.post("/api/messages", requireDb, async (req, res) => {
+app.post("/api/messages", async (req: Request, res: Response) => {
   try {
-    const data = insertChatMessageSchema.parse(req.body);
-    const userMessage = await storage.createMessage(data);
+    // Save user message via backend
+    const msgRes = await fetch(`${BACKEND}/api/gdevelop/messages`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
+    const userMessage = await msgRes.json();
 
     // Get AI response from xAI Grok
     try {
       if (!xai) throw new Error("XAI_API_KEY not configured");
 
-      const history = await storage.getMessagesByConversation(data.conversationId);
+      // Fetch conversation history from backend
+      const histRes = await fetch(`${BACKEND}/api/gdevelop/conversations/${req.body.conversationId}/messages`);
+      const history = await histRes.json();
+
       const response = await xai.chat.completions.create({
         model: "grok-2-1212",
         messages: [
           { role: "system", content: GDEVELOP_SYSTEM_PROMPT },
-          ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+          ...history.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
         ],
         max_tokens: 4096,
         temperature: 0.7,
@@ -226,22 +199,26 @@ app.post("/api/messages", requireDb, async (req, res) => {
 
       const aiContent = response.choices[0]?.message?.content
         || "I couldn't generate a response. Please try again.";
-      const aiMessage = await storage.createMessage({
-        conversationId: data.conversationId,
-        role: "assistant",
-        content: aiContent,
+
+      const aiRes = await fetch(`${BACKEND}/api/gdevelop/messages`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: req.body.conversationId, role: "assistant", content: aiContent }),
       });
+      const aiMessage = await aiRes.json();
       res.status(201).json({ userMessage, aiMessage });
     } catch (aiErr: any) {
       console.error("AI Error:", aiErr.message);
-      const fallback = await storage.createMessage({
-        conversationId: data.conversationId,
-        role: "assistant",
-        content: xai
-          ? "I encountered an error processing your request. Please try again."
-          : "AI chat is not configured. Set XAI_API_KEY in Vercel Environment Variables to enable it.",
+      const fbRes = await fetch(`${BACKEND}/api/gdevelop/messages`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: req.body.conversationId, role: "assistant",
+          content: xai
+            ? "I encountered an error processing your request. Please try again."
+            : "AI chat is not configured. Set XAI_API_KEY to enable it.",
+        }),
       });
-      res.status(201).json({ userMessage, aiMessage: fallback });
+      const aiMessage = await fbRes.json();
+      res.status(201).json({ userMessage, aiMessage });
     }
   } catch (e: any) {
     console.error("Message Error:", e);
@@ -250,106 +227,27 @@ app.post("/api/messages", requireDb, async (req, res) => {
 });
 
 // ── Assets ──
-app.get("/api/assets", requireDb, async (req, res) => {
-  try {
-    const { type, search } = req.query;
-    let assets;
-    if (search && typeof search === "string") assets = await storage.searchAssets(search);
-    else if (type && typeof type === "string") assets = await storage.getAssetsByType(type);
-    else assets = await storage.getAllAssets();
-    res.json(assets);
-  } catch { res.status(500).json({ error: "Failed to fetch assets" }); }
+app.get("/api/assets", (req, res) => {
+  const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+  proxyGet(`/api/gdevelop/assets${qs ? "?" + qs : ""}`, req, res);
 });
+app.post("/api/assets", (req, res) => proxyMutate("POST", "/api/gdevelop/assets", req, res));
 
-app.post("/api/assets", requireDb, async (req, res) => {
-  try {
-    const data = insertGdevelopAssetSchema.parse(req.body);
-    res.status(201).json(await storage.createAsset(data));
-  } catch { res.status(400).json({ error: "Invalid asset data" }); }
-});
-
-// ── Characters ──
-app.get("/api/characters", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllCharacters()); }
-  catch { res.status(500).json({ error: "Failed to fetch characters" }); }
-});
-
-// ── Currencies & Wallet ──
-app.get("/api/currencies", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllCurrencies()); }
-  catch { res.status(500).json({ error: "Failed to fetch currencies" }); }
-});
-
-// ── Achievements ──
-app.get("/api/achievements", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllAchievements()); }
-  catch { res.status(500).json({ error: "Failed to fetch achievements" }); }
-});
-
-// ── Store ──
-app.get("/api/store", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllStoreItems()); }
-  catch { res.status(500).json({ error: "Failed to fetch store" }); }
-});
-
-// ── Lobbies ──
-app.get("/api/lobbies", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllLobbies()); }
-  catch { res.status(500).json({ error: "Failed to fetch lobbies" }); }
-});
-
-// ── AI Behaviors ──
-app.get("/api/ai-behaviors", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllAiBehaviors()); }
-  catch { res.status(500).json({ error: "Failed to fetch AI behaviors" }); }
-});
-
-// ── Levels ──
-app.get("/api/levels", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllLevelRequirements()); }
-  catch { res.status(500).json({ error: "Failed to fetch levels" }); }
-});
-
-// ── Settings ──
-app.get("/api/settings", requireDb, async (req, res) => {
-  try {
-    const claims = (req as any).user?.claims;
-    const userId = claims?.sub || "guest";
-    const settings = await storage.getUserSettings(userId);
-    res.json(settings || {});
-  } catch { res.status(500).json({ error: "Failed to fetch settings" }); }
-});
-
-// ── Skill Trees ──
-app.get("/api/skill-trees", requireDb, async (_req, res) => {
-  try {
-    const trees = await db.query.skillTrees.findMany();
-    res.json(trees);
-  } catch { res.status(500).json({ error: "Failed to fetch skill trees" }); }
-});
-
-app.post("/api/skill-trees", requireDb, async (req, res) => {
-  try {
-    const data = insertSkillTreeSchema.parse(req.body);
-    const [tree] = await db.insert(skillTrees).values(data).returning();
-    res.status(201).json(tree);
-  } catch { res.status(400).json({ error: "Invalid skill tree data" }); }
-});
-
-// ── RTS Projects ──
-app.get("/api/rts/projects", requireDb, async (_req, res) => {
-  try { res.json(await storage.getAllRtsProjects()); }
-  catch { res.status(500).json({ error: "Failed to fetch RTS projects" }); }
-});
-
-app.get("/api/rts/assets", requireDb, async (req, res) => {
-  try {
-    const { type } = req.query;
-    const assets = type && typeof type === "string"
-      ? await storage.getRtsAssetsByType(type)
-      : await storage.getAllRtsAssets();
-    res.json(assets);
-  } catch { res.status(500).json({ error: "Failed to fetch RTS assets" }); }
+// ── Simple proxy routes ──
+app.get("/api/characters", (req, res) => proxyGet("/api/gdevelop/characters", req, res));
+app.get("/api/currencies", (req, res) => proxyGet("/api/gdevelop/currencies", req, res));
+app.get("/api/achievements", (req, res) => proxyGet("/api/gdevelop/achievements", req, res));
+app.get("/api/store", (req, res) => proxyGet("/api/gdevelop/store", req, res));
+app.get("/api/lobbies", (req, res) => proxyGet("/api/gdevelop/lobbies", req, res));
+app.get("/api/ai-behaviors", (req, res) => proxyGet("/api/gdevelop/ai-behaviors", req, res));
+app.get("/api/levels", (req, res) => proxyGet("/api/gdevelop/levels", req, res));
+app.get("/api/settings", (req, res) => proxyGet("/api/gdevelop/settings", req, res));
+app.get("/api/skill-trees", (req, res) => proxyGet("/api/gdevelop/skill-trees", req, res));
+app.post("/api/skill-trees", (req, res) => proxyMutate("POST", "/api/gdevelop/skill-trees", req, res));
+app.get("/api/rts/projects", (req, res) => proxyGet("/api/gdevelop/rts/projects", req, res));
+app.get("/api/rts/assets", (req, res) => {
+  const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+  proxyGet(`/api/gdevelop/rts/assets${qs ? "?" + qs : ""}`, req, res);
 });
 
 // ── Meshy 3D API (texture generation) ──
@@ -392,7 +290,7 @@ app.get("/api/meshy/retexture/:taskId", async (req, res) => {
 });
 
 // ── User routes (profile, characters, stats) ──
-try { registerUserRoutes(app); } catch { /* DB may not be configured */ }
+try { registerUserRoutes(app); } catch { /* backend may not be configured */ }
 
 // ── Lobby stats (no Socket.IO — returns zeros) ──
 app.get("/api/lobby/stats", (_req, res) => {

@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { aiService } from './ai';
-import { aiLogger } from '../lib/logger';
+import createLogger from '../lib/logger';
+const aiLogger = createLogger('AIWorker');
 
 /**
  * Types for frontend monitoring data
@@ -305,7 +306,7 @@ ${recentLogs.map(log => `[${log.level.toUpperCase()}] ${log.message}`).join('\n'
       .filter(s => now - s.lastActivity < this.SESSION_TIMEOUT);
 
     // Clean up old sessions
-    for (const [sessionId, session] of this.sessions.entries()) {
+    for (const [sessionId, session] of Array.from(this.sessions.entries())) {
       if (now - session.lastActivity >= this.SESSION_TIMEOUT) {
         this.sessions.delete(sessionId);
         aiLogger.info({ sessionId }, 'Session expired and removed');

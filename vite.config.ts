@@ -8,7 +8,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [
     react(),
-    // Replit-specific plugins disabled for local dev
   ],
   resolve: {
     alias: {

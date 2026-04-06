@@ -4,8 +4,7 @@
  */
 
 import { db } from "../db";
-import { eq, desc } from "drizzle-orm";
-import sql from "../db";
+import { eq, desc, sql } from "drizzle-orm";
 
 // ============================================
 // OVERDRIVE RACING PERSISTENCE
@@ -18,7 +17,7 @@ export async function saveOverdriveRace(raceData: any) {
       VALUES (${raceData.trackId}, ${raceData.maxPlayers}, 'starting')
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error saving overdrive race:", error);
     throw error;
@@ -41,7 +40,7 @@ export async function saveOverdriveVehicle(vehicleData: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error saving overdrive vehicle:", error);
     throw error;
@@ -69,7 +68,7 @@ export async function updateOverdriveVehicleState(vehicleId: string, state: any)
       WHERE id = ${vehicleId}
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error updating overdrive vehicle state:", error);
     throw error;
@@ -92,7 +91,7 @@ export async function finishOverdriveRace(raceId: string, winner: { playerId: st
       ORDER BY finish_time ASC
     `;
 
-    return vehicles;
+    return vehicles as any;
   } catch (error) {
     console.error("Error finishing overdrive race:", error);
     throw error;
@@ -106,7 +105,7 @@ export async function addToOverdriveLeaderboard(entry: any) {
       SELECT COUNT(*) as count FROM overdrive_leaderboard 
       WHERE track_id = ${entry.trackId} AND time < ${entry.time}
     `;
-    const rank = (existing[0]?.count || 0) + 1;
+    const rank = ((existing as any)[0]?.count || 0) + 1;
 
     const result = await sql`
       INSERT INTO overdrive_leaderboard (
@@ -118,7 +117,7 @@ export async function addToOverdriveLeaderboard(entry: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error adding to leaderboard:", error);
     throw error;
@@ -141,7 +140,7 @@ export async function createMMOSession(sessionData: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error creating MMO session:", error);
     throw error;
@@ -174,7 +173,7 @@ export async function saveMMOCharacterState(charState: any) {
         updated_at = NOW()
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error saving MMO character state:", error);
     throw error;
@@ -192,7 +191,7 @@ export async function addMMOInventoryItem(itemData: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error adding MMO inventory item:", error);
     throw error;
@@ -207,7 +206,7 @@ export async function endMMOSession(sessionId: string, playtimeSeconds: number) 
       WHERE id = ${sessionId}
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error ending MMO session:", error);
     throw error;
@@ -231,7 +230,7 @@ export async function createRTSMatchSession(sessionData: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error creating RTS match session:", error);
     throw error;
@@ -249,7 +248,7 @@ export async function addRTSPlayerState(playerData: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error adding RTS player state:", error);
     throw error;
@@ -270,7 +269,7 @@ export async function spawnRTSUnit(unitData: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error spawning RTS unit:", error);
     throw error;
@@ -290,7 +289,7 @@ export async function updateRTSUnitState(unitId: string, state: any) {
       WHERE id = ${unitId}
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error updating RTS unit state:", error);
     throw error;
@@ -309,7 +308,7 @@ export async function logRTSMatchEvent(eventData: any) {
       )
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error logging RTS match event:", error);
     throw error;
@@ -324,7 +323,7 @@ export async function finishRTSMatch(matchId: string, winnerFaction: string) {
       WHERE id = ${matchId}
       RETURNING *
     `;
-    return result[0];
+    return (result as any)[0];
   } catch (error) {
     console.error("Error finishing RTS match:", error);
     throw error;

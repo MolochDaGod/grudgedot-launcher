@@ -1,0 +1,19 @@
+{
+  "slug": "nexus-nemesis",
+  "title": "Nexus Nemesis",
+  "version": "1.0.0",
+  "description": "Web3-ready trading card game with real-time PvP battles, NFT card minting, multi-chain wallets, and Season 0 cNFT collections.",
+  "routes": [{ "path": "/nexus-nemesis", "entry": "tabs/nexus-nemesis/index.tsx" }],
+  "assets": {
+    "cards": "assets/nexus-nemesis/cards/",
+    "gui": "assets/nexus-nemesis/gui/"
+  },
+  "features": [
+    "tcg-battle",
+    "nft-minting",
+    "pvp-matchmaking",
+    "web3-wallet",
+    "deck-builder"
+  ],
+  "externalUrl": "https://nemesis.grudge-studio.com"
+}

@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { User, Trophy, Gamepad2, Star, LogIn, Edit2, Save, X } from "lucide-react";
+import { User, Trophy, Gamepad2, Star, LogIn, Edit2, Save, X, Users, Bell, BellDot, UserPlus, Crown, Globe } from "lucide-react";
 import { useState } from "react";
+import { grudgeAccountApi, grudgeIdApi, type GrudgeProfile, type GrudgeFriend, type GrudgeNotification } from "@/lib/grudgeBackendApi";
 import type { PlayerProfile, LevelRequirement } from "@shared/schema";
 
 export default function ProfilePage() {
@@ -19,6 +22,47 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [friendId, setFriendId] = useState("");
+
+  // Grudge identity
+  const { data: grudgeMe } = useQuery({
+    queryKey: ['grudge', 'identity'],
+    queryFn: () => grudgeIdApi.getMe(),
+    enabled: isAuthenticated,
+  });
+
+  const grudgeId = grudgeMe?.grudge_id || grudgeMe?.grudgeId || '';
+
+  const { data: grudgeProfile } = useQuery<GrudgeProfile | null>({
+    queryKey: ['grudge', 'profile', grudgeId],
+    queryFn: () => grudgeAccountApi.getProfile(grudgeId),
+    enabled: !!grudgeId,
+  });
+
+  const { data: friends = [], refetch: refetchFriends } = useQuery<GrudgeFriend[]>({
+    queryKey: ['grudge', 'friends'],
+    queryFn: () => grudgeAccountApi.listFriends(),
+    enabled: isAuthenticated,
+  });
+
+  const { data: notifications = [], refetch: refetchNotifs } = useQuery<GrudgeNotification[]>({
+    queryKey: ['grudge', 'notifications'],
+    queryFn: () => grudgeAccountApi.listNotifications(),
+    enabled: isAuthenticated,
+  });
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const sendFriendReq = useMutation({
+    mutationFn: (id: string) => grudgeAccountApi.sendFriendRequest(id),
+    onSuccess: () => { refetchFriends(); toast({ title: 'Friend request sent!' }); setFriendId(''); },
+    onError: () => toast({ variant: 'destructive', title: 'Error', description: 'Could not send friend request' }),
+  });
+
+  const markAllRead = useMutation({
+    mutationFn: () => grudgeAccountApi.markAllRead(),
+    onSuccess: () => refetchNotifs(),
+  });
 
   const { data: profile, isLoading: profileLoading } = useCachedQuery<PlayerProfile>(
     ["/api/players/me"],
@@ -249,6 +293,109 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Grudge Backend Tabs */}
+        {grudgeId && (
+          <Tabs defaultValue="identity" className="w-full">
+            <TabsList className="w-full">
+              <TabsTrigger value="identity" className="flex-1">
+                <Crown className="mr-1 h-4 w-4" /> Grudge Identity
+              </TabsTrigger>
+              <TabsTrigger value="friends" className="flex-1">
+                <Users className="mr-1 h-4 w-4" /> Friends ({friends.length})
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex-1">
+                {unreadCount > 0 ? <BellDot className="mr-1 h-4 w-4" /> : <Bell className="mr-1 h-4 w-4" />}
+                Notifications {unreadCount > 0 && `(${unreadCount})`}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="identity">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Grudge Profile</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><span className="text-muted-foreground">Grudge ID:</span> <span className="font-mono">{grudgeId}</span></div>
+                    <div><span className="text-muted-foreground">Username:</span> {grudgeProfile?.username || grudgeMe?.username || '—'}</div>
+                    {grudgeProfile?.bio && <div className="col-span-2"><span className="text-muted-foreground">Bio:</span> {grudgeProfile.bio}</div>}
+                    {grudgeProfile?.country && <div><span className="text-muted-foreground">Country:</span> {grudgeProfile.country}</div>}
+                    {grudgeMe?.faction && <div><span className="text-muted-foreground">Faction:</span> {grudgeMe.faction}</div>}
+                    {grudgeMe?.race && <div><span className="text-muted-foreground">Race:</span> {grudgeMe.race}</div>}
+                    {grudgeMe?.class && <div><span className="text-muted-foreground">Class:</span> {grudgeMe.class}</div>}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="friends">
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Friends</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Input value={friendId} onChange={(e) => setFriendId(e.target.value)} placeholder="Grudge ID" className="h-8 w-40" />
+                      <Button size="sm" onClick={() => sendFriendReq.mutate(friendId)} disabled={!friendId.trim()}>
+                        <UserPlus className="mr-1 h-3 w-3" /> Add
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {friends.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No friends yet. Add someone!</p>
+                  ) : (
+                    <ScrollArea className="max-h-60">
+                      <div className="space-y-2">
+                        {friends.map((f) => (
+                          <div key={f.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                            <span className="font-medium text-sm">{f.username || f.friend_grudge_id}</span>
+                            <Badge variant={f.status === 'accepted' ? 'default' : f.status === 'pending' ? 'secondary' : 'destructive'}>
+                              {f.status}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="notifications">
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Notifications</CardTitle>
+                    {unreadCount > 0 && (
+                      <Button size="sm" variant="outline" onClick={() => markAllRead.mutate()}>Mark All Read</Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {notifications.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No notifications</p>
+                  ) : (
+                    <ScrollArea className="max-h-60">
+                      <div className="space-y-2">
+                        {notifications.map((n) => (
+                          <div key={n.id} className={`p-2 rounded text-sm ${n.read ? 'bg-muted/30' : 'bg-muted/70 font-medium'}`}>
+                            <div className="flex items-center justify-between">
+                              <span>{n.type}</span>
+                              <span className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleDateString()}</span>
+                            </div>
+                            {n.payload && <p className="text-xs text-muted-foreground mt-1">{JSON.stringify(n.payload)}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
 
         <div className="flex justify-center">
           <Button variant="outline" asChild data-testid="button-logout">

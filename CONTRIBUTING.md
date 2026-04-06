@@ -57,14 +57,18 @@ npm install
 # Copy environment file
 cp .env.example .env
 
-# Start services with Docker
-npm run docker:up
-
-# Or run individual services for development
-npm run start:ai-agents
-npm run start:game-server
-npm run start:cloud-storage
+# Start dev server (Express + Vite HMR)
+npm run dev
 ```
+
+### Backend Connection (Critical)
+
+The app proxies all backend calls through Express. **Both** `server/routes.ts` (dev) and
+`server/vercelApp.ts` (Vercel) **must** call `setupGrudgeProxy(app)`. If either is missing,
+`/api/grudge/*` routes will 404.
+
+See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the full
+architecture, service map, domain conventions, and checklist.
 
 ## Project Structure
 
@@ -151,9 +155,10 @@ npm run test:coverage
 ## Documentation
 
 - Update README.md if you change functionality
-- Update API.md for API changes
+- Update [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for backend proxy or connection changes
+- Update [AUTH_INTEGRATION.md](AUTH_INTEGRATION.md) for auth changes
+- Update [docs/AI_SYSTEMS_GUIDE.md](docs/AI_SYSTEMS_GUIDE.md) for AI architecture changes
 - Add JSDoc comments to your code
-- Update DEPLOYMENT.md for deployment changes
 
 ## Commit Messages
 

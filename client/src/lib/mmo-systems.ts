@@ -125,9 +125,7 @@ export const WEAPON_TYPES = [
 export const CLASS_WEAPON_RESTRICTIONS: Record<string, string[]> = {
   warrior: ["sword", "shield", "2h_sword", "mace", "hammer", "spear"],
   mage:    ["staff", "tome", "wand", "mace"],
-  rogue:   ["dagger", "bow", "crossbow", "2h_sword", "spear"],
   ranger:  ["bow", "crossbow", "dagger", "spear", "2h_sword"],
-  cleric:  ["mace", "shield", "staff", "hammer"],
   worge:   ["staff", "spear", "dagger", "bow", "hammer", "mace"],
 };
 
@@ -184,9 +182,7 @@ export interface ArmorDef {
 export const CLASS_ARMOR_RESTRICTIONS: Record<string, ArmorWeight[]> = {
   warrior: ["metal", "leather"],
   mage:    ["cloth"],
-  rogue:   ["leather"],
   ranger:  ["leather", "cloth"],
-  cleric:  ["metal", "cloth"],
   worge:   ["leather"],
 };
 

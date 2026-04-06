@@ -13,7 +13,7 @@ import { Slider } from "@/components/ui/slider";
 import { 
   Plus, Users, Sword, Navigation, Sparkles, Target, TreePine, 
   Settings, Play, Save, Trash2, Copy, Eye, Crosshair, Shield,
-  Heart, Zap, Move, Wind
+  Heart, Zap, Move, Wind, Swords, Filter, ExternalLink
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -182,8 +182,8 @@ export default function RtsBuilder() {
                 className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                 data-testid="tab-actors"
               >
-                <Eye className="h-4 w-4" />
-                Actors
+                <Swords className="h-4 w-4" />
+                Actors (3D)
               </TabsTrigger>
               <TabsTrigger 
                 value="trinkets" 
@@ -1024,26 +1024,253 @@ function EffectsPanel({ effects }: { effects: OpenRTSEffect[] }) {
 }
 
 function ActorsPanel() {
+  const [raceFilter, setRaceFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: rtsModelCatalog, isLoading } = useQuery<any>({
+    queryKey: ["objectstore-rts-models"],
+    queryFn: async () => {
+      const res = await fetch("https://molochdagod.github.io/ObjectStore/api/v1/rtsModels.json");
+      if (!res.ok) throw new Error("Failed to fetch RTS models");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Actors</h3>
-          <p className="text-sm text-muted-foreground">3D models and animation sets for units</p>
+    <div className="flex h-full flex-col">
+      <div className="p-3 border-b">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-semibold flex items-center gap-2">
+              <Swords className="h-4 w-4" />
+              3D Model Actors
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {rtsModelCatalog?.totalModels ?? 0} GLB models from Grudge Warlords ObjectStore
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("https://molochdagod.github.io/ObjectStore/api/v1/rtsModels.json", "_blank")}
+          >
+            <ExternalLink className="mr-1 h-3 w-3" />
+            API
+          </Button>
         </div>
-        <Button size="sm" data-testid="button-create-actor">
-          <Plus className="mr-1 h-4 w-4" />
-          New Actor
-        </Button>
+
+        {/* Search */}
+        <div className="relative mb-3">
+          <Input
+            placeholder="Search models by name or tag..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 text-sm"
+            data-testid="input-search-actors"
+          />
+        </div>
+
+        {/* Race Filter */}
+        <div className="flex gap-1 flex-wrap mb-2">
+          {["all", ...Object.keys(rtsModelCatalog?.races || {})].map((race) => {
+            const raceData = race !== "all" ? rtsModelCatalog?.races[race] : null;
+            const count = race === "all"
+              ? (rtsModelCatalog?.totalModels ?? 0)
+              : (rtsModelCatalog?.stats?.totalByRace?.[race] ?? 0);
+            return (
+              <Button
+                key={race}
+                variant={raceFilter === race ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setRaceFilter(race)}
+                style={raceFilter === race && raceData?.color ? { backgroundColor: raceData.color } : {}}
+                data-testid={`filter-race-${race}`}
+              >
+                {raceData?.emoji ?? "\ud83c\udf10"} {race.charAt(0).toUpperCase() + race.slice(1)} ({count})
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Category Filter */}
+        <div className="flex gap-1 flex-wrap">
+          {["all", "character", "mount", "siege", "equipment", "vehicle"].map((cat) => (
+            <Button
+              key={cat}
+              variant={categoryFilter === cat ? "default" : "outline"}
+              size="sm"
+              className="h-7 text-xs capitalize"
+              onClick={() => setCategoryFilter(cat)}
+              data-testid={`filter-actor-cat-${cat}`}
+            >
+              <Filter className="mr-1 h-3 w-3" />
+              {cat}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      <div className="h-64 flex items-center justify-center border rounded-lg bg-muted/30">
-        <div className="text-center text-muted-foreground">
-          <Eye className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>Actor management coming soon</p>
-          <p className="text-xs">Link 3D models to units</p>
-        </div>
-      </div>
+      <ScrollArea className="flex-1 p-3">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading 3D models from ObjectStore...</p>
+          </div>
+        ) : !rtsModelCatalog ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Swords className="mb-4 h-12 w-12 text-muted-foreground opacity-30" />
+            <p className="text-muted-foreground">Could not load models. Check ObjectStore API.</p>
+          </div>
+        ) : (
+          <>
+            {/* Race sections */}
+            {/*
+              Reusable model card component for race models (and potentially vehicles).
+              Extracted to keep badge/size/link behavior consistent.
+            */}
+            {(() => {
+              type ModelCardProps = {
+                model: any;
+                baseUrl: string;
+                testIdPrefix: string;
+              };
+
+              const ModelCard = ({ model, baseUrl, testIdPrefix }: ModelCardProps) => (
+                <Card
+                  className="overflow-hidden hover-elevate"
+                  data-testid={`card-${testIdPrefix}-${model.grudgeId}`}
+                >
+                  <div className="h-20 w-full bg-muted flex items-center justify-center">
+                    <Swords className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <CardContent className="p-2">
+                    <div className="font-medium text-xs line-clamp-1">{model.displayName}</div>
+                    <p className="text-[10px] text-muted-foreground font-mono">{model.grudgeId}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {model.category}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {model.unitType}
+                      </Badge>
+                      {model.customizable && (
+                        <Badge className="text-[10px] bg-emerald-600">Custom</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-[10px] text-muted-foreground">
+                        {(model.sizeBytes / 1024).toFixed(0)} KB
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => window.open(`${baseUrl}/${model.file}`, "_blank")}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        GLB
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+
+              return Object.entries(rtsModelCatalog.races as Record<string, any>)
+                .filter(([raceId]) => raceFilter === "all" || raceFilter === raceId)
+                .map(([raceId, raceData]) => {
+                  const models = (raceData.models as any[]).filter((m: any) => {
+                    const matchesCat =
+                      categoryFilter === "all" || m.category === categoryFilter;
+                    const matchesSearch =
+                      searchQuery === "" ||
+                      m.displayName
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                      m.tags?.some((t: string) =>
+                        t.toLowerCase().includes(searchQuery.toLowerCase())
+                      );
+                    return matchesCat && matchesSearch;
+                  });
+                  if (models.length === 0) return null;
+                  return (
+                    <div key={raceId} className="mb-5">
+                      <div className="mb-2 flex items-center gap-2">
+                        <span>{raceData.emoji}</span>
+                        <h4 className="text-sm font-semibold">{raceData.name}</h4>
+                        <Badge
+                          style={{ backgroundColor: raceData.color, color: "#fff" }}
+                          className="text-xs"
+                        >
+                          {raceData.faction}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {models.length} models
+                        </span>
+                      </div>
+                      <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
+                        {models.map((model: any) => (
+                          <ModelCard
+                            key={model.grudgeId}
+                            model={model}
+                            baseUrl={rtsModelCatalog.baseUrl}
+                            testIdPrefix="actor"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+            })()}
+            {/* Vehicles section */}
+            {(raceFilter === "all") && (categoryFilter === "all" || categoryFilter === "vehicle") && rtsModelCatalog.vehicles?.length > 0 && (
+              <div className="mb-5">
+                <div className="mb-2 flex items-center gap-2">
+                  <span>\ud83d\udea2</span>
+                  <h4 className="text-sm font-semibold">Vehicles</h4>
+                  <Badge variant="secondary" className="text-xs">{rtsModelCatalog.vehicles.length} models</Badge>
+                </div>
+                <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
+                  {rtsModelCatalog.vehicles
+                    .filter((m: any) => {
+                      return searchQuery === "" ||
+                        m.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        m.tags?.some((t: string) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+                    })
+                    .map((model: any) => (
+                    <Card key={model.grudgeId} className="overflow-hidden hover-elevate" data-testid={`card-actor-${model.grudgeId}`}>
+                      <div className="h-20 w-full bg-muted flex items-center justify-center">
+                        <Swords className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <CardContent className="p-2">
+                        <div className="font-medium text-xs line-clamp-1">{model.displayName}</div>
+                        <p className="text-[10px] text-muted-foreground font-mono">{model.grudgeId}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <Badge variant="outline" className="text-[10px] capitalize">{model.category}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{model.unitType}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-[10px] text-muted-foreground">{(model.sizeBytes / 1024).toFixed(0)} KB</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => window.open(`${rtsModelCatalog.baseUrl}/${model.file}`, "_blank")}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            GLB
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </ScrollArea>
     </div>
   );
 }
@@ -1071,4 +1298,7 @@ function TrinketsPanel() {
       </div>
     </div>
   );
+import { BabylonPlaceholder } from '@/components/BabylonPlaceholder';
+export default function RtsBuilder() {
+  return <BabylonPlaceholder title="RTS Forge" description="Real-time strategy builder with unit placement, AI behavior trees, and terrain — being rebuilt on BabylonJS." concepts={['RTS Camera', 'Unit AI', 'Behavior Trees', 'Terrain Gen', 'Fog of War', 'Formation System']} />;
 }

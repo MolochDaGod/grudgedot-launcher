@@ -1189,7 +1189,7 @@ export default function SwarmRTSEnhanced() {
         
         state.selectedUnits.clear();
         if (foundUnit) {
-          state.selectedUnits.add(foundUnit.id);
+          state.selectedUnits.add((foundUnit as any).id);
         }
       } else {
         // Selection box

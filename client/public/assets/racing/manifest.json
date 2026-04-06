@@ -1,0 +1,88 @@
+{
+  "name": "Rude Races 2D Game Kit",
+  "source": "craftpix.net",
+  "basePath": "/assets/racing/PNG",
+  "bikes": [
+    { "id": "bike-1", "body": "Motorcycle Body/1.png", "label": "Street Racer" },
+    { "id": "bike-2", "body": "Motorcycle Body/2.png", "label": "Chopper" },
+    { "id": "bike-3", "body": "Motorcycle Body/3.png", "label": "Sport Bike" },
+    { "id": "bike-4", "body": "Motorcycle Body/4.png", "label": "Cruiser" },
+    { "id": "bike-5", "body": "Motorcycle Body/5.png", "label": "Dirt Bike" },
+    { "id": "bike-6", "body": "Motorcycle Body/6.png", "label": "Bobber" },
+    { "id": "bike-7", "body": "Motorcycle Body/7.png", "label": "Cafe Racer" },
+    { "id": "bike-8", "body": "Motorcycle Body/8.png", "label": "Superbike" }
+  ],
+  "riders": [
+    { "id": "rider-1", "frames": ["Riders/01/1.png","Riders/01/2.png","Riders/01/3.png","Riders/01/4.png"] },
+    { "id": "rider-2", "frames": ["Riders/02/1.png","Riders/02/2.png","Riders/02/3.png","Riders/02/4.png"] },
+    { "id": "rider-3", "frames": ["Riders/03/1.png","Riders/03/2.png","Riders/03/3.png","Riders/03/4.png"] },
+    { "id": "rider-4", "frames": ["Riders/04/1.png","Riders/04/2.png","Riders/04/3.png","Riders/04/4.png"] },
+    { "id": "rider-5", "frames": ["Riders/05/1.png","Riders/05/2.png","Riders/05/3.png","Riders/05/4.png"] },
+    { "id": "rider-6", "frames": ["Riders/06/1.png","Riders/06/2.png","Riders/06/3.png","Riders/06/4.png"] },
+    { "id": "rider-7", "frames": ["Riders/07/1.png","Riders/07/2.png","Riders/07/3.png","Riders/07/4.png"] },
+    { "id": "rider-8", "frames": ["Riders/08/1.png","Riders/08/2.png","Riders/08/3.png","Riders/08/4.png"] }
+  ],
+  "tires": [
+    { "id": "tire-1", "frames": ["Tires/01/1.png","Tires/01/2.png","Tires/01/3.png","Tires/01/4.png"] },
+    { "id": "tire-2", "frames": ["Tires/02/1.png","Tires/02/2.png","Tires/02/3.png","Tires/02/4.png"] },
+    { "id": "tire-3", "frames": ["Tires/03/1.png","Tires/03/2.png","Tires/03/3.png","Tires/03/4.png"] },
+    { "id": "tire-4", "frames": ["Tires/04/1.png","Tires/04/2.png","Tires/04/3.png","Tires/04/4.png"] },
+    { "id": "tire-5", "frames": ["Tires/05/1.png","Tires/05/2.png","Tires/05/3.png","Tires/05/4.png"] },
+    { "id": "tire-6", "frames": ["Tires/06/1.png","Tires/06/2.png","Tires/06/3.png","Tires/06/4.png"] },
+    { "id": "tire-7", "frames": ["Tires/07/1.png","Tires/07/2.png","Tires/07/3.png","Tires/07/4.png"] },
+    { "id": "tire-8", "frames": ["Tires/08/1.png","Tires/08/2.png","Tires/08/3.png","Tires/08/4.png"] }
+  ],
+  "roadTiles": {
+    "sets": ["RoadTile/01","RoadTile/02","RoadTile/03","RoadTile/04"],
+    "start": "RoadTile/Start.png",
+    "finish": "RoadTile/Finish.png"
+  },
+  "obstacles": [
+    { "id": "obs-1", "sprite": "Obstacle/1.png" },
+    { "id": "obs-2", "sprite": "Obstacle/2.png" },
+    { "id": "obs-3", "sprite": "Obstacle/3.png" },
+    { "id": "obs-4", "sprite": "Obstacle/4.png" },
+    { "id": "obs-5", "sprite": "Obstacle/5.png" },
+    { "id": "obs-6", "sprite": "Obstacle/6.png" },
+    { "id": "obs-7", "sprite": "Obstacle/7.png" }
+  ],
+  "cops": {
+    "car": ["Cops/Car/1.png","Cops/Car/2.png","Cops/Car/3.png","Cops/Car/4.png"],
+    "bike01": ["Cops/Bike01/1.png","Cops/Bike01/2.png","Cops/Bike01/3.png","Cops/Bike01/4.png"],
+    "bike02": ["Cops/Bike02/1.png","Cops/Bike02/2.png","Cops/Bike02/3.png","Cops/Bike02/4.png"],
+    "portrait": "Cops/Cop.png"
+  },
+  "weapons": [
+    { "id": "wpn-1", "sprite": "Weapons/1.png" },
+    { "id": "wpn-2", "sprite": "Weapons/2.png" },
+    { "id": "wpn-3", "sprite": "Weapons/3.png" },
+    { "id": "wpn-4", "sprite": "Weapons/4.png" },
+    { "id": "wpn-5", "sprite": "Weapons/5.png" },
+    { "id": "wpn-6", "sprite": "Weapons/6.png" }
+  ],
+  "collisionFx": {
+    "set1": ["CollisionFx/01/1.png","CollisionFx/01/2.png","CollisionFx/01/3.png","CollisionFx/01/4.png","CollisionFx/01/5.png","CollisionFx/01/6.png"],
+    "set2": ["CollisionFx/02/1.png","CollisionFx/02/2.png","CollisionFx/02/3.png","CollisionFx/02/4.png","CollisionFx/02/5.png","CollisionFx/02/6.png","CollisionFx/02/7.png"]
+  },
+  "items": [
+    { "id": "item-1", "frames": ["Items/01/1.png","Items/01/2.png","Items/01/3.png","Items/01/4.png"] },
+    { "id": "item-2", "frames": ["Items/02/1.png","Items/02/2.png","Items/02/3.png","Items/02/4.png"] },
+    { "id": "item-3", "frames": ["Items/03/1.png","Items/03/2.png","Items/03/3.png","Items/03/4.png"] },
+    { "id": "item-4", "frames": ["Items/04/1.png","Items/04/2.png","Items/04/3.png","Items/04/4.png"] }
+  ],
+  "ui": {
+    "logo": "UserInterface/Logo.png",
+    "startBtn": "UserInterface/StartRaceBtn.png",
+    "pauseBtn": "UserInterface/PauseBtn.png",
+    "menuBtn": "UserInterface/MenuBtn.png",
+    "trophy": "UserInterface/Trophy.png",
+    "hpBars": ["UserInterface/HpBar01.png","UserInterface/HpBar02.png","UserInterface/HpBar03.png"],
+    "goldBar": "UserInterface/Goldbar.png",
+    "clock": "UserInterface/Clock.png",
+    "positionBox": "UserInterface/PositionBox.png",
+    "roadMap": "UserInterface/RoadMap.png",
+    "carIcon": "UserInterface/car.png",
+    "tireBtn": "UserInterface/TireBtn.png",
+    "riderBtn": "UserInterface/RiderBtn.png"
+  }
+}

@@ -5,13 +5,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Send, Sparkles, User, Code, FileCode } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Send, Sparkles, User, Code, FileCode, Brain, BookOpen, Scale, Wand2 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { grudgeGameApi } from "@/lib/grudgeBackendApi";
+import { useToast } from "@/hooks/use-toast";
 import type { ChatMessage, ChatConversation } from "@shared/schema";
+
+type AITool = 'chat' | 'code-review' | 'code-generate' | 'lore' | 'balance';
 
 export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [aiTool, setAiTool] = useState<AITool>('chat');
+  const [aiResults, setAiResults] = useState<Array<{ tool: string; result: any; ts: number }>>([]);
+  const { toast } = useToast();
 
   const { data: conversation, isLoading: isLoadingConversation } = useQuery<ChatConversation>({
     queryKey: ["/api/conversations", currentConversationId],
@@ -72,6 +81,46 @@ export default function ChatPage() {
     }
   };
 
+  // Grudge AI tool mutations
+  const aiCodeReview = useMutation({
+    mutationFn: (code: string) => grudgeGameApi.aiCodeReview(code),
+    onSuccess: (data) => { if (data) setAiResults(prev => [...prev, { tool: 'Code Review', result: data, ts: Date.now() }]); },
+    onError: () => toast({ variant: 'destructive', title: 'AI Error', description: 'Code review failed' }),
+  });
+
+  const aiCodeGenerate = useMutation({
+    mutationFn: (desc: string) => grudgeGameApi.aiCodeGenerate(desc),
+    onSuccess: (data) => { if (data) setAiResults(prev => [...prev, { tool: 'Code Generate', result: data, ts: Date.now() }]); },
+    onError: () => toast({ variant: 'destructive', title: 'AI Error', description: 'Code generation failed' }),
+  });
+
+  const aiLore = useMutation({
+    mutationFn: (context: string) => grudgeGameApi.aiLoreGenerate('story', context),
+    onSuccess: (data) => { if (data) setAiResults(prev => [...prev, { tool: 'Lore', result: data, ts: Date.now() }]); },
+    onError: () => toast({ variant: 'destructive', title: 'AI Error', description: 'Lore generation failed' }),
+  });
+
+  const aiBalance = useMutation({
+    mutationFn: (area: string) => grudgeGameApi.aiBalanceAnalyze(area),
+    onSuccess: (data) => { if (data) setAiResults(prev => [...prev, { tool: 'Balance', result: data, ts: Date.now() }]); },
+    onError: () => toast({ variant: 'destructive', title: 'AI Error', description: 'Balance analysis failed' }),
+  });
+
+  const handleAiSend = () => {
+    const text = message.trim();
+    if (!text) return;
+    switch (aiTool) {
+      case 'code-review': aiCodeReview.mutate(text); break;
+      case 'code-generate': aiCodeGenerate.mutate(text); break;
+      case 'lore': aiLore.mutate(text); break;
+      case 'balance': aiBalance.mutate(text); break;
+      default: handleSend(); return;
+    }
+    setMessage('');
+  };
+
+  const isAiPending = aiCodeReview.isPending || aiCodeGenerate.isPending || aiLore.isPending || aiBalance.isPending;
+
   const handleNewChat = async () => {
     const res = await apiRequest("POST", "/api/conversations", {
       title: "New Chat",
@@ -80,6 +129,7 @@ export default function ChatPage() {
     const newConversation: ChatConversation = await res.json();
     setCurrentConversationId(newConversation.id);
     setMessage("");
+    setAiResults([]);
   };
 
   return (
@@ -179,7 +229,30 @@ export default function ChatPage() {
             </div>
           ))}
 
-          {sendMessageMutation.isPending && (
+          {/* Grudge AI tool results */}
+          {aiResults.map((r) => (
+            <div key={r.ts} className="flex gap-3 justify-start">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-600">
+                <Brain className="h-4 w-4 text-white" />
+              </div>
+              <Card className="max-w-2xl p-4">
+                <Badge variant="outline" className="mb-2">{r.tool}</Badge>
+                {r.result.code && <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto max-h-60">{r.result.code}</pre>}
+                {r.result.explanation && <p className="text-sm mt-1">{r.result.explanation}</p>}
+                {r.result.review && <p className="text-sm">{r.result.review}</p>}
+                {r.result.content && <p className="text-sm">{r.result.content}</p>}
+                {r.result.analysis && <p className="text-sm">{r.result.analysis}</p>}
+                {r.result.suggestions && r.result.suggestions.length > 0 && (
+                  <ul className="text-xs mt-1 list-disc list-inside text-muted-foreground">
+                    {r.result.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                  </ul>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-2">{r.result.provider}/{r.result.model}</p>
+              </Card>
+            </div>
+          ))}
+
+          {(sendMessageMutation.isPending || isAiPending) && (
             <div className="flex gap-3 justify-start">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
                 <Sparkles className="h-4 w-4 text-primary-foreground animate-pulse" />
@@ -197,12 +270,28 @@ export default function ChatPage() {
       </ScrollArea>
       <div className="border-t p-4 bg-[#171312]">
         <div className="mx-auto max-w-4xl">
+          {/* AI tool selector */}
+          <div className="flex items-center gap-2 mb-2">
+            <Select value={aiTool} onValueChange={(v: AITool) => setAiTool(v)}>
+              <SelectTrigger className="w-44 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chat"><span className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> Chat</span></SelectItem>
+                <SelectItem value="code-review"><span className="flex items-center gap-1"><Code className="h-3 w-3" /> Code Review</span></SelectItem>
+                <SelectItem value="code-generate"><span className="flex items-center gap-1"><Wand2 className="h-3 w-3" /> Code Generate</span></SelectItem>
+                <SelectItem value="lore"><span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /> Lore Writer</span></SelectItem>
+                <SelectItem value="balance"><span className="flex items-center gap-1"><Scale className="h-3 w-3" /> Balance Analyzer</span></SelectItem>
+              </SelectContent>
+            </Select>
+            {aiTool !== 'chat' && <Badge variant="secondary" className="text-xs">Grudge AI</Badge>}
+          </div>
           <div className="flex items-end gap-3">
             <Button
               size="icon"
               className="h-10 w-10 shrink-0"
-              onClick={handleSend}
-              disabled={!message.trim() || sendMessageMutation.isPending}
+              onClick={aiTool === 'chat' ? handleSend : handleAiSend}
+              disabled={!message.trim() || sendMessageMutation.isPending || isAiPending}
               data-testid="button-send-message"
             >
               <Send className="h-4 w-4" />
@@ -210,8 +299,8 @@ export default function ChatPage() {
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask me anything about game development..."
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiTool === 'chat' ? handleSend() : handleAiSend(); } }}
+              placeholder={aiTool === 'chat' ? 'Ask me anything about game development...' : aiTool === 'code-review' ? 'Paste code to review...' : aiTool === 'code-generate' ? 'Describe what code to generate...' : aiTool === 'lore' ? 'Describe lore context...' : 'Describe game area to balance...'}
               className="min-h-10 max-h-32 resize-none flex-1 bg-[#1c1919]"
               data-testid="input-chat-message"
             />

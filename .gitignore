@@ -14,6 +14,7 @@ public/grudge-warlords/
 public/grudge-drive/
 public/games/
 client/public/assets/
+client/public/models/
 
 # Large binary docs
 docs/MiniWorldSprites/
@@ -22,6 +23,9 @@ extensions/
 # Environment files
 .env
 .env*.local
+
+# Reference engine project (not part of build)
+Grudge-Engine-Web-1/
 
 # Vercel
 .vercel

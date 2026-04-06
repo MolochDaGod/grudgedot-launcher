@@ -10,10 +10,12 @@ export interface Player {
   joinedAt: Date;
 }
 
+export type GameType = 'crown-clash' | 'rts-battle' | 'grudge-arena' | 'grudge-gangs' | 'gruda-wars' | 'decay' | 'mmo-world' | 'custom';
+
 export interface GameRoom {
   id: string;
   name: string;
-  gameType: 'crown-clash' | 'rts-battle' | 'custom';
+  gameType: GameType;
   hostId: string;
   players: Map<string, Player>;
   maxPlayers: number;
@@ -64,7 +66,7 @@ class LobbyManager {
 
       socket.on('room:create', (data: {
         name: string;
-        gameType: 'crown-clash' | 'rts-battle' | 'custom';
+        gameType: GameType;
         maxPlayers: number;
         isPrivate: boolean;
         password?: string;
@@ -208,7 +210,7 @@ class LobbyManager {
 
   private createRoom(hostId: string, data: {
     name: string;
-    gameType: 'crown-clash' | 'rts-battle' | 'custom';
+    gameType: GameType;
     maxPlayers: number;
     isPrivate: boolean;
     password?: string;

@@ -4,12 +4,10 @@
  * Implementations:
  *   - LocalFSProvider:    serves files from a local directory (dev)
  *   - VercelBlobProvider: uses @vercel/blob for Vercel deployments
- *   - ReplitProvider:     delegates to existing GCS sidecar (backward compat)
  *
  * The active provider is selected by the STORAGE_PROVIDER env var:
  *   STORAGE_PROVIDER=local   → LocalFSProvider (default for dev)
  *   STORAGE_PROVIDER=vercel  → VercelBlobProvider
- *   STORAGE_PROVIDER=replit  → ReplitProvider (existing objectStorage.ts)
  */
 
 import fs from "fs/promises";
@@ -207,6 +205,7 @@ export class VercelBlobProvider implements StorageProvider {
     contentType: string
   ): Promise<UploadResult> {
     // Dynamic import to avoid requiring @vercel/blob when not on Vercel
+    // @ts-ignore — @vercel/blob is optional, only available on Vercel
     const { put } = await import("@vercel/blob");
     const pathname = `${folder}/${filename}`;
 
@@ -223,6 +222,7 @@ export class VercelBlobProvider implements StorageProvider {
   }
 
   async getUrl(storagePath: string): Promise<string> {
+    // @ts-ignore — @vercel/blob is optional, only available on Vercel
     const { head } = await import("@vercel/blob");
     try {
       const blob = await head(storagePath);
@@ -233,10 +233,11 @@ export class VercelBlobProvider implements StorageProvider {
   }
 
   async list(prefix?: string): Promise<StorageFile[]> {
+    // @ts-ignore — @vercel/blob is optional, only available on Vercel
     const { list } = await import("@vercel/blob");
     const result = await list({ prefix: prefix || undefined });
 
-    return result.blobs.map((blob) => ({
+    return result.blobs.map((blob: any) => ({
       name: blob.pathname.split("/").pop() || blob.pathname,
       path: blob.pathname,
       size: blob.size,
@@ -247,6 +248,7 @@ export class VercelBlobProvider implements StorageProvider {
   }
 
   async exists(storagePath: string): Promise<boolean> {
+    // @ts-ignore — @vercel/blob is optional, only available on Vercel
     const { head } = await import("@vercel/blob");
     try {
       await head(storagePath);
@@ -257,6 +259,7 @@ export class VercelBlobProvider implements StorageProvider {
   }
 
   async delete(storagePath: string): Promise<boolean> {
+    // @ts-ignore — @vercel/blob is optional, only available on Vercel
     const { del } = await import("@vercel/blob");
     try {
       await del(storagePath);
@@ -272,6 +275,7 @@ export class VercelBlobProvider implements StorageProvider {
   }
 
   async getMetadata(storagePath: string): Promise<StorageFile | null> {
+    // @ts-ignore — @vercel/blob is optional, only available on Vercel
     const { head } = await import("@vercel/blob");
     try {
       const blob = await head(storagePath);

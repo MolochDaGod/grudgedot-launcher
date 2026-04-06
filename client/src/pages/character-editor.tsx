@@ -51,9 +51,25 @@ import {
   FolderOpen,
   AlertCircle,
   Cloud,
+  CloudUpload,
+  Database,
+  Search,
+  Play,
+  Image,
+  Swords,
+  Music,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { grudgeGameApi, type GrudgeCharacter, type GrudgeFaction } from "@/lib/grudgeBackendApi";
 import { GrudgeStorageBrowser } from "@/components/grudge-storage-browser";
+import { useObjectStoreUpload, useObjectStoreAssets, type R2Asset } from "@/lib/objectstore";
+import {
+  useOsAnimations, useOsSpriteCharacters, useModels3D,
+  getCharacterModelUrl, getSpriteCharacterUrl, getOsBaseUrl,
+  type OsAnimationsData, type SpriteCharacter, type SpriteAnimation,
+} from "@/lib/objectstore-gamedata";
 
 interface BodyPart {
   id: string;
@@ -200,6 +216,7 @@ function identifyBodyPart(name: string): { displayName: string; category: BodyPa
 
 export default function CharacterEditor() {
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -224,6 +241,65 @@ export default function CharacterEditor() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [webglError, setWebglError] = useState(false);
   const [storageBrowserOpen, setStorageBrowserOpen] = useState(false);
+  const [selectedGrudgeCharId, setSelectedGrudgeCharId] = useState<number | null>(null);
+
+  // Grudge backend characters & factions for the editor
+  const { data: grudgeChars = [], refetch: refetchGrudgeChars } = useQuery<GrudgeCharacter[]>({
+    queryKey: ['grudge', 'characters'],
+    queryFn: () => grudgeGameApi.listCharacters(),
+    enabled: isAuthenticated,
+  });
+
+  const { data: factions = [] } = useQuery<GrudgeFaction[]>({
+    queryKey: ['grudge', 'factions'],
+    queryFn: () => grudgeGameApi.listFactions(),
+  });
+
+  // ObjectStore data
+  const { data: animationsData } = useOsAnimations();
+  const { data: spriteCharsData } = useOsSpriteCharacters();
+  const { data: r2Assets } = useObjectStoreAssets({ category: 'character', limit: 50 });
+  const uploadMutation = useObjectStoreUpload();
+
+  const saveToCloud = useCallback(async () => {
+    if (!modelRef.current) {
+      toast({ title: "No Model", description: "Load a model first", variant: "destructive" });
+      return;
+    }
+
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      modelRef.current,
+      (result) => {
+        const data = result as ArrayBuffer;
+        const blob = new Blob([data], { type: "model/gltf-binary" });
+        const charName = grudgeChars.find(c => c.id === selectedGrudgeCharId)?.name || "character";
+        const file = new File([blob], `${charName}-${Date.now()}.glb`, { type: "model/gltf-binary" });
+
+        uploadMutation.mutate(
+          {
+            file,
+            category: "character",
+            tags: ["character", "editor", charName],
+            metadata: { grudgeCharId: selectedGrudgeCharId, source: "character-editor" },
+          },
+          {
+            onSuccess: (res) => {
+              toast({ title: "Saved to Cloud", description: `"${file.name}" uploaded to ObjectStore` });
+            },
+            onError: (err) => {
+              toast({ title: "Upload Failed", description: err.message, variant: "destructive" });
+            },
+          }
+        );
+      },
+      (error) => {
+        console.error("Export error:", error);
+        toast({ title: "Export Failed", description: "Failed to prepare model for upload", variant: "destructive" });
+      },
+      { binary: true }
+    );
+  }, [toast, grudgeChars, selectedGrudgeCharId, uploadMutation]);
 
   const initScene = useCallback(() => {
     if (!containerRef.current || rendererRef.current) return;
@@ -1131,6 +1207,34 @@ export default function CharacterEditor() {
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            {/* Backend character picker */}
+            {grudgeChars.length > 0 && (
+              <select
+                className="h-8 text-xs bg-gray-800 border border-gray-700 rounded px-2 text-white"
+                value={selectedGrudgeCharId ?? ''}
+                onChange={(e) => setSelectedGrudgeCharId(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Select Grudge Char</option>
+                {grudgeChars.map((ch) => (
+                  <option key={ch.id} value={ch.id}>{ch.name} (Lv {ch.level} {ch.class})</option>
+                ))}
+              </select>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!selectedGrudgeCharId) { toast({ title: 'Select a character first', variant: 'destructive' }); return; }
+                const inv = await grudgeGameApi.listInventory(selectedGrudgeCharId);
+                const profs = await grudgeGameApi.getProfessions(selectedGrudgeCharId);
+                toast({ title: 'Inventory Loaded', description: `${inv.length} items, ${profs.length} professions` });
+              }}
+              disabled={!selectedGrudgeCharId}
+              data-testid="button-load-inventory"
+            >
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Load Inventory
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -1140,6 +1244,20 @@ export default function CharacterEditor() {
             >
               <Download className="h-4 w-4 mr-2" />
               Export
+            </Button>
+            <Button
+              size="sm"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={saveToCloud}
+              disabled={!modelLoaded || uploadMutation.isPending}
+              data-testid="button-save-cloud"
+            >
+              {uploadMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CloudUpload className="h-4 w-4 mr-2" />
+              )}
+              Save to Cloud
             </Button>
           </div>
         </div>
@@ -1166,14 +1284,18 @@ export default function CharacterEditor() {
 
       <div className="w-80 border-l border-gray-800 flex flex-col">
         <Tabs defaultValue="armor" className="flex-1 flex flex-col">
-          <TabsList className="grid grid-cols-2 m-4" data-testid="tabs-list-main">
+          <TabsList className="grid grid-cols-3 m-4" data-testid="tabs-list-main">
             <TabsTrigger value="armor" data-testid="tab-armor">
-              <Shield className="h-4 w-4 mr-2" />
+              <Shield className="h-4 w-4 mr-1" />
               Armor
             </TabsTrigger>
             <TabsTrigger value="presets" data-testid="tab-presets">
-              <Palette className="h-4 w-4 mr-2" />
+              <Palette className="h-4 w-4 mr-1" />
               Presets
+            </TabsTrigger>
+            <TabsTrigger value="assets" data-testid="tab-assets">
+              <Database className="h-4 w-4 mr-1" />
+              Assets
             </TabsTrigger>
           </TabsList>
 
@@ -1290,6 +1412,169 @@ export default function CharacterEditor() {
                   </CardContent>
                 </Card>
               ))}
+            </TabsContent>
+
+            <TabsContent value="assets" className="p-4 pt-0 space-y-4 mt-0">
+              {/* 3D Character Models */}
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <User className="h-4 w-4 text-red-600" />
+                    3D Characters ({animationsData?.characterModels.length ?? 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  {animationsData?.characterModels.map((model) => (
+                    <div
+                      key={model}
+                      className="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer transition-colors group"
+                      onClick={() => loadModel(getCharacterModelUrl(model), model)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Box className="h-3 w-3 text-amber-400 flex-shrink-0" />
+                        <span className="text-xs truncate">{model.replace('.glb', '')}</span>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 opacity-0 group-hover:opacity-100 text-xs">
+                        <Play className="h-3 w-3 mr-1" /> Load
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Animation Library */}
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Music className="h-4 w-4 text-red-600" />
+                    Animations ({animationsData?.total ?? 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {animationsData && Object.entries(animationsData.categories).map(([cat, info]) => (
+                    <div key={cat} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400 capitalize">{cat.replace(/_/g, ' ')}</span>
+                      <Badge variant="secondary" className="text-[10px]">{info.count}</Badge>
+                    </div>
+                  ))}
+                  <Separator className="bg-gray-800" />
+                  <p className="text-[10px] text-gray-500">Weapon Packs:</p>
+                  {animationsData && Object.entries(animationsData.weaponPacks).map(([pack, info]) => (
+                    <div key={pack} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">
+                        <Swords className="h-3 w-3 inline mr-1" />
+                        {pack.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-gray-500">{info.count} anims • {info.class}</span>
+                    </div>
+                  ))}
+                  <Separator className="bg-gray-800" />
+                  <p className="text-[10px] text-gray-500">Class Defaults:</p>
+                  {animationsData && Object.entries(animationsData.classDefaults).map(([cls, defaults]) => (
+                    <Collapsible key={cls}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full text-xs p-1 hover:bg-gray-800 rounded">
+                        <span className="font-medium">{cls}</span>
+                        <ChevronRight className="h-3 w-3" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-3 space-y-0.5">
+                        {Object.entries(defaults).map(([action, anim]) => (
+                          <div key={action} className="flex items-center justify-between text-[10px] text-gray-500">
+                            <span className="capitalize">{action}</span>
+                            <span className="font-mono">{anim}</span>
+                          </div>
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* 2D Sprite Characters */}
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Image className="h-4 w-4 text-red-600" />
+                    2D Sprites ({spriteCharsData?.totalCharacters ?? 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-48">
+                    <div className="space-y-1">
+                      {spriteCharsData?.characters.slice(0, 50).map((char) => (
+                        <Collapsible key={char.uuid}>
+                          <CollapsibleTrigger className="flex items-center justify-between w-full text-xs p-1.5 hover:bg-gray-800 rounded">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Circle className="h-2 w-2 text-green-500 fill-green-500 flex-shrink-0" />
+                              <span className="truncate">{char.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary" className="text-[10px]">{char.animationCount}</Badge>
+                              <ChevronRight className="h-3 w-3" />
+                            </div>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="pl-5 space-y-1 py-1">
+                            {char.animations.map((anim) => (
+                              <div key={anim.uuid} className="flex items-center gap-2">
+                                <img
+                                  src={getSpriteCharacterUrl(anim)}
+                                  alt={anim.name}
+                                  className="h-8 w-8 object-contain bg-black/50 rounded"
+                                  loading="lazy"
+                                />
+                                <div className="text-[10px]">
+                                  <p className="font-medium">{anim.name}</p>
+                                  <p className="text-gray-500">{anim.frameCount}f • {anim.frameW}x{anim.frameH}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* R2 Cloud Assets */}
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Cloud className="h-4 w-4 text-red-600" />
+                    Cloud Assets ({r2Assets?.count ?? 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {r2Assets?.items.length ? (
+                    <div className="space-y-1">
+                      {r2Assets.items.map((asset) => (
+                        <div
+                          key={asset.id}
+                          className="flex items-center justify-between p-1.5 rounded hover:bg-gray-800 cursor-pointer transition-colors group"
+                          onClick={() => {
+                            if (asset.file_url || asset.key) {
+                              const url = asset.file_url || `https://objectstore.grudge-studio.com/v1/assets/${encodeURIComponent(asset.id)}/file`;
+                              loadModel(url, asset.filename);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Box className="h-3 w-3 text-blue-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs truncate">{asset.filename}</p>
+                              <p className="text-[10px] text-gray-500">{(asset.size / 1024).toFixed(0)}KB</p>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="ghost" className="h-6 px-2 opacity-0 group-hover:opacity-100 text-xs">
+                            <Play className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 text-center py-3">No character assets in cloud yet. Use "Save to Cloud" to upload.</p>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </ScrollArea>
         </Tabs>

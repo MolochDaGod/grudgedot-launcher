@@ -288,3 +288,116 @@ class PuterService {
 
 export const puterService = new PuterService();
 export default puterService;
+
+// Convenience check used by engine components
+export const isPuterAvailable = (): boolean => {
+  return typeof window !== 'undefined' && !!window.puter;
+};
+
+// ============================================
+// Engine AI Integration (used by engine editor)
+// ============================================
+
+export const PUTER_AI_MODELS = {
+  GPT_4O: 'gpt-4o',
+  GPT_4O_MINI: 'gpt-4o-mini',
+  GPT_4_TURBO: 'gpt-4-turbo',
+  GPT_5_NANO: 'gpt-5-nano',
+  O1: 'o1',
+  O3_MINI: 'o3-mini',
+  GEMINI_2_FLASH: 'gemini-2.0-flash',
+  GEMINI_1_5_PRO: 'gemini-1.5-pro',
+  GEMINI_1_5_FLASH: 'gemini-1.5-flash',
+  CLAUDE_3_7_SONNET: 'claude-3-7-sonnet',
+  CLAUDE_3_5_SONNET: 'claude-3-5-sonnet',
+  CLAUDE_3_OPUS: 'claude-3-opus',
+  CLAUDE_3_HAIKU: 'claude-3-haiku',
+  DEEPSEEK_CHAT: 'deepseek-chat',
+  GROK_2: 'grok-2',
+  DALLE_3: 'dall-e-3',
+  FLUX: 'flux',
+  GPT_IMAGE: 'gpt-image',
+} as const;
+
+export const aiChat = async (prompt: string, model?: string): Promise<string> => {
+  if (!isPuterAvailable()) throw new Error('Puter.js is not available');
+  const response = await window.puter!.ai.chat(prompt, { model: model || 'gpt-4o' });
+  if (typeof response === 'string') return response;
+  if ((response as any)?.message?.content) return (response as any).message.content;
+  return String(response);
+};
+
+export const aiChatUniversal = async (prompt: string, model: string = PUTER_AI_MODELS.GEMINI_2_FLASH): Promise<string> => {
+  if (!isPuterAvailable()) throw new Error('Puter.js is not available');
+  const response = await window.puter!.ai.chat(prompt, { model });
+  if (typeof response === 'string') return response;
+  if ((response as any)?.message?.content) return (response as any).message.content;
+  return String(response);
+};
+
+export const aiChatStream = async (
+  prompt: string,
+  onChunk: (text: string) => void,
+  options?: { model?: string }
+): Promise<void> => {
+  if (!isPuterAvailable()) throw new Error('Puter.js is not available');
+  const response = await window.puter!.ai.chat(prompt, {
+    model: options?.model || 'gpt-4o',
+    stream: true
+  });
+  if (response && typeof (response as any)[Symbol.asyncIterator] === 'function') {
+    for await (const chunk of response as any) {
+      if (chunk?.text) onChunk(chunk.text);
+    }
+  } else if (typeof response === 'string') {
+    onChunk(response);
+  }
+};
+
+export const generateImage = async (prompt: string, options?: { model?: string }): Promise<HTMLImageElement | null> => {
+  if (!isPuterAvailable()) return null;
+  try {
+    return await (window.puter!.ai as any).txt2img(prompt, { model: options?.model || 'dall-e-3' });
+  } catch (error) {
+    console.error('Image generation failed:', error);
+    return null;
+  }
+};
+
+export const textToSpeech = async (text: string, options?: { voice?: string }): Promise<HTMLAudioElement | null> => {
+  if (!isPuterAvailable()) return null;
+  try {
+    return await (window.puter!.ai as any).txt2speech(text, { voice: options?.voice || 'alloy' });
+  } catch (error) {
+    console.error('Text-to-speech failed:', error);
+    return null;
+  }
+};
+
+export const showOpenFilePicker = async (): Promise<{ data: Blob; path: string; name: string } | null> => {
+  if (!isPuterAvailable()) return null;
+  try {
+    const result = await (window.puter as any).ui.showOpenFilePicker();
+    const file = Array.isArray(result) ? result[0] : result;
+    if (!file) return null;
+    const data = typeof file.content === 'function'
+      ? await file.content()
+      : (typeof file.read === 'function' ? await file.read() : null);
+    if (!data) return null;
+    return { data, path: file.path || '', name: file.name || '' };
+  } catch (error) {
+    console.error('File picker failed:', error);
+    return null;
+  }
+};
+
+export const showSaveFilePicker = async (content: string | Blob, filename: string): Promise<{ path: string } | null> => {
+  if (!isPuterAvailable()) return null;
+  try {
+    const result = await (window.puter as any).ui.showSaveFilePicker(content, filename);
+    return { path: result?.path || result?.name || filename };
+  } catch (error) {
+    console.error('Save file picker failed:', error);
+    return null;
+  }
+};

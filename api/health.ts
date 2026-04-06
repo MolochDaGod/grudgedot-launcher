@@ -6,9 +6,9 @@ export default function handler(_req: any, res: any) {
     timestamp: new Date().toISOString(),
     runtime: process.version,
     env: {
-      hasDatabase: !!process.env.DATABASE_URL,
+      grudgeBackend: process.env.GRUDGE_BACKEND_URL || 'https://api.grudge-studio.com',
       hasSessionSecret: !!process.env.SESSION_SECRET,
-      hasSupabase: !!process.env.db_SUPABASE_URL,
+      hasXaiKey: !!process.env.XAI_API_KEY,
       nodeEnv: process.env.NODE_ENV || 'not-set',
     },
   });

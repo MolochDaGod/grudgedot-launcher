@@ -1,0 +1,18 @@
+{
+  "slug": "grudge-engine",
+  "title": "Grudge Engine",
+  "version": "1.0.0",
+  "description": "Full BabylonJS-powered game development studio with 3D viewport, scene hierarchy, inspector, asset browser, AI tools, and play mode.",
+  "routes": [{ "path": "/engine", "entry": "tabs/grudge-engine/index.tsx" }],
+  "assets": {
+    "models": "assets/grudge-engine/models/"
+  },
+  "features": [
+    "babylonjs-viewport",
+    "scene-editor",
+    "inspector",
+    "ai-studio",
+    "combat-system",
+    "asset-browser"
+  ]
+}

@@ -1,33 +1,34 @@
 import "./env";
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "../shared/schema";
 
-neonConfig.webSocketConstructor = ws;
-
 // Schema-aware db type helper
-function _createDb(client: Pool) { return drizzle({ client, schema }); }
+function _createDb(client: postgres.Sql) { return drizzle(client, { schema }); }
 type DbType = ReturnType<typeof _createDb>;
 
-let _pool: Pool | null = null;
+let _sql: postgres.Sql | null = null;
 let _db: DbType | null = null;
 
-function getPool(): Pool {
-  if (!_pool) {
+function getSql(): postgres.Sql {
+  if (!_sql) {
     if (!process.env.DATABASE_URL) {
       throw new Error(
         "DATABASE_URL must be set. Did you forget to provision a database?",
       );
     }
-    _pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    _sql = postgres(process.env.DATABASE_URL, {
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
   }
-  return _pool;
+  return _sql;
 }
 
 function getDb(): DbType {
   if (!_db) {
-    _db = drizzle({ client: getPool(), schema });
+    _db = drizzle(getSql(), { schema });
   }
   return _db;
 }
@@ -37,10 +38,10 @@ export function isDatabaseConfigured(): boolean {
   return !!process.env.DATABASE_URL;
 }
 
-// Lazy proxies — only connect when first accessed
-export const pool = new Proxy({} as Pool, {
+/** The raw postgres.js SQL client (lazy) */
+export const sql = new Proxy({} as postgres.Sql, {
   get(_target, prop) {
-    return Reflect.get(getPool(), prop);
+    return Reflect.get(getSql(), prop);
   },
 });
 
