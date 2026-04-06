@@ -46,7 +46,7 @@ export const GRUDACHAIN_API = {
   vibeChat: `${GRUDACHAIN_URL}/ai/chat`,
   // SDK & Storage
   sdkInfo: `${GRUDACHAIN_URL}/sdk/info`,
-  storageInfo: `${GRUDACHAIN_URL}/health`,
+  storageInfo: `${GRUDACHAIN_URL}/storage/info`,
   storageList: `${GRUDACHAIN_URL}/health`,
   // Grudge Studio integration
   grudgeStudioConfig: `${GRUDACHAIN_URL}/health`,
