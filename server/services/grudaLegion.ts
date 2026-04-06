@@ -1,5 +1,11 @@
 /**
  * GRUDA Legion Service
+ * Server-side proxy to the VPS game-api (api.grudge-studio.com).
+ * Keeps API keys server-side and adds Puter account linkage + cloud storage best practices.
+ *
+ * Production: https://api.grudge-studio.com (VPS/Coolify)
+ * Endpoints proxied: /health, /ai/chat, /ai/generate-code,
+ *   /characters, /economy, /crafting, /islands, /factions, /missions, /inventory, /professions
  * Server-side proxy to the VPS-deployed GRUDA Legion AI node system.
  * Keeps API keys server-side and adds Puter account linkage + cloud storage best practices.
  *
@@ -182,7 +188,7 @@ export function registerGrudaLegionRoutes(app: Express) {
       status: allHealthy ? "healthy" : "degraded",
       timestamp: new Date().toISOString(),
       services: {
-        grudaLegion: {
+        gameApi: {
           url: GRUDACHAIN_URL,
           status: vpsHealth.ok ? "healthy" : "unreachable",
           data: vpsHealth.data,
@@ -201,6 +207,7 @@ export function registerGrudaLegionRoutes(app: Express) {
     });
   });
 
+  // ─── Vibe AI proxy (VPS ai-agent, proxied via game-api) ───
   // ─── Vibe AI proxy (VPS game-api serves these natively) ───
   app.get("/api/vibe/providers", async (_req, res) => {
     const result = await proxyFetch(GRUDACHAIN_API.vibeProviders);
@@ -436,6 +443,54 @@ export function registerGrudaLegionRoutes(app: Express) {
     });
   });
 
+  // ─── VPS Game API proxy routes ───
+  // These proxy to api.grudge-studio.com game-api endpoints with JWT forwarding
+
+  const gameApiProxy = (route: string) => async (req: any, res: any) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const authHeader = req.headers.authorization;
+    if (authHeader) headers["Authorization"] = authHeader;
+
+    const result = await proxyFetch(`${GAME_API_GRUDA}${route}`, {
+      method: req.method,
+      headers,
+      ...(req.method !== "GET" ? { body: JSON.stringify(req.body) } : {}),
+    });
+    res.status(result.status).json(result.data);
+  };
+
+  // Characters
+  app.get("/api/gruda-legion/characters", gameApiProxy("/characters"));
+  app.post("/api/gruda-legion/characters", gameApiProxy("/characters"));
+
+  // Economy
+  app.get("/api/gruda-legion/economy/balance", gameApiProxy("/economy/balance"));
+  app.post("/api/gruda-legion/economy/transfer", gameApiProxy("/economy/transfer"));
+
+  // Crafting
+  app.get("/api/gruda-legion/crafting/recipes", gameApiProxy("/crafting/recipes"));
+  app.post("/api/gruda-legion/crafting/craft", gameApiProxy("/crafting/craft"));
+
+  // Islands
+  app.get("/api/gruda-legion/islands", gameApiProxy("/islands"));
+
+  // Factions
+  app.get("/api/gruda-legion/factions", gameApiProxy("/factions"));
+
+  // Missions
+  app.get("/api/gruda-legion/missions", gameApiProxy("/missions"));
+
+  // Professions
+  app.get("/api/gruda-legion/professions/:characterId", (req: any, res: any) =>
+    gameApiProxy(`/professions/${req.params.characterId}`)(req, res)
+  );
+
+  // Inventory
+  app.get("/api/gruda-legion/inventory/:characterId", (req: any, res: any) =>
+    gameApiProxy(`/inventory/${req.params.characterId}`)(req, res)
+  );
+
+  console.log("✅ GRUDA Legion proxy routes registered (VPS game-api + AI)");
   // ─── Puter AI Legion routes ──────────────────────────────────────────
   // These routes use the GRUDACHAIN Puter account’s paid membership to access
   // 500+ AI models free via puter.ai. Falls back to Legion Hub if Puter fails.
