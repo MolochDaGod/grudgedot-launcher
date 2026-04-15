@@ -1,0 +1,26 @@
+{
+  "slug": "character-creator",
+  "title": "Character Creator",
+  "version": "1.0.0",
+  "description": "Modular 3D race character editor with GLTF models, equipment system, class/profession skill trees, weapon mastery, souls-like boss fight arena, and PostFX pipeline.",
+  "routes": [{ "path": "/character-creator", "entry": "tabs/character-creator/index.tsx" }],
+  "assets": {
+    "models": "assets/character-creator/models/",
+    "environment": "assets/character-creator/environment/"
+  },
+  "features": [
+    "threejs-viewport",
+    "gltf-loader",
+    "smart-loader",
+    "equipment-system",
+    "animation-blender",
+    "postfx-pipeline",
+    "boss-fight-arena",
+    "bone-attachment",
+    "character-persistence",
+    "class-skill-trees",
+    "weapon-mastery"
+  ],
+  "externalUrl": "https://playground-teal-zeta.vercel.app",
+  "repository": "https://github.com/MolochDaGod/grudge-character-creator"
+}
