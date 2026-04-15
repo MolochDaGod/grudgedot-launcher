@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <defs><radialGradient id="sk" cx="0.4" cy="0.35" r="0.6"><stop offset="0%" stop-color="#f0e0c0"/><stop offset="100%" stop-color="#a08060"/></radialGradient></defs>
+  <ellipse cx="14" cy="12" rx="9" ry="10" fill="url(#sk)" stroke="#604020" stroke-width="0.5"/>
+  <!-- Eyes -->
+  <ellipse cx="10" cy="11" rx="2.5" ry="3" fill="#201008"/>
+  <ellipse cx="18" cy="11" rx="2.5" ry="3" fill="#201008"/>
+  <ellipse cx="10" cy="10.5" rx="1" ry="1.2" fill="rgba(255,100,100,0.4)"/>
+  <ellipse cx="18" cy="10.5" rx="1" ry="1.2" fill="rgba(255,100,100,0.4)"/>
+  <!-- Nose -->
+  <path d="M13,14 L14,16 L15,14" fill="#402010"/>
+  <!-- Jaw -->
+  <path d="M8,18 Q8,24 14,24 Q20,24 20,18" fill="url(#sk)" stroke="#604020" stroke-width="0.5"/>
+  <g stroke="#604020" stroke-width="0.8">
+    <line x1="10" y1="18" x2="10" y2="22"/><line x1="12" y1="18" x2="12" y2="23"/>
+    <line x1="14" y1="18" x2="14" y2="24"/><line x1="16" y1="18" x2="16" y2="23"/>
+    <line x1="18" y1="18" x2="18" y2="22"/>
+  </g>
+</svg>

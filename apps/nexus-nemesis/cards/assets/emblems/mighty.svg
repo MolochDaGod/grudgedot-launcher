@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <defs><linearGradient id="mt" x1="0.5" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="#ffd700"/><stop offset="100%" stop-color="#b8860b"/></linearGradient></defs>
+  <!-- Crown -->
+  <polygon points="4,18 6,8 10,14 14,4 18,14 22,8 24,18" fill="url(#mt)" stroke="#8b6508" stroke-width="0.5"/>
+  <rect x="4" y="18" width="20" height="4" rx="1" fill="url(#mt)" stroke="#8b6508" stroke-width="0.5"/>
+  <!-- Gems -->
+  <circle cx="14" cy="19.5" r="1.5" fill="#ff2222"/><circle cx="9" cy="19.5" r="1" fill="#2255ff"/><circle cx="19" cy="19.5" r="1" fill="#22cc44"/>
+  <!-- Point tips -->
+  <circle cx="6" cy="8" r="1" fill="#ffd700"/><circle cx="14" cy="4" r="1.2" fill="#ffd700"/><circle cx="22" cy="8" r="1" fill="#ffd700"/>
+</svg>

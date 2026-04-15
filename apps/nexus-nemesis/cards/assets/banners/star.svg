@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <defs><radialGradient id="sr" cx="0.4" cy="0.35"><stop offset="0%" stop-color="#ffee88"/><stop offset="100%" stop-color="#ddaa00"/></radialGradient></defs>
+  <polygon points="10,1 12.5,7 19,7.5 14,12 15.5,18.5 10,15 4.5,18.5 6,12 1,7.5 7.5,7" fill="url(#sr)" stroke="#aa8800" stroke-width="0.3"/>
+  <polygon points="10,4 11.5,8 15,8.5" fill="rgba(255,255,255,0.2)"/>
+</svg>

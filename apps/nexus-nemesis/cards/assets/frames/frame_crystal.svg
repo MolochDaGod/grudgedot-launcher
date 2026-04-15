@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 310">
+  <defs>
+    <linearGradient id="cr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(100,200,255,0.3)"/>
+      <stop offset="50%" stop-color="rgba(150,220,255,0.1)"/>
+      <stop offset="100%" stop-color="rgba(100,200,255,0.25)"/>
+    </linearGradient>
+  </defs>
+  <rect width="220" height="310" rx="12" fill="none"/>
+  <rect x="2" y="2" width="216" height="306" rx="11" fill="none" stroke="url(#cr)" stroke-width="3"/>
+  <rect x="6" y="6" width="208" height="298" rx="9" fill="none" stroke="rgba(150,220,255,0.15)" stroke-width="1"/>
+  <!-- Top decorative bar -->
+  <rect x="30" y="4" width="160" height="2" rx="1" fill="rgba(150,220,255,0.3)"/>
+  <rect x="50" y="7" width="120" height="1" rx="0.5" fill="rgba(150,220,255,0.15)"/>
+  <!-- Bottom decorative bar -->
+  <rect x="30" y="304" width="160" height="2" rx="1" fill="rgba(150,220,255,0.3)"/>
+  <!-- Corner gems -->
+  <g fill="rgba(150,220,255,0.5)">
+    <circle cx="12" cy="12" r="4"/><circle cx="208" cy="12" r="4"/>
+    <circle cx="12" cy="298" r="4"/><circle cx="208" cy="298" r="4"/>
+  </g>
+  <g fill="rgba(200,240,255,0.8)">
+    <circle cx="12" cy="12" r="1.5"/><circle cx="208" cy="12" r="1.5"/>
+    <circle cx="12" cy="298" r="1.5"/><circle cx="208" cy="298" r="1.5"/>
+  </g>
+</svg>

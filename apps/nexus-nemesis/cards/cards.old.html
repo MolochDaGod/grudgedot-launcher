@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Season 0 Card Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=MedievalSharp&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'grudge-dark': '#0a0e1a',
+                        'grudge-primary': '#141a2e',
+                        'grudge-accent': '#10b981',
+                        'ethereal-glow': '#10b981',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: radial-gradient(ellipse at center, #141a2e 0%, #0a0e1a 70%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+        .font-medieval { font-family: 'MedievalSharp', cursive; }
+
+        /* ============ CARD ============ */
+        .nexus-card {
+            position: relative;
+            width: 220px;
+            height: 310px;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            flex-shrink: 0;
+        }
+        .nexus-card:hover {
+            transform: translateY(-8px) scale(1.03);
+        }
+        .nexus-card .layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+        }
+        .nexus-card .card-base {
+            z-index: 1;
+            object-fit: cover;
+        }
+        .nexus-card .card-art {
+            z-index: 2;
+            object-fit: contain;
+            top: 2%; left: 5%; width: 90%; height: 60%;
+        }
+        .nexus-card .card-art-overlay {
+            z-index: 3;
+            object-fit: cover;
+            opacity: 0.15;
+        }
+        .nexus-card .card-frame {
+            z-index: 5;
+            object-fit: cover;
+        }
+        .nexus-card .card-ornament {
+            z-index: 6;
+            object-fit: contain;
+            opacity: 0.5;
+            mix-blend-mode: screen;
+        }
+        /* Info panel area */
+        .nexus-card .info-zone {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 38%;
+            z-index: 10;
+        }
+        .nexus-card .info-bg {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 0 0 12px 12px;
+        }
+        .nexus-card .card-name {
+            position: absolute;
+            top: 2px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 0.72rem;
+            text-align: center;
+            width: 80%;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7);
+            line-height: 1.1;
+            color: #fff;
+        }
+        .nexus-card .card-banner {
+            position: absolute;
+            top: -6px; left: 50%;
+            transform: translateX(-50%);
+            width: 75%; height: auto;
+            z-index: 14;
+            opacity: 0.9;
+        }
+        .nexus-card .card-flavor {
+            position: absolute;
+            top: 24px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 0.52rem;
+            text-align: center;
+            width: 78%;
+            color: #e0d6c0;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            line-height: 1.2;
+            opacity: 0.9;
+        }
+        .nexus-card .card-abilities-text {
+            position: absolute;
+            top: 50px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            font-size: 0.48rem;
+            text-align: center;
+            width: 82%;
+            color: #ffd700;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+            font-weight: bold;
+            line-height: 1.15;
+        }
+
+        /* Stat bubbles */
+        .stat-bubble {
+            position: absolute;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px; height: 42px;
+        }
+        .stat-bubble .stat-bg {
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .stat-bubble .stat-frame {
+            position: absolute;
+            width: 110%; height: 110%;
+            top: -5%; left: -5%;
+            object-fit: contain;
+        }
+        .stat-bubble .stat-icon {
+            position: absolute;
+            width: 55%; height: 55%;
+            object-fit: contain;
+            top: -2px; left: 50%;
+            transform: translateX(-50%);
+            opacity: 0.3;
+        }
+        .stat-bubble .stat-value {
+            position: relative;
+            z-index: 5;
+            font-family: 'Cinzel', serif;
+            font-weight: 900;
+            font-size: 1.1rem;
+            text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8);
+            color: #fff;
+            margin-top: 2px;
+        }
+        .stat-cost { top: 4px; right: 4px; }
+        .stat-attack { bottom: 4px; left: 4px; }
+        .stat-health { bottom: 4px; right: 4px; }
+
+        /* Crystal (mana cost) */
+        .crystal-bubble {
+            position: absolute;
+            top: 2px; right: 2px;
+            z-index: 22;
+            width: 46px; height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .crystal-bubble img {
+            position: absolute;
+            width: 100%; height: 100%;
+            object-fit: contain;
+        }
+        .crystal-bubble .crystal-val {
+            position: relative;
+            z-index: 5;
+            font-family: 'Cinzel', serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: #fff;
+            text-shadow: 0 0 8px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.9);
+        }
+
+        /* Emblem (sub-type icon) */
+        .card-emblem {
+            position: absolute;
+            top: 4px; left: 4px;
+            z-index: 20;
+            width: 28px; height: 28px;
+            opacity: 0.85;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.5));
+        }
+
+        /* Ability icons row */
+        .ability-row {
+            position: absolute;
+            bottom: 72px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 18;
+            display: flex;
+            gap: 3px;
+        }
+        .ability-row img {
+            width: 22px; height: 22px;
+            filter: drop-shadow(0 0 4px rgba(255,200,0,0.7));
+        }
+
+        /* Season badge */
+        .season-badge {
+            position: absolute;
+            bottom: 118px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            font-family: 'Cinzel', serif;
+            font-size: 0.45rem;
+            font-weight: 700;
+            padding: 1px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* UUID */
+        .card-uuid {
+            position: absolute;
+            top: 36px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 8;
+            font-size: 0.32rem;
+            color: rgba(255,255,255,0.35);
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        /* Rarity glow borders */
+        .rarity-common { box-shadow: 0 0 8px rgba(128,128,128,0.4); }
+        .rarity-uncommon { box-shadow: 0 0 12px rgba(0,255,0,0.5); }
+        .rarity-rare { box-shadow: 0 0 16px rgba(50,120,255,0.6); }
+        .rarity-epic { box-shadow: 0 0 20px rgba(180,0,255,0.7), inset 0 0 12px rgba(180,0,255,0.15); }
+        .rarity-legendary { box-shadow: 0 0 28px rgba(255,215,0,0.8), 0 0 50px rgba(255,165,0,0.4), inset 0 0 15px rgba(255,215,0,0.1); }
+        .rarity-signature { box-shadow: 0 0 35px rgba(0,255,128,0.8), 0 0 60px rgba(255,215,0,0.5), inset 0 0 20px rgba(0,255,128,0.15); }
+        .nexus-card:hover.rarity-legendary { box-shadow: 0 0 40px rgba(255,215,0,1), 0 0 70px rgba(255,165,0,0.6); }
+        .nexus-card:hover.rarity-epic { box-shadow: 0 0 30px rgba(180,0,255,0.9), 0 0 50px rgba(180,0,255,0.4); }
+
+        /* Rare trait overlay effects */
+        .trait-fire::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 7;
+            border-radius: 12px;
+            background: linear-gradient(180deg, transparent 30%, rgba(255,80,0,0.2) 70%, rgba(255,30,0,0.35) 100%);
+            animation: fireFlicker 2s infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes fireFlicker {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        .trait-life::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 7;
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(0,255,100,0.15) 0%, transparent 40%, rgba(0,255,100,0.2) 100%);
+            animation: lifeGlow 3s infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes lifeGlow {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .trait-foil::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 7;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 75%, rgba(255,255,255,0) 100%);
+            background-size: 200% 200%;
+            animation: foilSheen 3s infinite linear;
+            pointer-events: none;
+        }
+        @keyframes foilSheen {
+            0% { background-position: 200% 200%; }
+            100% { background-position: -200% -200%; }
+        }
+
+        /* ============ PACK OPENING ============ */
+        .pack-open-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(10,14,26,0.95), rgba(0,0,0,0.98));
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .pack-open-overlay.hidden { display: none; }
+
+        /* Card flip */
+        .flip-container {
+            perspective: 1000px;
+            width: 200px;
+            height: 280px;
+            margin: 8px;
+            cursor: pointer;
+        }
+        .flip-inner {
+            position: relative;
+            width: 100%; height: 100%;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .flip-inner.flipped { transform: rotateY(180deg); }
+        .flip-front, .flip-back {
+            position: absolute;
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .flip-back { transform: rotateY(180deg); }
+        .flip-front {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .flip-front img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        /* Pack cards scroll area */
+        .pack-cards-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px;
+            max-width: 95vw;
+        }
+
+        /* Reveal glow burst */
+        .reveal-burst {
+            position: absolute;
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 999;
+        }
+        .reveal-burst.active {
+            animation: burstGlow 1s ease-out forwards;
+        }
+        @keyframes burstGlow {
+            0% { opacity: 0.8; transform: scale(0.3); }
+            50% { opacity: 0.5; }
+            100% { opacity: 0; transform: scale(2); }
+        }
+
+        /* Particles */
+        .particle-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1001;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFall linear forwards;
+        }
+        @keyframes particleFall {
+            0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+            100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.2); }
+        }
+
+        /* Screen shake */
+        @keyframes screenShake {
+            0%, 100% { transform: translate(0,0); }
+            10% { transform: translate(-5px, -3px); }
+            20% { transform: translate(4px, 2px); }
+            30% { transform: translate(-3px, 4px); }
+            40% { transform: translate(5px, -2px); }
+            50% { transform: translate(-2px, 3px); }
+            60% { transform: translate(3px, -4px); }
+            70% { transform: translate(-4px, 1px); }
+            80% { transform: translate(2px, -3px); }
+            90% { transform: translate(-1px, 2px); }
+        }
+        .shake { animation: screenShake 0.5s ease-in-out; }
+
+        /* Pack selector */
+        .pack-card {
+            width: 180px;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .pack-card:hover {
+            transform: translateY(-6px) scale(1.05);
+            border-color: rgba(255,215,0,0.5);
+        }
+        .pack-card img {
+            width: 120px; height: 168px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 0 auto 12px;
+        }
+
+        /* Bright modal */
+        .bright-modal {
+            background: linear-gradient(135deg, rgba(255,255,255,0.97), rgba(240,235,225,0.97));
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            padding: 2rem;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalIn 0.4s ease-out;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .close-x {
+            position: absolute;
+            top: 10px; right: 14px;
+            font-size: 1.5rem;
+            color: #333;
+            cursor: pointer;
+            background: none;
+            border: none;
+            line-height: 1;
+        }
+
+        /* Settings panel */
+        .settings-panel {
+            max-height: 55vh;
+            overflow-y: auto;
+            background: rgba(20,26,46,0.95);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+
+        /* Card grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 24px;
+            justify-items: center;
+        }
+
+        /* Tabs */
+        .tab-btn {
+            padding: 8px 20px;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: rgba(16,185,129,0.2);
+            border-bottom: 2px solid #10b981;
+            color: #10b981;
+        }
+        .tab-btn:not(.active) {
+            background: rgba(255,255,255,0.05);
+            color: #888;
+        }
+
+        /* Popout card (for info modal) */
+        .popout-card {
+            width: 280px;
+            height: 390px;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- HEADER -->
+        <header class="mb-8">
+            <img src="https://i.imgur.com/qdcHcAl.png" alt="Nexus Season 0 Banner" class="w-full max-w-4xl mx-auto mb-4 rounded-lg">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h1 class="text-3xl font-bold text-ethereal-glow font-cinzel tracking-wide">Nexus Season 0</h1>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <div id="auth-section">
+                        <button id="login-btn" class="bg-grudge-accent hover:bg-opacity-80 text-white px-4 py-2 rounded-lg font-bold text-sm">Login</button>
+                        <button id="register-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm ml-1">Register</button>
+                    </div>
+                    <div id="user-section" class="hidden items-center gap-3">
+                        <span class="text-sm">Logged in: <span id="username-display" class="text-ethereal-glow font-bold"></span></span>
+                        <button id="logout-btn" class="bg-red-700 hover:bg-red-800 text-white px-3 py-1.5 rounded-lg text-sm">Logout</button>
+                    </div>
+                    <button id="buy-packs-btn" class="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white px-5 py-2 rounded-lg font-bold text-sm shadow-lg shadow-orange-900/40">Open Packs</button>
+                    <button id="mint-btn" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-5 py-2 rounded-lg font-bold text-sm shadow-lg shadow-emerald-900/40">Mint Card</button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-1 mb-6 border-b border-gray-700">
+                <button class="tab-btn active" data-tab="all-cards">All Cards</button>
+                <button class="tab-btn" data-tab="my-collection">My Collection (<span id="collection-count">0</span>)</button>
+            </div>
+        </header>
+
+        <!-- ALL CARDS TAB -->
+        <div id="all-cards-tab" class="card-grid mb-12"></div>
+
+        <!-- MY COLLECTION TAB -->
+        <div id="my-collection-tab" class="card-grid mb-12 hidden"></div>
+
+        <!-- Total Minted -->
+        <div class="text-center text-gray-500 text-sm mb-8">
+            Total Minted: <span id="global-mint-count" class="text-ethereal-glow font-bold">0</span> / 100,000
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bright-modal" style="max-width:360px;">
+            <button class="close-x" onclick="document.getElementById('login-modal').classList.add('hidden')">&#10005;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 font-cinzel">Login</h2>
+            <input type="text" id="login-username" placeholder="Username" class="w-full p-2.5 mb-3 bg-gray-100 text-black rounded-lg border border-gray-300">
+            <input type="password" id="login-password" placeholder="Password" class="w-full p-2.5 mb-4 bg-gray-100 text-black rounded-lg border border-gray-300">
+            <button id="do-login" class="w-full bg-grudge-accent text-white py-2.5 rounded-lg font-bold hover:bg-opacity-80">Login</button>
+        </div>
+    </div>
+
+    <!-- REGISTER MODAL -->
+    <div id="register-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bright-modal" style="max-width:360px;">
+            <button class="close-x" onclick="document.getElementById('register-modal').classList.add('hidden')">&#10005;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 font-cinzel">Register</h2>
+            <input type="text" id="reg-username" placeholder="Username" class="w-full p-2.5 mb-3 bg-gray-100 text-black rounded-lg border border-gray-300">
+            <input type="password" id="reg-password" placeholder="Password" class="w-full p-2.5 mb-4 bg-gray-100 text-black rounded-lg border border-gray-300">
+            <button id="do-register" class="w-full bg-grudge-accent text-white py-2.5 rounded-lg font-bold hover:bg-opacity-80">Register</button>
+        </div>
+    </div>
+
+    <!-- PACK SELECTION MODAL -->
+    <div id="pack-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
+        <div class="bright-modal" style="max-width: 650px;">
+            <button class="close-x" onclick="document.getElementById('pack-modal').classList.add('hidden')">&#10005;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 font-cinzel text-center">Choose Your Pack</h2>
+            <div class="flex flex-wrap justify-center gap-5">
+                <div class="pack-card bg-gradient-to-b from-gray-100 to-gray-200" data-pack="starter">
+                    <img src="assets/backs/back_green.png" alt="Starter Pack">
+                    <h3 class="font-cinzel font-bold text-gray-800 text-lg">Starter</h3>
+                    <p class="text-gray-500 text-xs mb-2">5 Cards</p>
+                    <span class="text-xs text-gray-400">2% Signature</span>
+                </div>
+                <div class="pack-card bg-gradient-to-b from-purple-50 to-purple-100 border-purple-200" data-pack="premium">
+                    <img src="assets/backs/back_blue.png" alt="Premium Pack">
+                    <h3 class="font-cinzel font-bold text-purple-800 text-lg">Premium</h3>
+                    <p class="text-purple-500 text-xs mb-2">10 Cards</p>
+                    <span class="text-xs text-purple-400">5% Signature</span>
+                </div>
+                <div class="pack-card bg-gradient-to-b from-yellow-50 to-amber-100 border-amber-300" data-pack="legendary">
+                    <img src="assets/backs/back_red.png" alt="Legendary Pack">
+                    <h3 class="font-cinzel font-bold text-amber-800 text-lg">Legendary</h3>
+                    <p class="text-amber-600 text-xs mb-2">3 Cards</p>
+                    <span class="text-xs text-amber-500">20% Signature</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PACK OPENING OVERLAY -->
+    <div id="pack-open-overlay" class="pack-open-overlay hidden">
+        <div id="particle-container" class="particle-container"></div>
+        <h2 class="text-2xl font-cinzel font-bold text-yellow-400 mb-2 z-10 relative" id="pack-title">Opening Pack...</h2>
+        <p class="text-gray-400 text-sm mb-4 z-10 relative">Click each card to reveal!</p>
+        <div class="pack-cards-area z-10 relative" id="pack-cards-area"></div>
+        <div class="mt-4 flex gap-4 z-10 relative">
+            <button id="reveal-all-btn" class="bg-yellow-600 hover:bg-yellow-500 text-white px-6 py-2 rounded-lg font-bold text-sm">Reveal All</button>
+            <button id="close-pack-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg text-sm">Close</button>
+        </div>
+    </div>
+
+    <!-- CARD INFO MODAL -->
+    <div id="info-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
+        <div class="relative bg-grudge-primary p-6 rounded-2xl max-w-lg w-full border border-gray-700" style="animation: modalIn 0.4s ease-out;">
+            <button class="close-x text-gray-300" onclick="document.getElementById('info-modal').classList.add('hidden')">&#10005;</button>
+            <div id="info-card-container" class="flex justify-center mb-4"></div>
+            <div id="info-details" class="text-center font-cinzel"></div>
+        </div>
+    </div>
+
+    <script>
+    // ==================== CONFIGURATION ====================
+    const ASSET = {
+        frames: {
+            blue: 'assets/frames/front_blue.png',
+            red: 'assets/frames/front_red.png',
+            green: 'assets/frames/front_green.png',
+            crystal: 'assets/frames/frame_crystal.png',
+            golden: 'assets/frames/frame_golden.png',
+            ornament: 'assets/frames/ornament_runes.png',
+            artOverlay: 'assets/frames/art_overlay.png',
+        },
+        backs: {
+            blue: 'assets/backs/back_blue.png',
+            red: 'assets/backs/back_red.png',
+            green: 'assets/backs/back_green.png',
+            crystal: 'assets/backs/back_crystal.png',
+        },
+        stats: {
+            blue: 'assets/stats/stat_blue.png',
+            red: 'assets/stats/stat_red.png',
+            green: 'assets/stats/stat_green.png',
+            orange: 'assets/stats/stat_orange.png',
+            purple: 'assets/stats/stat_purple.png',
+            yellow: 'assets/stats/stat_yellow.png',
+            brown: 'assets/stats/stat_brown.png',
+            border: 'assets/stats/stat_border.png',
+            frame: 'assets/stats/stat_icon_frame.png',
+        },
+        icons: {
+            sword: 'assets/icons/icon_sword.png',
+            heart: 'assets/icons/icon_heart.png',
+            shield: 'assets/icons/icon_shield.png',
+            flame: 'assets/icons/icon_flame.png',
+            storm: 'assets/icons/icon_storm.png',
+            drop: 'assets/icons/icon_drop.png',
+        },
+        crystals: {
+            blue: 'assets/crystals/crystal_blue.png',
+            red: 'assets/crystals/crystal_red.png',
+            green: 'assets/crystals/crystal_green.png',
+        },
+        emblems: {
+            skull: 'assets/emblems/skull.png',
+            sword: 'assets/emblems/sword.png',
+            shild: 'assets/emblems/shild.png',
+            magic: 'assets/emblems/magic.png',
+            heart: 'assets/emblems/heart_.png',
+            wing: 'assets/emblems/wing.png',
+            arrow: 'assets/emblems/arrow.png',
+            axe: 'assets/emblems/axe.png',
+            moon: 'assets/emblems/moon.png',
+            sun: 'assets/emblems/sun.png',
+            people: 'assets/emblems/people.png',
+            mighty: 'assets/emblems/mighty.png',
+        },
+        banners: {
+            gold: 'assets/banners/banner_gold.png',
+            infoPanel: 'assets/banners/info_panel.png',
+            heartGem: 'assets/banners/heart_gem.png',
+            shieldGem: 'assets/banners/shield_gem.png',
+            emerald: 'assets/banners/emerald.png',
+            star: 'assets/banners/star.png',
+        },
+        effects: {
+            light: 'assets/effects/light_glow.png',
+            rose1: 'assets/effects/rose1.png',
+            rose2: 'assets/effects/rose2.png',
+            gem1: 'assets/effects/gem1.png',
+            gem2: 'assets/effects/gem2.png',
+        }
+    };
+
+    // Tribe definitions with asset mappings
+    const tribes = {
+        silver: {
+            name: 'Iron Will',
+            cardBase: ASSET.frames.blue,
+            cardFrame: ASSET.frames.crystal,
+            cardBack: ASSET.backs.blue,
+            crystal: ASSET.crystals.blue,
+            statAttack: ASSET.stats.red,
+            statHealth: ASSET.stats.green,
+            statCost: ASSET.stats.blue,
+            ornament: ASSET.frames.ornament,
+            borderColor: '#4a90d9',
+            badgeColor: 'rgba(74,144,217,0.85)',
+            badgeText: '#fff',
+            nameColor: '#c8e6ff',
+            upgrade: 'Each Iron Will minion gains +1 HP at turn start if multiple on field',
+        },
+        red: {
+            name: 'Blood For Conquest',
+            cardBase: ASSET.frames.red,
+            cardFrame: ASSET.frames.golden,
+            cardBack: ASSET.backs.red,
+            crystal: ASSET.crystals.red,
+            statAttack: ASSET.stats.red,
+            statHealth: ASSET.stats.orange,
+            statCost: ASSET.stats.red,
+            ornament: null,
+            borderColor: '#d9442a',
+            badgeColor: 'rgba(200,40,20,0.85)',
+            badgeText: '#fff',
+            nameColor: '#ffccbb',
+            upgrade: '+1 Attack to existing Red minions on summon (this turn only)',
+        },
+        purple: {
+            name: 'Fabled',
+            cardBase: ASSET.frames.green,
+            cardFrame: ASSET.frames.crystal,
+            cardBack: ASSET.backs.green,
+            crystal: ASSET.crystals.green,
+            statAttack: ASSET.stats.purple,
+            statHealth: ASSET.stats.purple,
+            statCost: ASSET.stats.purple,
+            ornament: ASSET.frames.ornament,
+            borderColor: '#9b30ff',
+            badgeColor: 'rgba(155,48,255,0.85)',
+            badgeText: '#fff',
+            nameColor: '#e0ccff',
+            tint: 'hue-rotate(260deg) saturate(1.3)',
+            upgrade: 'Each Fabled reduces mana cost of other Fabled cards by 1 (min 0)',
+        },
+        orange: {
+            name: 'Tribal War',
+            cardBase: ASSET.frames.red,
+            cardFrame: ASSET.frames.golden,
+            cardBack: ASSET.backs.red,
+            crystal: ASSET.crystals.red,
+            statAttack: ASSET.stats.orange,
+            statHealth: ASSET.stats.orange,
+            statCost: ASSET.stats.orange,
+            ornament: null,
+            borderColor: '#e68a00',
+            badgeColor: 'rgba(230,138,0,0.85)',
+            badgeText: '#fff',
+            nameColor: '#ffe0a0',
+            tint: 'hue-rotate(30deg) saturate(1.5) brightness(1.1)',
+            upgrade: 'Spawns 1/1 Taunt minion on play',
+        },
+        signature: {
+            name: 'Ethereal Signature',
+            cardBase: ASSET.frames.blue,
+            cardFrame: ASSET.frames.crystal,
+            cardBack: ASSET.backs.crystal,
+            crystal: ASSET.crystals.blue,
+            statAttack: ASSET.stats.yellow,
+            statHealth: ASSET.stats.yellow,
+            statCost: ASSET.stats.yellow,
+            ornament: ASSET.frames.ornament,
+            borderColor: '#ffd700',
+            badgeColor: 'rgba(255,215,0,0.9)',
+            badgeText: '#1a1a00',
+            nameColor: '#fff5cc',
+            tint: 'sepia(0.3) saturate(1.8) hue-rotate(15deg)',
+            upgrade: 'One-of-one, -1 mana cost, +2/+2, max 1 on field, max 3 in deck',
+        }
+    };
+
+    // Sub-type → emblem mapping
+    const subTypeEmblems = {
+        'Ship': ASSET.emblems.wing,
+        'Crusade': ASSET.emblems.shild,
+        'Legion': ASSET.emblems.skull,
+        'Elf': ASSET.emblems.magic,
+        'Celestial': ASSET.emblems.sun,
+        'Lore': ASSET.emblems.moon,
+        'Spell': ASSET.emblems.magic,
+        'StarterM': ASSET.emblems.sword,
+    };
+
+    // Ability → icon mapping
+    const abilityIcons = {
+        'stealth': ASSET.icons.drop,
+        'taunt': ASSET.icons.shield,
+        'haste': ASSET.icons.storm,
+        'heal': ASSET.icons.heart,
+        'restore': ASSET.icons.heart,
+        'gold shield': ASSET.icons.shield,
+        'double strike': ASSET.icons.sword,
+        'ally boost': ASSET.icons.flame,
+        'poison': ASSET.icons.drop,
+    };
+
+    const heroCardIds = ['21', '55', '56', '52', '80', '92'];
+    let totalMinted = 0;
+    const maxMints = 100000;
+
+    // ==================== CSV DATA ====================
+    const csvData = `cardId,name,type,image,attack,health,cost,abilities,sub_type,flavor_text,rarity
+1,Stealth Drone,Minion,https://i.imgur.com/nJMY8NA.png,1,1,1,Stealth,Ship,Quick scouting unit cloaked in shadow.,Common
+2,Cowardly Priest,Minion,https://i.imgur.com/tjWUZus.png,1,1,1,Battlecry: Restore 1 Health to your hero.,Crusade,His prayers heal though his courage wanes.,Common
+3,Starborn Esper,Minion,https://i.imgur.com/dshnei4.png,1,2,1,,Lore,A fleeting spark of cosmic wonder.,Common
+4,Arcane Archer,Minion,https://i.imgur.com/dyPYSgc.png,2,3,2,Battlecry: Draw a card.,Lore,She channels the mysteries of the arcane.,Uncommon
+5,Alpha Skiff,Minion,https://i.imgur.com/z1fbkXx.png,2,1,2,Haste,Ship,Swift and lethal it strikes from the void.,Common
+6,Orcish Sniper,Spell,https://i.imgur.com/nlkfMpI.png,0,0,2,Deal 1 damage to all enemies.,Legion,Arrows rain from the shadows.,Common
+7,Mace Assassin,Minion,https://i.imgur.com/lwTIb66.png,4,2,3,Stealth,Crusade,His mace delivers justice in silence.,Uncommon
+8,Swarm Legion,Minion,https://i.imgur.com/Kr5SzLh.png,3,3,3,Battlecry: Summon a 1/1 Grudge with Taunt.,Legion,A horde driven by relentless fury.,Common
+9,Frozen Phantom,Minion,https://i.imgur.com/zA4lDwj.png,2,3,3,Taunt,Legion,A ghostly sentinel barring the path.,Common
+10,Crimson Shade,Minion,https://i.imgur.com/3aXjZ5b.png,2,3,3,Stealth,Elf,Burns with crimson energy.,Common
+11,Ruff Worker,Minion,https://i.imgur.com/d1GQxLH.png,2,3,3,Battlecry: Give a friendly minion +1 Health.,Crusade,His labor strengthens the righteous.,Common
+12,Luminous Watcher,Minion,https://i.imgur.com/wUHrPRU.png,2,3,3,At the start of your turn: Restore 1 Health to all friendly minions.,Legion,He watches those that watch.,Rare
+13,Rolling Thalar,Minion,https://i.imgur.com/XcvBmCy.png,2,3,3,Battlecry: Give all friendly minions +1 Attack this turn.,Elf,A monk whisper ignited his spirit.,Rare
+14,Battle Commander,Minion,https://i.imgur.com/e1y365m.png,2,4,3,Taunt,Crusade,Leads the charge with unbreakable resolve.,Common
+15,Night Wraith,Minion,https://i.imgur.com/SuhuNa6.png,2,3,4,Stealth,Legion,Strikes from the shadows.,Uncommon
+16,Night Lord,Minion,https://i.imgur.com/45Nkl3W.png,4,3,4,Battlecry: Give a friendly minion Stealth.,Elf,Roams the shadows cloaking allies.,Rare
+17,Gei-Eye,Minion,https://i.imgur.com/X18XmtN.png,3,3,4,Haste,Legion,Blind but swift his strikes are unerring.,Uncommon
+18,Salvation Stalker,Minion,https://i.imgur.com/WcoUO2G.png,2,2,4,Battlecry: Summon a 1/1 Grudge with Taunt.,Crusade,Seeks redemption in the chaos of war.,Common
+19,Storm Cavalier,Minion,https://i.imgur.com/Sb1Ev9O.png,3,4,4,Battlecry: Deal 2 damage to an enemy minion.,Crusade,His lance rides the storm fury.,Rare
+20,Flame Charger,Minion,https://i.imgur.com/dIIDbac.png,2,4,4,Double Strike,Legion,Charges with fiery speed.,Rare
+21,X3rror,Hero,https://i.imgur.com/4Nw3IQv.png,3,4,4,Battlecry: Summon two 1/1 Grudges with Taunt.,Elf,A glitch in Alvon fate sowing chaos.,Legendary
+22,Beta Cruiser,Minion,https://i.imgur.com/grlVpW6.png,3,3,3,Battlecry: Deal 2 damage to an enemy minion.,Ship,Master of deadly precision strikes.,Uncommon
+23,Enigmatic Warrior,Minion,https://i.imgur.com/JwcxWth.png,4,3,4,,Legion,Mysterious combatant with hidden motives.,Common
+24,Barrier Vessel,Minion,https://i.imgur.com/Lajvj8w.png,0,7,4,At the start of your turn: Gain +1 Attack.,Crusade,Unyielding defense that grows stronger.,Uncommon
+25,Void Sorcerer,Minion,https://i.imgur.com/MXz3jc3.png,3,4,5,Battlecry: Deal 3 damage to a random enemy minion.,Legion,Casts dark magic from the abyss.,Rare
+26,Light Mage,Minion,https://i.imgur.com/CKgcfXb.png,3,4,5,At the start of your turn: Restore 1 Health to all friendly minions.,Elf,Shields with radiant magic.,Rare
+27,Time Caster,Minion,https://i.imgur.com/x4Ljnll.png,5,4,5,Battlecry: Return a friendly minion to your hand.,Ship,Bends time to reshape the battlefield.,Rare
+28,Radiant Paladin,Minion,https://i.imgur.com/d5Q9KNl.png,5,4,5,Taunt,Crusade,Shines with radiant power.,Uncommon
+29,Vitality Totem,Minion,https://i.imgur.com/IQrV3et.png,3,5,5,Battlecry: Restore 2 Health to all friendly characters.,Elf,Heals wounds with gentle touch.,Uncommon
+30,Ironclad Sufferer,Minion,https://i.imgur.com/5j4Sc0m.png,4,4,5,Taunt,Legion,Heavy armored enforcer enduring pain.,Common
+31,Overlord Dragon,Minion,https://i.imgur.com/2goA55f.png,4,4,5,Battlecry: Deal 2 damage to all enemy minions.,Legion,Calls lightning from stormy skies.,Common
+32,Cerb,Minion,https://i.imgur.com/RGIuubn.png,3,5,5,Haste,Celestial,Speaks all languages with ease.,Common
+33,Abyssal Keeper,Minion,https://i.imgur.com/KaUDhZt.png,5,5,5,Taunt,Legion,Heals with dark energy.,Rare
+34,Arcane Missile,Spell,https://i.imgur.com/JuxTEX9.png,0,0,1,Deal 3 damage randomly split among enemy characters.,Spell,Bolts of arcane energy seek their mark.,Common
+35,Shadow Strike,Minion,https://i.imgur.com/cOAKCRP.png,4,4,4,Battlecry: Deal 4 damage to an enemy minion.,Legion,A blade cloaked in darkness.,Uncommon
+36,Green Doctor,Minion,https://i.imgur.com/xKQM1BX.png,3,3,5,Taunt. Battlecry: Restore 6 Health to a friendly character.,Crusade,His remedies mend the gravest wounds.,Epic
+37,Mind Control,Spell,https://i.imgur.com/IIz6wjR.png,0,0,8,Take control of an enemy minion.,Spell,A whisper that bends the strongest wills.,Common
+38,Starship RiVI,Minion,https://i.imgur.com/SpwgvuM.png,3,3,6,Stealth. Battlecry: Summon two 1/1 Grudges with Taunt.,Ship,Communicates with the dead.,Epic
+39,Star Hut,Minion,https://i.imgur.com/lszPOCd.png,0,4,4,Taunt. At the start of your turn: Restore 1 Health to all friendly minions.,Ship,Predicts enemy moves with foresight.,Uncommon
+40,Engineer Prime,Minion,https://i.imgur.com/QShonG5.png,4,4,6,Battlecry: Summon two 2/2 Grudges with Taunt.,Crusade,Fortifies the front lines with precision.,Rare
+41,Starship Beta,Minion,https://i.imgur.com/BSurWbZ.png,3,3,4,Battlecry: Deal 2 damage to an enemy minion.,Ship,Deals precise strikes to fortifications.,Uncommon
+42,Starship Gamma,Minion,https://i.imgur.com/5PSOVVc.png,2,4,4,At the start of your turn: Restore 1 Health to all friendly minions.,Ship,Heals allies with cosmic energy.,Common
+43,Star Cruiser,Minion,https://i.imgur.com/0iNkSRU.png,6,5,7,Battlecry: Deal 3 damage to all enemy minions.,Ship,A juggernaut that crushes resistance.,Epic
+44,Heat Seeker,Spell,https://i.imgur.com/GBsrUb1.png,0,0,2,Deal 3 damage to a target minion.,Spell,Tracks prey across the battlefield.,Common
+45,Spirit Of Grudge,Minion,https://i.imgur.com/KqSF1B2.png,3,3,3,,Legion,Grants Undead strength that endures.,Common
+46,The Knight Helper,Minion,https://i.imgur.com/0XcU175.png,3,3,3,Battlecry: Give a friendly minion +1 Attack.,Crusade,Grants Human loyalty to the cause.,Common
+47,Groad,Minion,https://i.imgur.com/WYSsqMY.png,4,2,3,Taunt,Legion,Grants Orc ferocity in battle.,Common
+48,Shelenif,Minion,https://i.imgur.com/6CXJn5s.png,2,4,3,,Elf,Grants Elf grace and precision.,Common
+49,Druu hKarno,Minion,https://i.imgur.com/3NbOaQP.png,3,3,3,Battlecry: Deal 1 damage to all enemy minions.,Legion,Grants Dwarf resilience in combat.,Uncommon
+50,Kagnoat,Minion,https://i.imgur.com/a8pRbUI.png,4,3,3,Taunt,Crusade,Grants Barbarian might and fury.,Common
+51,Sly Skuller,Minion,https://i.imgur.com/0isS1vU.png,2,3,2,Poison Touch,Legion,Swift skeletal fighter with venomous strikes.,Uncommon
+52,Sleeping Dragon,Hero,https://i.imgur.com/T1O3w1g.png,4,3,4,Battlecry: Deal 3 damage to all enemy minions.,Legion,Alvon guardian awakened to protect.,Legendary
+53,Tar-Gan,Minion,https://i.imgur.com/iCnwBhv.png,2,2,2,Stealth,Legion,Stealthy orc scout with deadly aim.,Common
+54,Barbarian Mace,Minion,https://i.imgur.com/3SkE6VG.png,4,2,3,,Crusade,Barbarian wielding a heavy mace.,Common
+55,The Breaker of Alvon,Hero,https://i.imgur.com/0sEB7lc.png,3,4,4,Gold Shield. Battlecry: Deal 3 damage to an enemy minion.,Crusade,Alvon warrior shattering chains.,Legendary
+56,The Beloved of Alvon,Hero,https://i.imgur.com/ZHEyuU8.png,3,5,4,Battlecry: Restore 5 Health to all friendly characters.,Crusade,Alvon heart mending the broken.,Legendary
+57,Rilen LongBow,Minion,https://i.imgur.com/ydKwqEy.png,3,2,3,Battlecry: Deal 1 damage to an enemy.,Elf,Precise elf archer with deadly aim.,Common
+58,Great Grunt,Minion,https://i.imgur.com/mQFU119.png,5,5,6,Gold Shield,Crusade,Armored knight with divine strength.,Epic
+59,Dawned Knight,Minion,https://i.imgur.com/nDkKg5i.png,4,5,5,Taunt,Crusade,Heavily armored dwarf knight.,Uncommon
+60,Yorda,Minion,https://i.imgur.com/UvZsOLQ.png,5,4,6,Battlecry: Give all friendly minions +1 Attack.,Crusade,Bats with thunderous force.,Common
+61,Proud Spellbinder,Minion,https://i.imgur.com/xW35xEX.png,3,3,4,Battlecry: Draw a Spell card.,Crusade,Casts arcane spells with mastery.,Uncommon
+62,Calvin,Minion,https://i.imgur.com/mHO0KZa.png,4,4,4,Haste,Crusade,Glides with icy magic.,Epic
+63,Uneasy Tombs,Minion,https://i.imgur.com/7TXqqHZ.png,3,3,3,Battlecry: Summon a 1/1 Grudge with Taunt.,Legion,Undead soldier with enduring spirit.,Common
+64,Gabsiona Federi,Minion,https://i.imgur.com/qi0ebX7.png,3,3,4,Taunt,Crusade,Human wizard casting powerful spells.,Common
+65,Sergeant of the Mace,Minion,https://i.imgur.com/1W6WH38.png,3,2,3,Battlecry: Deal 2 damage to all enemy minions.,Crusade,Human archer with deadly precision.,Common
+66,Clever Neve,Minion,https://i.imgur.com/RHdJFRv.png,2,4,3,Battlecry: Draw a card.,Elf,Undead warrior with cunning tactics.,Uncommon
+67,Double Shot,Minion,https://i.imgur.com/itUYjDf.png,3,2,3,Battlecry: Deal 2 damage to an enemy minion.,Crusade,Undead archer with ghostly arrows.,Common
+68,Wise Stien,Minion,https://i.imgur.com/UWivjA4.png,2,3,3,,Crusade,Explosive barrel used as a weapon.,Common
+69,Gorgoz,Minion,https://i.imgur.com/cCtGqVi.png,3,2,3,Battlecry: Deal 2 damage to an enemy.,Legion,Orc archer with a heavy bow.,Common
+70,Matra Healer,Minion,https://i.imgur.com/0pEl5QA.png,2,4,4,Battlecry: Restore 4 Health to a friendly minion.,Elf,Heals allies with divine light.,Uncommon
+71,Arturo of the South,Minion,https://i.imgur.com/TmWcZRr.png,5,5,6,Battlecry: Deal 3 damage to an enemy minion.,Crusade,Protects with holy power.,Common
+72,Gruuubk,Minion,https://i.imgur.com/OMos5zZ.png,5,4,5,Taunt,Legion,Heavy orc with a massive axe.,Uncommon
+73,Champion of Hope,Minion,https://i.imgur.com/dhHC7K5.png,4,5,5,Taunt. Battlecry: Restore 5 Health to all friendly characters.,Crusade,Heavily armored human warrior.,Common
+74,Hope Demand,Minion,https://i.imgur.com/7VqdkUB.png,4,5,5,Battlecry: Give all friendly minions +1/+1.,Crusade,Undead giant with a spiked club.,Uncommon
+75,WareTree,Minion,https://i.imgur.com/gA5V2vd.png,3,6,5,Taunt,Elf,Living tree that attacks with roots.,Uncommon
+76,Small Troll,Minion,https://i.imgur.com/ep8ADev.png,3,3,3,,Legion,Small troll with regenerative powers.,Common
+77,John Wayne Captain,Minion,https://i.imgur.com/V72hBmF.png,4,5,5,Battlecry: Deal 2 damage to all enemy minions. Stealth.,Ship,Commands the skies with grit and guile.,Epic
+78,Dwarf Enforcer,Minion,https://i.imgur.com/jTJc7XE.png,4,6,5,Taunt,Crusade,Heavy dwarf with a warhammer.,Uncommon
+79,Scourge,Minion,https://i.imgur.com/2WUEurF.png,2,2,2,Battlecry: Deal 2 damage to all enemy minions.,Legion,Dark familiar that boosts spells.,Epic
+80,Faith Bearer,Hero,https://i.imgur.com/oXH8vh7.png,5,5,6,Battlecry: Give all friendly minions Gold Shield.,Crusade,Alvon priest uniting its champions.,Legendary
+81,Glorified Ending,Spell,https://i.imgur.com/E1q4QX0.png,0,0,5,Destroy an enemy minion.,Spell,A fiery judgment upon the battlefield.,Uncommon
+82,Clasmic Bolt,Spell,https://i.imgur.com/4zdaQ55.png,0,0,4,Deal 5 damage to all enemy characters.,Spell,A surge of energy that scorches foes.,Rare
+83,Spell Hammer,Spell,https://i.imgur.com/wOfSH4s.png,0,0,3,Deal 3 damage to a random enemy and draw a card.,Spell,A mystic strike that fuels sorcery.,Common
+84,Swirling Storm,Spell,https://i.imgur.com/laUgc5E.png,0,0,5,Deal 4 damage to all enemy minions.,Spell,A tempest that tears through ranks.,Epic
+85,Fireball,Spell,https://i.imgur.com/46zVuKY.png,0,0,4,Deal 6 damage to a target.,Spell,A blazing orb of destruction.,Rare
+86,Swipe of the Mage,Spell,https://i.imgur.com/uA5Kpet.png,0,0,4,Take control of an enemy minion with 3 or less Attack.,Spell,A flick of the wrist weakens foes.,Rare
+87,Forged Weapons,Spell,https://i.imgur.com/nffwcar.png,0,0,2,Give all friendly minions +2 Attack this turn.,Spell,Fresh from the forge blades thirst for battle.,Common
+88,Special Noise!,Spell,https://i.imgur.com/WBjYFlN.png,0,0,2,Give friendly minions +2 Health and deal 2 damage to all enemy minions.,Spell,A discordant cry that bolsters allies.,Epic
+89,Book,Spell,https://i.imgur.com/53eid0D.png,0,0,1,Draw 2 cards.,Spell,Ancient pages hold forgotten secrets.,Common
+90,Light,Spell,https://i.imgur.com/ymZEywJ.png,0,0,2,Restore 4 Health to a friendly character.,Spell,A radiant glow that mends the broken.,Common
+91,Meat!,Spell,https://i.imgur.com/w4XUbaI.png,0,0,4,Restore 6 Health to a friendly character.,Spell,A feast that fuels enduring strength.,Uncommon
+92,Brothers Keeper,Hero,https://i.imgur.com/MzrTJXw.png,0,0,7,Deal 7 damage to all enemy minions.,Spell,Alvon vow a shield for its champions.,Legendary
+93,Mystic Green,Spell,https://i.imgur.com/MAkqPa3.png,0,0,5,Restore 5 Health to all friendly characters.,Spell,A verdant surge that renews life.,Rare
+94,Skull Magic,Spell,https://i.imgur.com/aZWMBoG.png,0,0,6,Deal 6 damage to a target and summon a 2/2 Grudge.,Spell,Dark sorcery that binds death to life.,Rare
+95,Green Skull Magic,Spell,https://i.imgur.com/VYlB95f.png,0,0,6,Deal 5 damage to a target and restore 5 Health to your hero.,Spell,A twisted spell that takes and gives.,Rare
+96,Small Building,Minion,https://i.imgur.com/LouhX6b.png,0,5,3,Taunt. At the start of your turn: Gain +1 Attack.,Crusade,Defensive structure for enduring battles.,Common
+97,Summoning Tower,Minion,https://i.imgur.com/VcPwEZm.png,2,4,4,At the end of your turn: Give all friendly minions +1 Attack.,Crusade,Summons spirits to guard the field.,Common
+98,Armory,Minion,https://i.imgur.com/YTGTyN1.png,0,6,5,At the end of your turn: Give all friendly minions +1 Health.,Crusade,Forges weapons to empower allies.,Epic
+99,Hero Hall,Minion,https://i.imgur.com/6B4ZbFt.png,0,7,7,At the end of your turn: Give all friendly minions +1 Attack and summon a 1/1 Grudge with Taunt.,Crusade,Boosts heroes with legendary might.,Common
+100,Farm,Minion,https://i.imgur.com/KcD3SYv.png,0,4,3,At the end of your turn: Give all friendly minions +1 Health.,Crusade,Nourishes warriors with vital strength.,Common
+101,Grudge,StarterM,https://i.imgur.com/sUjTI8c.png,2,2,3,,StarterM,A restless spirit bound to serve.,Common
+102,Sling Shot,StarterM,https://i.imgur.com/901uCC6.png,1,1,2,,StarterM,A simple weapon deadly in skilled hands.,Common`;
+
+    function parseCSV(csv) {
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',');
+        return lines.slice(1).filter(l => l.trim()).map(line => {
+            const vals = line.split(',');
+            const obj = {};
+            headers.forEach((h, i) => obj[h.trim()] = (vals[i] || '').trim());
+            return obj;
+        });
+    }
+    const cards = parseCSV(csvData);
+
+    // ==================== AUTH ====================
+    let currentUser = null;
+
+    function loadUser() {
+        const saved = localStorage.getItem('nexusCurrentUser');
+        if (saved) {
+            currentUser = JSON.parse(saved);
+            document.getElementById('username-display').textContent = currentUser.username;
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('user-section').classList.remove('hidden');
+            loadCollection();
+        }
+    }
+    function logout() {
+        localStorage.removeItem('nexusCurrentUser');
+        currentUser = null;
+        document.getElementById('auth-section').classList.remove('hidden');
+        document.getElementById('user-section').classList.add('hidden');
+        document.getElementById('collection-count').textContent = '0';
+        document.getElementById('my-collection-tab').innerHTML = '';
+    }
+    function getUserData(u) { const d = localStorage.getItem('nexusUser_' + u); return d ? JSON.parse(d) : null; }
+    function saveUserData(u, d) { localStorage.setItem('nexusUser_' + u, JSON.stringify(d)); }
+
+    document.getElementById('login-btn').addEventListener('click', () => document.getElementById('login-modal').classList.remove('hidden'));
+    document.getElementById('register-btn').addEventListener('click', () => document.getElementById('register-modal').classList.remove('hidden'));
+    document.getElementById('logout-btn').addEventListener('click', logout);
+
+    document.getElementById('do-register').addEventListener('click', () => {
+        const u = document.getElementById('reg-username').value.trim();
+        const p = document.getElementById('reg-password').value;
+        if (!u || !p) return alert('Please fill both fields');
+        if (getUserData(u)) return alert('Username already exists');
+        saveUserData(u, { password: p, collection: [] });
+        alert('Registered! You can now login.');
+        document.getElementById('register-modal').classList.add('hidden');
+    });
+    document.getElementById('do-login').addEventListener('click', () => {
+        const u = document.getElementById('login-username').value.trim();
+        const p = document.getElementById('login-password').value;
+        const d = getUserData(u);
+        if (!d || d.password !== p) return alert('Invalid credentials');
+        currentUser = { username: u };
+        localStorage.setItem('nexusCurrentUser', JSON.stringify(currentUser));
+        document.getElementById('username-display').textContent = u;
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('user-section').classList.remove('hidden');
+        document.getElementById('login-modal').classList.add('hidden');
+        loadCollection();
+    });
+
+    function addToCollection(cardData) {
+        if (!currentUser) return;
+        const d = getUserData(currentUser.username);
+        if (!d.collection.some(c => c.uuid === cardData.uuid)) {
+            d.collection.push(cardData);
+            saveUserData(currentUser.username, d);
+        }
+    }
+    function loadCollection() {
+        if (!currentUser) return;
+        const d = getUserData(currentUser.username);
+        const container = document.getElementById('my-collection-tab');
+        container.innerHTML = '';
+        document.getElementById('collection-count').textContent = d.collection.length;
+        d.collection.forEach(cd => {
+            const card = cards.find(c => c.cardId === cd.cardId);
+            if (card) container.appendChild(renderCard(card, cd.tribe, true, cd.rareTrait, cd.additionalAbility, cd.serialNumber, cd.uuid));
+        });
+    }
+
+    // ==================== TABS ====================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.dataset.tab;
+            document.getElementById('all-cards-tab').classList.toggle('hidden', tab !== 'all-cards');
+            document.getElementById('my-collection-tab').classList.toggle('hidden', tab !== 'my-collection');
+            if (tab === 'my-collection') loadCollection();
+        });
+    });
+
+    // ==================== CARD RENDERING ====================
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    }
+
+    function rollTribe(packType) {
+        const r = Math.random();
+        let p = { silver: 0.40, orange: 0.35, purple: 0.15, red: 0.08, signature: 0.02 };
+        if (packType === 'premium') p = { silver: 0.30, orange: 0.25, purple: 0.20, red: 0.20, signature: 0.05 };
+        if (packType === 'legendary') p = { silver: 0.15, orange: 0.15, purple: 0.20, red: 0.30, signature: 0.20 };
+        if (r < 0.01) return 'hero';
+        let cum = 0;
+        for (const t in p) { cum += p[t]; if (r < cum) return t; }
+        return 'silver';
+    }
+    function rollAbility() {
+        const abs = ['Haste', 'Ally Boost', 'Double Strike', 'Stealth', 'Gold Shield', 'Taunt'];
+        return Math.random() < 0.05 ? abs[Math.floor(Math.random() * abs.length)] : null;
+    }
+    function rollRareTrait(packType) {
+        const ch = packType === 'legendary' ? 0.20 : packType === 'premium' ? 0.10 : 0.05;
+        return Math.random() < ch ? ['life', 'fire', 'foil'][Math.floor(Math.random() * 3)] : null;
+    }
+
+    function getAbilityIconSrcs(abilitiesStr, additionalAbility) {
+        const combined = ((abilitiesStr || '') + (additionalAbility ? ', ' + additionalAbility : '')).toLowerCase();
+        const icons = [];
+        for (const [key, src] of Object.entries(abilityIcons)) {
+            if (combined.includes(key)) icons.push(src);
+        }
+        return icons;
+    }
+
+    function renderCard(card, tribe, isMinted = false, rareTrait = null, additionalAbility = null, serialNumber = null, forcedUUID = null, size = 'normal') {
+        const isHero = tribe === 'hero' || heroCardIds.includes(card.cardId);
+        const tribeKey = isHero ? 'signature' : tribe;
+        const t = tribes[tribeKey];
+        const isMinion = card.type.toLowerCase() === 'minion' || card.type.toLowerCase() === 'hero' || card.type.toLowerCase() === 'starterm';
+        const isSpell = card.type.toLowerCase() === 'spell';
+
+        let modCard = {...card};
+        if (tribeKey === 'signature') {
+            modCard.cost = Math.max(0, parseInt(card.cost) - 1);
+            if (isMinion) { modCard.attack = parseInt(card.attack) + 2; modCard.health = parseInt(card.health) + 2; }
+        }
+        if (rareTrait === 'life') modCard.health = parseInt(modCard.health) + 1;
+        if (rareTrait === 'fire') modCard.attack = parseInt(modCard.attack) + 1;
+
+        const uuid = forcedUUID || generateUUID();
+        const sizeClass = size === 'large' ? 'popout-card' : '';
+
+        const el = document.createElement('div');
+        el.className = `nexus-card rarity-${(card.rarity || 'common').toLowerCase()} ${rareTrait ? 'trait-' + rareTrait : ''} ${sizeClass}`;
+        el.style.borderColor = t.borderColor;
+        el.style.border = `3px solid ${t.borderColor}`;
+
+        // Build layers
+        let html = '';
+
+        // 1. Card base (tribe-colored background)
+        const tintStyle = t.tint ? `filter:${t.tint};` : '';
+        html += `<img src="${t.cardBase}" class="layer card-base" style="${tintStyle}">`;
+
+        // 2. Card art
+        html += `<img src="${modCard.image}" class="layer card-art" style="object-fit:contain;">`;
+
+        // 3. Art overlay (subtle shine)
+        html += `<img src="${ASSET.frames.artOverlay}" class="layer card-art-overlay">`;
+
+        // 4. Card frame overlay
+        html += `<img src="${t.cardFrame}" class="layer card-frame" style="opacity:0.85;">`;
+
+        // 5. Ornament runes (if tribe has them)
+        if (t.ornament) {
+            html += `<img src="${t.ornament}" class="layer card-ornament">`;
+        }
+
+        // 6. Sub-type emblem
+        const emblemSrc = subTypeEmblems[card.sub_type] || ASSET.emblems.sword;
+        html += `<img src="${emblemSrc}" class="card-emblem">`;
+
+        // 7. Crystal cost
+        html += `<div class="crystal-bubble">
+            <img src="${t.crystal}">
+            <span class="crystal-val">${modCard.cost}</span>
+        </div>`;
+
+        // 8. UUID
+        html += `<div class="card-uuid">${uuid.substring(0, 18)}</div>`;
+
+        // 9. Ability icons row
+        const abilityIconSrcs = getAbilityIconSrcs(modCard.abilities, additionalAbility);
+        if (abilityIconSrcs.length > 0) {
+            html += `<div class="ability-row">${abilityIconSrcs.map(s => `<img src="${s}">`).join('')}</div>`;
+        }
+
+        // 10. Season badge
+        html += `<div class="season-badge" style="background:${t.badgeColor};color:${t.badgeText};">Season 0 &bull; ${t.name}</div>`;
+
+        // 11. Info zone (bottom panel)
+        html += `<div class="info-zone">
+            <img src="${ASSET.banners.infoPanel}" class="info-bg" style="opacity:0.9;">
+            <img src="${ASSET.banners.gold}" class="card-banner">
+            <div class="card-name" style="color:${t.nameColor};">${modCard.name}</div>
+            <div class="card-flavor">${modCard.flavor_text || ''}</div>
+            <div class="card-abilities-text">${modCard.abilities || ''}</div>
+        </div>`;
+
+        // 12. Attack & Health stat bubbles (for minions)
+        if (isMinion && parseInt(modCard.attack) + parseInt(modCard.health) > 0) {
+            html += `<div class="stat-bubble stat-attack">
+                <img src="${t.statAttack}" class="stat-bg">
+                <img src="${ASSET.stats.border}" class="stat-frame">
+                <img src="${ASSET.icons.sword}" class="stat-icon">
+                <span class="stat-value">${modCard.attack}</span>
+            </div>`;
+            html += `<div class="stat-bubble stat-health">
+                <img src="${t.statHealth}" class="stat-bg">
+                <img src="${ASSET.stats.border}" class="stat-frame">
+                <img src="${ASSET.icons.heart}" class="stat-icon">
+                <span class="stat-value">${modCard.health}</span>
+            </div>`;
+        }
+
+        el.innerHTML = html;
+
+        // Click to open info
+        el.addEventListener('click', () => showCardInfo(card, tribeKey, modCard, uuid, serialNumber, rareTrait, additionalAbility));
+
+        return el;
+    }
+
+    function showCardInfo(card, tribeKey, modCard, uuid, serialNumber, rareTrait, additionalAbility) {
+        const t = tribes[tribeKey];
+        const container = document.getElementById('info-card-container');
+        container.innerHTML = '';
+        container.appendChild(renderCard(card, tribeKey, true, rareTrait, additionalAbility, serialNumber, uuid, 'large'));
+
+        document.getElementById('info-details').innerHTML = `
+            <p class="text-lg font-bold mb-1" style="color:${t.nameColor};">${modCard.name}</p>
+            <p class="text-sm text-gray-400 mb-2">${t.name} &bull; ${card.rarity}${rareTrait ? ' &bull; <span class="text-yellow-400">' + rareTrait.toUpperCase() + ' Trait</span>' : ''}</p>
+            <p class="text-xs text-gray-500 mb-1">Serial: ${serialNumber || 'N/A'} &bull; UUID: ${uuid.substring(0,18)}...</p>
+            <p class="text-xs text-gray-400 italic mb-2">${modCard.flavor_text || ''}</p>
+            <p class="text-xs text-emerald-400">${t.upgrade}</p>
+        `;
+        document.getElementById('info-modal').classList.remove('hidden');
+    }
+
+    function loadAllCards() {
+        const container = document.getElementById('all-cards-tab');
+        container.innerHTML = '';
+        const tribeKeys = Object.keys(tribes);
+        cards.forEach((card, i) => {
+            const tribe = tribeKeys[i % tribeKeys.length];
+            container.appendChild(renderCard(card, tribe));
+        });
+    }
+
+    // ==================== PACK OPENING ====================
+    document.getElementById('buy-packs-btn').addEventListener('click', () => document.getElementById('pack-modal').classList.remove('hidden'));
+    document.querySelectorAll('.pack-card').forEach(pc => {
+        pc.addEventListener('click', () => {
+            const packType = pc.dataset.pack;
+            document.getElementById('pack-modal').classList.add('hidden');
+            openPack(packType);
+        });
+    });
+
+    document.getElementById('mint-btn').addEventListener('click', () => {
+        openPack('single');
+    });
+
+    function openPack(packType) {
+        if (totalMinted >= maxMints) return alert('Global mint limit reached!');
+        const sizes = { starter: 5, premium: 10, legendary: 3, single: 1 };
+        const count = sizes[packType] || 5;
+
+        const overlay = document.getElementById('pack-open-overlay');
+        const area = document.getElementById('pack-cards-area');
+        area.innerHTML = '';
+        overlay.classList.remove('hidden');
+
+        const packNames = { starter: 'Starter Pack', premium: 'Premium Pack', legendary: 'Legendary Pack', single: 'Single Mint' };
+        document.getElementById('pack-title').textContent = `Opening ${packNames[packType]}...`;
+
+        const mintedCards = [];
+
+        for (let i = 0; i < count && totalMinted < maxMints; i++) {
+            const card = cards[Math.floor(Math.random() * cards.length)];
+            const tribe = rollTribe(packType === 'single' ? 'starter' : packType);
+            const rare = rollRareTrait(packType === 'single' ? 'starter' : packType);
+            const ability = rollAbility();
+            const serial = ++totalMinted;
+            const uuid = generateUUID();
+            const tribeKey = (tribe === 'hero' || heroCardIds.includes(card.cardId)) ? 'signature' : tribe;
+            const t = tribes[tribeKey];
+
+            const cardData = { cardId: card.cardId, tribe, rareTrait: rare, additionalAbility: ability, serialNumber: serial, uuid };
+            mintedCards.push(cardData);
+            addToCollection(cardData);
+
+            // Create flip container
+            const flipContainer = document.createElement('div');
+            flipContainer.className = 'flip-container';
+            flipContainer.style.animationDelay = `${i * 0.15}s`;
+
+            const flipInner = document.createElement('div');
+            flipInner.className = 'flip-inner';
+
+            // Front (card back)
+            const front = document.createElement('div');
+            front.className = 'flip-front';
+            front.innerHTML = `<img src="${t.cardBack}" style="border:3px solid ${t.borderColor};border-radius:12px;">`;
+
+            // Back (actual card face)
+            const back = document.createElement('div');
+            back.className = 'flip-back';
+            const cardEl = renderCard(card, tribe, true, rare, ability, serial, uuid);
+            cardEl.style.width = '100%';
+            cardEl.style.height = '100%';
+            back.appendChild(cardEl);
+
+            flipInner.appendChild(front);
+            flipInner.appendChild(back);
+            flipContainer.appendChild(flipInner);
+
+            // Staggered entrance
+            flipContainer.style.opacity = '0';
+            flipContainer.style.transform = 'translateY(40px)';
+            setTimeout(() => {
+                flipContainer.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                flipContainer.style.opacity = '1';
+                flipContainer.style.transform = 'translateY(0)';
+            }, i * 150 + 200);
+
+            // Click to flip
+            flipContainer.addEventListener('click', () => {
+                if (!flipInner.classList.contains('flipped')) {
+                    flipInner.classList.add('flipped');
+                    // Effects based on rarity
+                    const rarity = (card.rarity || 'common').toLowerCase();
+                    if (rarity === 'legendary' || rarity === 'epic' || tribeKey === 'signature') {
+                        document.body.classList.add('shake');
+                        setTimeout(() => document.body.classList.remove('shake'), 500);
+                        spawnParticles(rarity === 'legendary' || tribeKey === 'signature' ? '#ffd700' : '#b344ff', 30);
+                    } else if (rarity === 'rare') {
+                        spawnParticles('#3388ff', 15);
+                    }
+                    if (rare) {
+                        spawnParticles(rare === 'fire' ? '#ff4400' : rare === 'life' ? '#00ff66' : '#ffffff', 20);
+                    }
+                }
+            });
+
+            area.appendChild(flipContainer);
+        }
+
+        document.getElementById('global-mint-count').textContent = totalMinted;
+    }
+
+    // Reveal All button
+    document.getElementById('reveal-all-btn').addEventListener('click', () => {
+        const flips = document.querySelectorAll('#pack-cards-area .flip-inner');
+        flips.forEach((f, i) => {
+            setTimeout(() => {
+                if (!f.classList.contains('flipped')) {
+                    f.classList.add('flipped');
+                }
+            }, i * 200);
+        });
+        // Big particle burst
+        setTimeout(() => {
+            spawnParticles('#ffd700', 40);
+            spawnParticles('#10b981', 30);
+            document.body.classList.add('shake');
+            setTimeout(() => document.body.classList.remove('shake'), 500);
+        }, flips.length * 200);
+    });
+
+    document.getElementById('close-pack-btn').addEventListener('click', () => {
+        document.getElementById('pack-open-overlay').classList.add('hidden');
+        document.getElementById('particle-container').innerHTML = '';
+        loadCollection();
+    });
+
+    // ==================== PARTICLES ====================
+    function spawnParticles(color, count) {
+        const container = document.getElementById('particle-container');
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 8 + 3;
+            const x = Math.random() * 100;
+            const dur = Math.random() * 2 + 1.5;
+            p.style.cssText = `
+                left: ${x}vw;
+                top: ${Math.random() * 30}vh;
+                width: ${size}px;
+                height: ${size}px;
+                background: ${color};
+                box-shadow: 0 0 ${size * 2}px ${color};
+                animation-duration: ${dur}s;
+                animation-delay: ${Math.random() * 0.5}s;
+            `;
+            container.appendChild(p);
+            setTimeout(() => p.remove(), (dur + 0.5) * 1000);
+        }
+    }
+
+    // ==================== INIT ====================
+    window.onload = () => {
+        loadUser();
+        loadAllCards();
+    };
+    </script>
+</body>
+</html>

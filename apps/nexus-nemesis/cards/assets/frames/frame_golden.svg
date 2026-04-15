@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 310">
+  <defs>
+    <linearGradient id="gld" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.4)"/>
+      <stop offset="30%" stop-color="rgba(255,180,0,0.2)"/>
+      <stop offset="70%" stop-color="rgba(255,200,50,0.3)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.35)"/>
+    </linearGradient>
+  </defs>
+  <rect width="220" height="310" rx="12" fill="none"/>
+  <rect x="2" y="2" width="216" height="306" rx="11" fill="none" stroke="url(#gld)" stroke-width="3.5"/>
+  <rect x="6" y="6" width="208" height="298" rx="9" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1"/>
+  <!-- Gold corner ornaments -->
+  <g fill="rgba(255,215,0,0.5)" stroke="rgba(255,180,0,0.3)" stroke-width="0.5">
+    <path d="M6,20 L6,12 Q6,6 12,6 L20,6 L16,10 L12,10 Q10,10 10,12 L10,16 Z"/>
+    <path d="M214,20 L214,12 Q214,6 208,6 L200,6 L204,10 L208,10 Q210,10 210,12 L210,16 Z"/>
+    <path d="M6,290 L6,298 Q6,304 12,304 L20,304 L16,300 L12,300 Q10,300 10,298 L10,294 Z"/>
+    <path d="M214,290 L214,298 Q214,304 208,304 L200,304 L204,300 L208,300 Q210,300 210,298 L210,294 Z"/>
+  </g>
+  <!-- Top/bottom center medallions -->
+  <ellipse cx="110" cy="5" rx="20" ry="3" fill="rgba(255,215,0,0.25)"/>
+  <ellipse cx="110" cy="305" rx="20" ry="3" fill="rgba(255,215,0,0.25)"/>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 46 46">
+  <defs>
+    <linearGradient id="cg1" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#66ffaa"/>
+      <stop offset="50%" stop-color="#22aa55"/>
+      <stop offset="100%" stop-color="#116633"/>
+    </linearGradient>
+    <radialGradient id="cgl" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0%" stop-color="#44dd77" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#44dd77" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="cglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <!-- Outer glow -->
+  <circle cx="23" cy="23" r="20" fill="url(#cgl)"/>
+  <!-- Crystal shape -->
+  <g filter="url(#cglow)">
+    <polygon points="23,3 38,16 35,38 11,38 8,16" fill="url(#cg1)" stroke="#116633" stroke-width="1"/>
+    <!-- Facets -->
+    <polygon points="23,3 38,16 23,20 8,16" fill="rgba(255,255,255,0.1)"/>
+    <polygon points="23,20 38,16 35,38" fill="rgba(0,0,0,0.1)"/>
+    <!-- Highlight -->
+    <polygon points="14,12 23,5 28,14 20,18" fill="rgba(255,255,255,0.2)"/>
+  </g>
+</svg>
