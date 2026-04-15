@@ -6,18 +6,12 @@
 
 // Deployment URLs (overridable via env)
 // Game API runs on VPS via Coolify/Docker + Traefik
-export const GRUDACHAIN_URL = process.env.GRUDACHAIN_URL || "https://api.grudge-studio.com";
-export const WCS_URL = process.env.WCS_URL || "https://warlord-crafting-suite.vercel.app";
-
-// GAME_API_GRUDA is the canonical Grudge Studio API endpoint
-export const GAME_API_GRUDA = process.env.GAME_API_GRUDA || "https://api.grudge-studio.com";
-// GAME_API_GRUDA is the canonical Grudge Studio API endpoint (same as GRUDACHAIN_URL by default)
 // GRUDA Legion production runs on the Grudge Studio VPS via Coolify/Traefik.
 // grudachain.grudgestudio.com is the GrudaChain *frontend* (Cloudflare Pages) — NOT the backend.
 export const GRUDACHAIN_URL = process.env.GRUDACHAIN_URL || "https://api.grudge-studio.com";
 export const WCS_URL = process.env.WCS_URL || "https://warlord-crafting-suite.vercel.app";
 
-// GAME_API_GRUDA is the canonical Grudge Studio API endpoint
+// GAME_API_GRUDA is the canonical Grudge Studio API endpoint (same as GRUDACHAIN_URL by default)
 export const GAME_API_GRUDA = process.env.GAME_API_GRUDA || GRUDACHAIN_URL;
 
 // Vercel deployment (static landing page + serverless functions)
@@ -36,18 +30,6 @@ export const WCS_PAGES = {
   dashboard: `${WCS_URL}/dashboard`,
 } as const;
 
-// VPS Game API endpoints
-// Source: https://github.com/MolochDaGod/grudge-studio-backend (main) → VPS Docker/Coolify
-export const GRUDACHAIN_API = {
-  health: `${GRUDACHAIN_URL}/health`,
-  status: `${GRUDACHAIN_URL}/health`,
-  chat: `${GRUDACHAIN_URL}/ai/chat`,
-  generateCode: `${GRUDACHAIN_URL}/ai/generate-code`,
-  analyzeFile: `${GRUDACHAIN_URL}/ai/analyze-file`,
-  networkDiscover: `${GRUDACHAIN_URL}/health`,
-  // AI features — proxied through game-api to internal ai-agent
-  vibeProviders: `${GRUDACHAIN_URL}/ai/providers`,
-  vibeChat: `${GRUDACHAIN_URL}/ai/chat`,
 // GRUDACHAIN API endpoints
 // Source: https://github.com/MolochDaGod/grudge-studio-backend → VPS auto-deploy via Coolify
 export const GRUDACHAIN_API = {
@@ -78,7 +60,6 @@ export const GRUDACHAIN_SOURCE = {
   repo: "MolochDaGod/grudge-studio-backend",
   branch: "main",
   deployment: "VPS Coolify/Docker",
-  github: "https://github.com/MolochDaGod/grudge-studio-backend",
   service: "game-api",
   github: "https://github.com/MolochDaGod/grudge-studio-backend",
 } as const;

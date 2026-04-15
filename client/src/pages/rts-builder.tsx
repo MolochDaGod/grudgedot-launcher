@@ -1144,7 +1144,6 @@ function ActorsPanel() {
         {/* Race Filter */}
         <div className="flex gap-1 flex-wrap mb-2">
           {["all", ...Object.keys(rtsModelCatalog?.races ?? {})].map((race) => {
-          {["all", ...Object.keys(rtsModelCatalog?.races || {})].map((race) => {
             const raceData = race !== "all" ? rtsModelCatalog?.races[race] : null;
             const count = race === "all"
               ? (rtsModelCatalog?.totalModels ?? 0)
@@ -1214,38 +1213,10 @@ function ActorsPanel() {
                       <h4 className="text-sm font-semibold">{raceData.name}</h4>
                       <Badge style={{ backgroundColor: raceData.color, color: "#fff" }} className="text-xs">
                         {raceData.faction}
-            {/*
-              Reusable model card component for race models (and potentially vehicles).
-              Extracted to keep badge/size/link behavior consistent.
-            */}
-            {(() => {
-              type ModelCardProps = {
-                model: any;
-                baseUrl: string;
-                testIdPrefix: string;
-              };
-
-              const ModelCard = ({ model, baseUrl, testIdPrefix }: ModelCardProps) => (
-                <Card
-                  className="overflow-hidden hover-elevate"
-                  data-testid={`card-${testIdPrefix}-${model.grudgeId}`}
-                >
-                  <div className="h-20 w-full bg-muted flex items-center justify-center">
-                    <Swords className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <CardContent className="p-2">
-                    <div className="font-medium text-xs line-clamp-1">{model.displayName}</div>
-                    <p className="text-[10px] text-muted-foreground font-mono">{model.grudgeId}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <Badge variant="outline" className="text-[10px] capitalize">
-                        {model.category}
                       </Badge>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {model.unitType}
-                      </Badge>
-                      {model.customizable && (
-                        <Badge className="text-[10px] bg-emerald-600">Custom</Badge>
-                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {models.length} models
+                      </span>
                     </div>
                     <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
                       {models.map((model) => (
@@ -1256,70 +1227,10 @@ function ActorsPanel() {
                           testIdPrefix="actor"
                         />
                       ))}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-[10px] text-muted-foreground">
-                        {(model.sizeBytes / 1024).toFixed(0)} KB
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs"
-                        onClick={() => window.open(`${baseUrl}/${model.file}`, "_blank")}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        GLB
-                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-
-              return Object.entries(rtsModelCatalog.races as Record<string, any>)
-                .filter(([raceId]) => raceFilter === "all" || raceFilter === raceId)
-                .map(([raceId, raceData]) => {
-                  const models = (raceData.models as any[]).filter((m: any) => {
-                    const matchesCat =
-                      categoryFilter === "all" || m.category === categoryFilter;
-                    const matchesSearch =
-                      searchQuery === "" ||
-                      m.displayName
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                      m.tags?.some((t: string) =>
-                        t.toLowerCase().includes(searchQuery.toLowerCase())
-                      );
-                    return matchesCat && matchesSearch;
-                  });
-                  if (models.length === 0) return null;
-                  return (
-                    <div key={raceId} className="mb-5">
-                      <div className="mb-2 flex items-center gap-2">
-                        <span>{raceData.emoji}</span>
-                        <h4 className="text-sm font-semibold">{raceData.name}</h4>
-                        <Badge
-                          style={{ backgroundColor: raceData.color, color: "#fff" }}
-                          className="text-xs"
-                        >
-                          {raceData.faction}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {models.length} models
-                        </span>
-                      </div>
-                      <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
-                        {models.map((model: any) => (
-                          <ModelCard
-                            key={model.grudgeId}
-                            model={model}
-                            baseUrl={rtsModelCatalog.baseUrl}
-                            testIdPrefix="actor"
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                });
-            })()}
+                  </div>
+                );
+              })}
             {/* Vehicles section */}
             {(raceFilter === "all") && (categoryFilter === "all" || categoryFilter === "vehicle") && rtsModelCatalog.vehicles?.length > 0 && (
               <div className="mb-5">
@@ -1376,7 +1287,4 @@ function TrinketsPanel() {
       </div>
     </div>
   );
-import { BabylonPlaceholder } from '@/components/BabylonPlaceholder';
-export default function RtsBuilder() {
-  return <BabylonPlaceholder title="RTS Forge" description="Real-time strategy builder with unit placement, AI behavior trees, and terrain — being rebuilt on BabylonJS." concepts={['RTS Camera', 'Unit AI', 'Behavior Trees', 'Terrain Gen', 'Fog of War', 'Formation System']} />;
 }
