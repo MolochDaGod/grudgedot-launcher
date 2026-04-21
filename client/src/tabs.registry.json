@@ -12,5 +12,6 @@
   { "slug": "nexus-nemesis", "title": "Nexus Nemesis", "entry": "tabs/nexus-nemesis/index.tsx" },
   { "slug": "grudge-engine", "title": "Grudge Engine", "entry": "tabs/grudge-engine/index.tsx" },
   { "slug": "grudge-warlords-rts", "title": "Grudge Warlords RTS", "entry": "tabs/grudge-warlords-rts/index.tsx" },
-  { "slug": "shooter-3d", "title": "Grudge Assault", "entry": "tabs/shooter-3d/index.tsx" }
+  { "slug": "shooter-3d", "title": "Grudge Assault", "entry": "tabs/shooter-3d/index.tsx", "engine": "babylon", "hubTab": "babygrudge" },
+  { "slug": "babygrudge", "title": "BabyGrudge", "entry": "tabs/babygrudge/index.tsx", "engine": "babylon", "group": "engines" }
 ]

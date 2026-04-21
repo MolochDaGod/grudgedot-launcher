@@ -1,4 +1,4 @@
-import { BabylonPlaceholder } from '@/components/BabylonPlaceholder';
+import { EngineBootstrap } from '@/components/EngineBootstrap';
 import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
 import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
 export default function GrudgeDrift() {
@@ -10,5 +10,12 @@ export default function GrudgeDrift() {
 }
 
 function GrudgeDriftInner({ session }: { session: GrudgeGameSession }) {
-  return <BabylonPlaceholder title="Grudge Drift" description="3D racing with drift mechanics — being rebuilt on BabylonJS." concepts={['Drift Physics', 'Vehicle Models', 'Track Design', 'Boost System']} />;
+  return (
+    <EngineBootstrap
+      engine="threejs"
+      title="Grudge Drift"
+      description="3D racing with drift mechanics — being rebuilt on three.js + @react-three/fiber (Rapier physics)."
+      concepts={['Drift Physics', 'Vehicle Models', 'Track Design', 'Boost System']}
+    />
+  );
 }
