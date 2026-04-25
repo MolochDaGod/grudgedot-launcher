@@ -1,0 +1,25 @@
+# Cloudflare Pages routing for the grudgeDot launcher.
+# Order matters — most-specific first, SPA catch-all LAST.
+
+# Root: gated hub with login + service preview cards.
+# After login, the cards link into the SPA (which is served by the catch-all below).
+/             /portal.html                                 200
+/portal       /portal.html                                 200
+/launcher     /portal.html                                 200
+/hub          /portal.html                                 200
+# Direct access to the React SPA shell, bypassing the hub.
+/app          /index.html                                  200
+/app/*        /index.html                                  200
+
+# API proxies — the Express server in api/index.ts does NOT run on Pages.
+# Auth goes through id.grudge-studio.com; Discord OAuth uses grudgewarlords.com.
+/api/auth/discord       https://grudgewarlords.com/discord                200
+/api/auth/discord/*     https://grudgewarlords.com/api/discord/:splat     200
+/api/auth/*             https://id.grudge-studio.com/auth/:splat          200
+/api/*                  https://api.grudge-studio.com/api/:splat          200
+
+# Admin is a separate static HTML page; preserve direct hits.
+/admin        /admin.html                                  200
+
+# SPA fallback — must be last so it doesn't shadow the rules above.
+/*            /index.html                                  200
