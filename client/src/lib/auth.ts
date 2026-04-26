@@ -203,7 +203,9 @@ function cleanAuthParams(keys: string[]) {
 export function logout() {
   const token = localStorage.getItem(KEYS.token);
   if (token) {
-    fetch(`${GRUDGE_ID_BASE}/api/auth/logout`, {
+    // Same-origin via the Pages Function proxy at functions/api/[[path]].ts
+    // -> https://id.grudge-studio.com/auth/logout. Avoids CORS entirely.
+    fetch('/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     }).catch(() => {});
@@ -216,7 +218,7 @@ export function logout() {
 export function logoutSilent() {
   const token = localStorage.getItem(KEYS.token);
   if (token) {
-    fetch(`${GRUDGE_ID_BASE}/api/auth/logout`, {
+    fetch('/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     }).catch(() => {});

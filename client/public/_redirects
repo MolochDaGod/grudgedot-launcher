@@ -13,12 +13,13 @@
 /app          /           200
 /app/*        /           200
 
-# API proxies — the Express server in api/index.ts does NOT run on Pages.
-# Auth goes through id.grudge-studio.com; Discord OAuth uses grudgewarlords.com.
-/api/auth/discord       https://grudgewarlords.com/discord                200
-/api/auth/discord/*     https://grudgewarlords.com/api/discord/:splat     200
-/api/auth/*             https://id.grudge-studio.com/auth/:splat          200
-/api/*                  https://api.grudge-studio.com/api/:splat          200
+# API proxying is handled by `functions/api/[[path]].ts` (a Cloudflare Pages
+# Function), NOT by `_redirects`. Pages silently drops `200` rewrites whose
+# destination is an external URL, so the rules that used to live here
+# (auth -> id.grudge-studio.com, /api/* -> api.grudge-studio.com,
+#  Discord -> grudgewarlords.com) never actually proxied; every /api/* call
+# fell through to the SPA fallback below and returned index.html.
+# The Pages Function now owns all /api/* routing.
 
 # Admin is a separate static HTML page; preserve direct hits.
 # Use the pretty URL `/admin` (no .html) so Pages' canonicalizer doesn't loop.

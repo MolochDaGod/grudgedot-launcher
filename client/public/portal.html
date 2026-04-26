@@ -1063,11 +1063,15 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
 
 <script>
 // ===== GRUDGE STUDIO CLIENT PORTAL — REAL BACKEND =====
-// Auth kickoff endpoints differ by provider — each one matches the redirect
-// URLs already approved in the respective OAuth app dashboards.
-const ID_API   = 'https://id.grudge-studio.com';        // GitHub, Google, Puter, Phone, Wallet
-const WARLORDS = 'https://grudgewarlords.com';          // Discord OAuth (callback at /api/discord/callback)
-const GAME_API = 'https://api.grudge-studio.com';
+// Auth calls go through THIS origin so the browser never sees a cross-origin
+// request. The Cloudflare Pages Function at `functions/api/[[path]].ts`
+// proxies /api/auth/* server-side to id.grudge-studio.com (and Discord OAuth
+// to grudgewarlords.com). Same-origin = no CORS preflights, no
+// `Access-Control-Allow-Origin` mismatches, and the upstream sees a clean
+// edge-to-edge request.
+const ID_API   = '/api/auth';                           // proxied -> https://id.grudge-studio.com/auth
+const WARLORDS = '/api/auth/discord';                   // proxied -> https://grudgewarlords.com/discord
+const GAME_API = '/api';                                // proxied -> https://api.grudge-studio.com/api
 const LAUNCHER_APP_PATH = '/';                          // Where to send users after auth (React SPA root)
 const CLIENT_URL = location.origin;
 
@@ -1095,7 +1099,7 @@ if (callbackToken) {
 
 async function initFromToken(token) {
   try {
-    const res = await fetch(`${ID_API}/auth/user`, {
+    const res = await fetch(`${ID_API}/user`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Token expired');
@@ -1172,7 +1176,7 @@ async function loginEmail() {
   const password = document.getElementById('login-pass').value;
   if (!identifier || !password) return showAuthErr('Username and password required');
   try {
-    const data = await apiPost(`${ID_API}/auth/login`, { identifier, password });
+    const data = await apiPost(`${ID_API}/login`, { identifier, password });
     handleAuthSuccess(data);
     showToast('\u2694 Welcome back, ' + (data.username || identifier));
   } catch(e) { showAuthErr(e.message); }
@@ -1189,15 +1193,17 @@ async function registerEmail() {
   if (password !== pass2) return showAuthErr('Passwords do not match');
   if (password.length < 4) return showAuthErr('Password must be 4+ characters');
   try {
-    const data = await apiPost(`${ID_API}/auth/register`, { username, email: email || undefined, password });
+    const data = await apiPost(`${ID_API}/register`, { username, email: email || undefined, password });
     handleAuthSuccess(data);
     showToast('\u2694 GRUDGE ID forged: ' + (data.grudgeId || data.grudge_id));
   } catch(e) { showAuthErr(e.message); }
 }
 
 // ===== DISCORD OAuth (callback approved at grudgewarlords.com/api/discord/callback) =====
+// Hits same-origin /api/auth/discord; the Pages Function proxies to
+// grudgewarlords.com/discord while preserving the redirect_uri query.
 function loginDiscord() {
-  window.location.href = `${WARLORDS}/discord?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
+  window.location.href = `${WARLORDS}?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
 }
 
 // ===== GOOGLE — routed via Puter (their modal supports Google sign-in) =====
@@ -1211,12 +1217,12 @@ async function loginGoogle() {
       if (pu) { await authViaPuter(pu.uuid, pu.username); return; }
     }
   } catch(e) { /* fall through to direct OAuth */ }
-  window.location.href = `${ID_API}/auth/google?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
+  window.location.href = `${ID_API}/google?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
 }
 
 // ===== GITHUB OAuth =====
 function loginGithub() {
-  window.location.href = `${ID_API}/auth/github?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
+  window.location.href = `${ID_API}/github?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
 }
 
 // ===== PUTER AUTH =====
@@ -1232,7 +1238,7 @@ async function loginPuter() {
 
 async function authViaPuter(puterUuid, puterUsername) {
   try {
-    const data = await apiPost(`${ID_API}/auth/puter`, { puterUuid, puterUsername });
+    const data = await apiPost(`${ID_API}/puter`, { puterUuid, puterUsername });
     handleAuthSuccess(data);
     showToast('\u2601 Signed in via Puter');
   } catch(e) { showAuthErr(e.message); showAuthGate(); }
@@ -1248,7 +1254,7 @@ async function loginPhantom() {
     }
     const resp = await phantom.connect();
     const wallet_address = resp.publicKey.toString();
-    const data = await apiPost(`${ID_API}/auth/wallet`, { wallet_address });
+    const data = await apiPost(`${ID_API}/wallet`, { wallet_address });
     handleAuthSuccess(data);
     showToast('\u25ce Signed in with wallet: ' + wallet_address.slice(0,8) + '...');
   } catch(e) { showAuthErr('Wallet auth failed: ' + e.message); }
@@ -1266,7 +1272,7 @@ async function loginPhone() {
     return showAuthErr('Phone must be E.164 format, e.g. +15555550123');
   }
   try {
-    await apiPost(`${ID_API}/auth/phone-send`, { phone });
+    await apiPost(`${ID_API}/phone-send`, { phone });
     showToast('\ud83d\udcec Code sent — check your messages');
   } catch(e) {
     return showAuthErr('Could not send code: ' + e.message);
@@ -1274,7 +1280,7 @@ async function loginPhone() {
   const code = window.prompt('\ud83d\udd11 Enter the 6-digit code we just texted to ' + phone + ':');
   if (!code) return;
   try {
-    const data = await apiPost(`${ID_API}/auth/phone-verify`, { phone, code: code.trim() });
+    const data = await apiPost(`${ID_API}/phone-verify`, { phone, code: code.trim() });
     handleAuthSuccess(data);
     showToast('\u2694 Phone verified — welcome');
   } catch(e) { showAuthErr('Code did not verify: ' + e.message); }
@@ -1284,7 +1290,7 @@ async function loginPhone() {
 async function loginGuest() {
   try {
     const deviceId = 'web_' + (crypto.randomUUID ? crypto.randomUUID().slice(0,12) : Math.random().toString(36).slice(2,14));
-    const data = await apiPost(`${ID_API}/auth/guest`, { deviceId });
+    const data = await apiPost(`${ID_API}/guest`, { deviceId });
     handleAuthSuccess(data);
     showToast('\u25b7 Playing as guest \u2014 create an account to save progress');
   } catch(e) { showAuthErr(e.message); }
@@ -1292,7 +1298,7 @@ async function loginGuest() {
 
 // ===== LOGOUT =====
 async function logout() {
-  try { await fetch(`${ID_API}/auth/logout`, { method: 'POST', credentials: 'include' }); } catch(e) {}
+  try { await fetch(`${ID_API}/logout`, { method: 'POST', credentials: 'include' }); } catch(e) {}
   currentUser = null;
   authToken = null;
   sessionStorage.removeItem('grudge_token');
@@ -1444,7 +1450,7 @@ async function saveSettings() {
   if (!currentUser || !authToken) return;
   const username = document.getElementById('settings-display').value;
   try {
-    await fetch(`${ID_API}/identity/me`, {
+    await fetch(`/api/identity/me`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
       body: JSON.stringify({ username: username || undefined })
