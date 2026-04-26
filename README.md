@@ -48,8 +48,6 @@ All games draw from the same hero identity:
 ## Project Structure
 ```
 grudgeDot/
-├── api/                  # Vercel serverless entry point
-│   └── index.ts          # Express app for Vercel
 ├── apps/                 # Per-tab packaging & metadata
 ├── client/               # React frontend (Vite)
 │   ├── src/
@@ -67,7 +65,6 @@ grudgeDot/
 │   └── services/         # grudaLegion.ts, etc.
 ├── shared/               # Shared types and schemas
 ├── docs/                 # Project documentation
-├── vercel.json           # Vercel deployment config
 ├── vite.config.ts        # Vite build config
 └── package.json
 ```
@@ -118,16 +115,16 @@ railway domain # assign grudgedot.com as the custom domain
 
 Set all required env vars in the Railway dashboard (or `railway variables set KEY=VALUE`). See `railway.toml` for the full list of required vars. The container listens on `$PORT` (injected by Railway) and the health endpoint is `/api/health`.
 
-### Vercel (static + serverless fallback)
+### Cloudflare Pages (static SPA)
 
-The Vite client builds to `dist/public/`. Serverless API routes live in `api/`.
+The Vite client builds to `dist/public/` and is published to the Cloudflare Pages project `grudgedot` by `.github/workflows/pages-deploy.yml` on every push to `main`. There is no Vercel deployment for this repo — the legacy `gdevelop-assistant` Vercel project has been retired.
 
 ```bash
-npm run build:vercel
-vercel --prod --yes
+npm run build      # produces dist/public/
+# CI then runs cloudflare/pages-action against project=grudgedot
 ```
 
-> **Note**: Both `server/routes.ts` (dev) and `server/vercelApp.ts` (Vercel) must call `setupGrudgeProxy(app)` or all `/api/grudge/*` backend calls will 404. See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md).
+> **Note**: All runtime API routes are handled by `server/routes.ts` against the Railway / VPS container. Static-only deploys (Cloudflare Pages) proxy `/api/*` to `api.grudge-studio.com` via the client's fetch calls. See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md).
 
 After any deploy, verify backend connectivity at `/connections`.
 ## Warlord Suite (Native Pages)

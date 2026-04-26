@@ -1,0 +1,6 @@
+# grudgedot-launcher is deployed via Cloudflare Pages, NOT Vercel.
+# This repo is intentionally non-deployable on Vercel; the legacy
+# `gdevelop-assistant` Vercel project has been retired.
+# If a Vercel build is ever triggered (manually or via lingering Git
+# integration), this file ensures nothing useful is shipped.
+*
