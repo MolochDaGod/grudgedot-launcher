@@ -1,3 +1,7 @@
+---
+title: Sprite System Overview
+nav_order: 5
+---
 # Sprite Animation System - Technical Overview
 
 ## Architecture

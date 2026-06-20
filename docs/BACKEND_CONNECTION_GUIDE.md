@@ -1,3 +1,7 @@
+---
+title: Backend Connection Guide
+nav_order: 3
+---
 # Grudge Backend Connection Guide
 
 > **Reference architecture** for connecting any Grudge Studio app to the backend services.

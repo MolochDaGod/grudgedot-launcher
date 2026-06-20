@@ -1,0 +1,12 @@
+title: grudgeDot Launcher Docs
+description: Documentation for the grudgeDot launcher and Grudge Studio apps
+theme: just-the-docs
+url: "https://molochdagod.github.io"
+baseurl: "/grudgedot-launcher"
+markdown: kramdown
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+aux_links:
+  "grudgeDot on GitHub":
+    - "https://github.com/MolochDaGod/grudgedot-launcher"

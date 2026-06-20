@@ -1,3 +1,7 @@
+---
+title: Tabs and Apps
+nav_order: 6
+---
 # Tabs, Apps, and Project Organization
 
 This repo hosts multiple games/tools as "tabs" in one platform. Each tab has a unique slug, source, assets, and packaging metadata. This guide defines the structure and the process to add or update tabs and apps.
