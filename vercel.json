@@ -1,0 +1,74 @@
+{
+  "version": 2,
+  "name": "grudgedot-launcher",
+  "framework": "vite",
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": "dist/public",
+  "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/api/auth/discord",
+      "destination": "https://grudgewarlords.com/discord"
+    },
+    {
+      "source": "/api/auth/discord/:path*",
+      "destination": "https://grudgewarlords.com/api/discord/:path*"
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "https://id.grudge-studio.com/auth/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.grudge-studio.com/api/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/portal",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/launcher",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/hub",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/app",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api/|assets/|favicon|apple-touch|admin|portal|robots\\.txt|manifest|grudge-logo|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
