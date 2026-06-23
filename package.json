@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "sprite-generator": "node sprite-generator.js",
     "scan:models": "tsx server/scripts/scan-models.ts",
-    "scan:models:custom": "tsx server/scripts/scan-models.ts --dir"
+    "scan:models:custom": "tsx server/scripts/scan-models.ts --dir",
+    "fleet:sweep": "tsx scripts/dns-sweep.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.54",

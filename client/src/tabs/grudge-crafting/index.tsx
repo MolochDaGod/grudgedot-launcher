@@ -1,6 +1,8 @@
 import React from 'react';
 
-const GAME_URL = 'https://client.grudge-studio.com/crafting';
+import { GAME_URLS } from '@shared/gameUrls';
+
+const GAME_URL = `${GAME_URLS.client}/crafting`;
 
 export default function GrudgeCraftingTab() {
   return (

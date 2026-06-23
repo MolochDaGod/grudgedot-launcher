@@ -1,13 +1,21 @@
 /**
  * Canonical live URLs for embedded Grudge games.
- * Prefer *.grudge-studio.com custom domains over raw *.vercel.app hosts.
- * Never reference dead projects (e.g. standalone-grudge.vercel.app).
+ * Sourced from shared/fleetEras.ts — do not hardcode vercel.app hosts here.
  */
+import { resolveFleetUrl, BLOCKLIST_URLS } from './fleetEras';
+
 export const GAME_URLS = {
-  client: 'https://client.grudge-studio.com',
-  arena: 'https://grudge-arena.vercel.app',
-  armada: 'https://armada.grudge-studio.com',
-  nemesis: 'https://nexus-nemesis-game.vercel.app',
-  warlordsRts: 'https://grudge-warlords-rts.vercel.app/play',
-  bettaWarlords: 'https://client.grudge-studio.com/play',
+  client: resolveFleetUrl('warlords-client'),
+  play: resolveFleetUrl('warlords-play'),
+  arena: resolveFleetUrl('arena'),
+  armada: resolveFleetUrl('armada'),
+  nemesis: resolveFleetUrl('nemesis'),
+  warlordsRts: resolveFleetUrl('warlords-rts'),
+  bettaWarlords: `${resolveFleetUrl('warlords-client')}/play`,
+  survival: resolveFleetUrl('survival'),
+  drive: resolveFleetUrl('drive'),
+  dcq: resolveFleetUrl('dcq'),
+  platform: resolveFleetUrl('platform'),
 } as const;
+
+export { BLOCKLIST_URLS };

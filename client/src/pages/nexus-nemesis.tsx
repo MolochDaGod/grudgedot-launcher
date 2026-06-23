@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
 
-const GAME_URL = 'https://nexus-nemesis-game.vercel.app';
+import { GAME_URLS } from '@shared/gameUrls';
+
+const GAME_URL = GAME_URLS.nemesis;
 
 export default function NexusNemesisPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);

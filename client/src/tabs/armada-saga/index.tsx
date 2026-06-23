@@ -1,6 +1,8 @@
 import { GrudgeEmbed } from '@/components/GrudgeEmbed';
 
-const GAME_URL = 'https://armada.grudge-studio.com';
+import { GAME_URLS } from '@shared/gameUrls';
+
+const GAME_URL = GAME_URLS.armada;
 
 /**
  * Armada Saga tab — embeds the Gruda Armada space RTS in GrudgeDotBox.

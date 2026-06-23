@@ -1,6 +1,8 @@
 import React from 'react';
 
-const GAME_URL = 'https://client.grudge-studio.com/factory';
+import { GAME_URLS } from '@shared/gameUrls';
+
+const GAME_URL = `${GAME_URLS.client}/factory`;
 
 export default function GrudgeFactoryTab() {
   return (
