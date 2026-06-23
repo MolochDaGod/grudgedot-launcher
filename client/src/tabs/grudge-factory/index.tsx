@@ -1,6 +1,6 @@
 import React from 'react';
 
-const GAME_URL = 'https://standalone-grudge.vercel.app/factory';
+const GAME_URL = 'https://client.grudge-studio.com/factory';
 
 export default function GrudgeFactoryTab() {
   return (

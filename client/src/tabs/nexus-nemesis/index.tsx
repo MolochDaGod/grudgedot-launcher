@@ -1,6 +1,6 @@
 import React from 'react';
 
-const GAME_URL = 'https://nemesis.grudge-studio.com';
+const GAME_URL = 'https://nexus-nemesis-game.vercel.app';
 
 export default function NexusNemesisTab() {
   return (
