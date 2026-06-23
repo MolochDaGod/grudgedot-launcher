@@ -4,7 +4,7 @@ import {
   Joystick, Puzzle, Zap, Rocket, Box, Plane, Shield, Target, Crosshair, Map,
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
   Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse, Link2,
-  CreditCard,
+  CreditCard, Download, Brain, MapPin,
   Cog, Layers, Cuboid,
 } from "lucide-react";
 import {
@@ -277,6 +277,45 @@ const arcadeGames = [
   },
 ];
 
+const fleetHubItems = [
+  {
+    title: "Nexus Hub",
+    url: "https://grudachain.grudge-studio.com",
+    icon: Link2,
+    badge: "Hub",
+  },
+  {
+    title: "Studio Forge",
+    url: "https://github.com/MolochDaGod/grudge-dev-tool/releases/latest",
+    icon: Download,
+    badge: "Desktop",
+  },
+  {
+    title: "My Characters",
+    url: "https://client.grudge-studio.com/character",
+    icon: Sword,
+    badge: "Warlords",
+  },
+  {
+    title: "Home Island",
+    url: "https://warlord-crafting-suite.vercel.app/island-hub",
+    icon: MapPin,
+    badge: "WCS",
+  },
+  {
+    title: "Play Warlords",
+    url: "https://client.grudge-studio.com",
+    icon: Globe,
+    badge: "MMO",
+  },
+  {
+    title: "Legion AI",
+    url: "https://ai.grudge-studio.com",
+    icon: Brain,
+    badge: "AI",
+  },
+];
+
 const accountEconomyItems = [
   {
     title: "War Chest",
@@ -472,6 +511,35 @@ export function AppSidebar() {
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground flex items-center gap-1">
+            <Link2 className="h-3 w-3 text-emerald-500" />
+            Fleet Connect
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {fleetHubItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    data-testid={`link-fleet-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <a href={item.url} target="_blank" rel="noreferrer">
+                      <item.icon className="h-4 w-4" />
+                      <span className="flex-1">{item.title}</span>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/20 text-emerald-400 border-0">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

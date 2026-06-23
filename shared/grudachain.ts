@@ -16,7 +16,9 @@ export const WCS_URL = process.env.WCS_URL || "https://warlord-crafting-suite.ve
 export const GAME_API_GRUDA = process.env.GAME_API_GRUDA || GRUDACHAIN_URL;
 
 // Vercel deployment (static landing page + serverless functions)
-export const GRUDACHAIN_VERCEL_URL = "https://grudachain.vercel.app";
+export const GRUDACHAIN_VERCEL_URL = "https://grudachain.grudge-studio.com";
+export const GRUDACHAIN_NEXUS_URL = GRUDACHAIN_VERCEL_URL;
+export const FLEET_CONNECT_SCRIPT = `${GRUDACHAIN_NEXUS_URL}/grudge-fleet-connect.js`;
 
 // WCS pages available for iframe embedding
 export const WCS_PAGES = {

@@ -48,6 +48,11 @@ export const STUDIO_CORE: FleetEntry[] = [
   { id: 'grudge6', era: 'studio-core', label: 'Grudge6 Character Viewer', canonicalUrl: 'https://grudge6.grudge-studio.com', platform: 'vercel', status: 'live', vercelProject: 'grudge-character-creator' },
   { id: 'fleet', era: 'studio-core', label: 'Fleet Map', canonicalUrl: 'https://fleet.grudge-studio.com', platform: 'vercel', status: 'live', repo: 'grudge-fleet' },
   { id: 'coder', era: 'studio-core', label: 'GrudaChain IDE', canonicalUrl: 'https://coder.grudge-studio.com', platform: 'cloudflare-pages', status: 'live' },
+  { id: 'nexus', era: 'studio-core', label: 'GrudaChain Nexus Hub', canonicalUrl: 'https://grudachain.grudge-studio.com', fallbackUrl: 'https://grudachain-rho.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'grudachain', repo: 'grudachain' },
+  { id: 'grudgedot', era: 'studio-core', label: 'grudgeDot Launcher', canonicalUrl: 'https://gdevelop-assistant.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'gdevelop-assistant', repo: 'GDevelopAssistant' },
+  { id: 'dev-tool', era: 'studio-core', label: 'Grudge Studio Forge', canonicalUrl: 'https://github.com/MolochDaGod/grudge-dev-tool/releases/latest', platform: 'tunnel', status: 'live', repo: 'grudge-dev-tool', notes: 'Desktop Electron launcher v0.4+' },
+  { id: 'legion-hub', era: 'studio-core', label: 'Legion AI Hub', canonicalUrl: 'https://ai.grudge-studio.com', platform: 'cloudflare-worker', status: 'live', repo: 'grudge-ai-hub' },
+  { id: 'gruda-agent', era: 'studio-core', label: 'GRUDA Agent', canonicalUrl: 'https://grudaagent.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'grudaagent' },
 ];
 
 /** Warlords Era — fantasy MMORPG, island, crafting, classic RTS */

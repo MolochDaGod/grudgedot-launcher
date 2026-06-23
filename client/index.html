@@ -36,6 +36,10 @@
     <!-- Vite Entry Point -->
     <script type="module" src="/src/main.tsx"></script>
 
+    <!-- Grudge SSO + Fleet Connect (characters, islands, saves across apps) -->
+    <script src="https://grudachain.grudge-studio.com/grudge-sso.js"></script>
+    <script src="https://grudachain.grudge-studio.com/grudge-fleet-connect.js"></script>
+
     <!-- Puter SDK (client cloud storage — not used for auth) -->
     <script src="https://js.puter.com/v2/"></script>
 
@@ -45,8 +49,13 @@
         appId: 'GRUDGEDOT',
         appName: 'GrudgeDot',
         version: '2.0.0',
-        buildDate: new Date().toISOString()
+        buildDate: new Date().toISOString(),
+        fleetConnect: 'https://grudachain.grudge-studio.com/grudge-fleet-connect.js',
+        nexus: 'https://grudachain.grudge-studio.com'
       };
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.GrudgeFleetConnect) GrudgeFleetConnect.autoMount({ mode: 'pill' });
+      });
     </script>
   </body>
 </html>

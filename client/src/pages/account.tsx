@@ -4,7 +4,7 @@
  * Tabs: Overview | Characters | Social | Stats | Linked Accounts
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGrudgeAccount } from '@/hooks/useGrudgeAccount';
 import { usePlayerActivity, formatPlaytime } from '@/hooks/usePlayerActivity';
@@ -26,7 +26,7 @@ import {
   User, Trophy, Gamepad2, Star, LogIn, Coins, Gem, Wallet,
   UserPlus, Bell, BellDot, Shield, Link2, Crown, Globe,
   Sword, Clock, Zap, ChevronRight, Copy, Check, ExternalLink,
-  BarChart3, Target, Sparkles,
+  BarChart3, Target, Sparkles, MapPin, Download, Brain,
 } from 'lucide-react';
 import { Link } from 'wouter';
 
@@ -81,6 +81,11 @@ export default function AccountPage() {
     toast({ title: 'Copied', description: 'Grudge ID copied' });
     setTimeout(() => setCopied(false), 2000);
   };
+
+  useEffect(() => {
+    const gfc = (window as Window & { GrudgeFleetConnect?: { mount: (sel: string) => void } }).GrudgeFleetConnect;
+    if (gfc) gfc.mount('#grudge-fleet-connect-account');
+  }, [isAuthenticated, account?.homeIslandId]);
 
   // ── Auth gate ──
   if (!isAuthenticated && !authLoading) {
@@ -237,6 +242,44 @@ export default function AccountPage() {
                 </Link>
               ))}
             </div>
+
+            {/* Fleet Connect — cross-app character / island / save links */}
+            <Card className="border-emerald-500/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-emerald-400" />
+                  Fleet Connect
+                </CardTitle>
+                <CardDescription>Jump to your characters, home-island, and saves across the Grudge fleet</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {[
+                    { label: 'Warlords Characters', href: 'https://client.grudge-studio.com/character', icon: Sword },
+                    { label: 'Home Island', href: account?.homeIslandId
+                      ? `https://warlord-crafting-suite.vercel.app/island-hub?island=${account.homeIslandId}`
+                      : 'https://warlord-crafting-suite.vercel.app/island-hub', icon: MapPin },
+                    { label: 'Play Warlords', href: 'https://client.grudge-studio.com', icon: Globe },
+                    { label: 'Nexus Hub', href: 'https://grudachain.grudge-studio.com', icon: Link2 },
+                    { label: 'Studio Forge', href: 'https://github.com/MolochDaGod/grudge-dev-tool/releases/latest', icon: Download },
+                    { label: 'Legion AI', href: 'https://ai.grudge-studio.com', icon: Brain },
+                  ].map(link => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 p-3 rounded-lg border border-border/60 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition text-sm"
+                    >
+                      <link.icon className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <span>{link.label}</span>
+                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                    </a>
+                  ))}
+                </div>
+                <div id="grudge-fleet-connect-account" data-grudge-fleet-connect className="mt-4" />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* ═══ CHARACTERS ═══ */}
