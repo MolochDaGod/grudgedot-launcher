@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { GrudgeEmbed } from "@/components/GrudgeEmbed";
 import type { 
   OpenRTSUnit, OpenRTSWeapon, OpenRTSMover, OpenRTSEffect, 
   OpenRTSActor, OpenRTSProjectile, OpenRTSTrinket 
@@ -73,6 +74,9 @@ const DAMAGE_TYPES: { value: DamageType; label: string; icon: typeof Sword }[] =
   { value: "explosive", label: "Explosive", icon: Target },
   { value: "poison", label: "Poison", icon: Shield },
 ];
+
+/** Live, deployable top-down RTS game (grudge-warlords-rts.vercel.app). */
+const RTS_GAME_URL = "https://grudge-warlords-rts.vercel.app/play";
 
 export default function RtsBuilder() {
   const { toast } = useToast();
@@ -162,9 +166,9 @@ export default function RtsBuilder() {
               <Copy className="mr-2 h-4 w-4" />
               Export DSL
             </Button>
-            <Button size="sm" data-testid="button-preview-game">
+            <Button size="sm" data-testid="button-preview-game" onClick={() => setActiveTab("playtest")}>
               <Play className="mr-2 h-4 w-4" />
-              Preview
+              Playtest
             </Button>
           </div>
         </div>
@@ -222,6 +226,14 @@ export default function RtsBuilder() {
                 <TreePine className="h-4 w-4" />
                 Trinkets
               </TabsTrigger>
+              <TabsTrigger 
+                value="playtest" 
+                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                data-testid="tab-playtest"
+              >
+                <Play className="h-4 w-4" />
+                Playtest
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -269,6 +281,14 @@ export default function RtsBuilder() {
 
             <TabsContent value="trinkets" className="h-full m-0 p-0">
               <TrinketsPanel />
+            </TabsContent>
+
+            <TabsContent value="playtest" className="h-full m-0 p-0">
+              <GrudgeEmbed
+                src={RTS_GAME_URL}
+                title="Grudge Warlords RTS — Playtest"
+                minHeight="100%"
+              />
             </TabsContent>
           </div>
         </Tabs>
