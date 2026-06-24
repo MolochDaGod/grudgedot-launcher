@@ -2,7 +2,7 @@
  * grudgeDot Authentication
  *
  * The launcher does NOT provide its own login. Authentication is fully delegated
- * to the unified Grudge ID SSO at https://id.grudge-studio.com/auth. This module
+ * to the unified Grudge ID SSO at https://id.grudge-studio.com/api/auth/page. This module
  * only handles:
  *
  *   - storing / reading the JWT issued by the SSO
@@ -12,7 +12,8 @@
  *   - forwarding the JWT on authenticated API calls + logging out
  */
 
-const GRUDGE_AUTH_URL = 'https://id.grudge-studio.com/auth';
+/** Canonical login page — never use bare /auth (legacy Rec0deD SPA). */
+const GRUDGE_AUTH_LOGIN_URL = 'https://id.grudge-studio.com/api/auth/page';
 const GRUDGE_ID_BASE = 'https://id.grudge-studio.com';
 const APP_ID = 'grudgedot';
 
@@ -115,10 +116,15 @@ export function hasAuthToken(): boolean {
   return !!localStorage.getItem(KEYS.token);
 }
 
+/** Build canonical Grudge ID login URL (OAuth-style authorization redirect). */
+export function getLoginHref(customReturnUrl?: string): string {
+  const returnUrl = encodeURIComponent(customReturnUrl || window.location.href);
+  return `${GRUDGE_AUTH_LOGIN_URL}?app=${APP_ID}&redirect=${returnUrl}`;
+}
+
 /** Hard-redirect the browser to the Grudge ID SSO. */
 export function redirectToLogin(customReturnUrl?: string) {
-  const returnUrl = encodeURIComponent(customReturnUrl || window.location.href);
-  window.location.replace(`${GRUDGE_AUTH_URL}?redirect=${returnUrl}&app=${APP_ID}`);
+  window.location.replace(getLoginHref(customReturnUrl));
 }
 
 /**
@@ -146,8 +152,8 @@ export function captureAuthCallback(): boolean {
 
   const params = new URLSearchParams(window.location.search);
 
-  // 2. Cross-service SSO handshake (sso_token)
-  const ssoToken = params.get('sso_token');
+  // 2. Cross-service SSO handshake (sso_token or grudge_token from auth page handoff)
+  const ssoToken = params.get('sso_token') || params.get('grudge_token');
   if (ssoToken) {
     storeAuth({
       token: ssoToken,
@@ -157,6 +163,7 @@ export function captureAuthCallback(): boolean {
     });
     cleanAuthParams([
       'sso_token',
+      'grudge_token',
       'grudge_id',
       'grudge_user_id',
       'grudge_username',
@@ -204,7 +211,7 @@ export function logout() {
   const token = localStorage.getItem(KEYS.token);
   if (token) {
     // Same-origin via the Pages Function proxy at functions/api/[[path]].ts
-    // -> https://id.grudge-studio.com/auth/logout. Avoids CORS entirely.
+    // -> https://id.grudge-studio.com/api/auth/logout. Avoids CORS entirely.
     fetch('/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

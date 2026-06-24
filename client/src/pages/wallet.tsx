@@ -1,3 +1,4 @@
+import { getLoginHref } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useGbuxEconomy } from "@/hooks/useGbuxEconomy";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,7 +76,7 @@ export default function WalletPage() {
           <p className="text-muted-foreground">Sign in to view your GBUX balance and wallet</p>
         </div>
         <Button asChild data-testid="button-login">
-          <a href="https://id.grudge-studio.com/auth?app=grudgedot">
+          <a href={getLoginHref()}>
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
           </a>

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { getLoginHref } from '@/lib/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { useGrudgeAccount } from '@/hooks/useGrudgeAccount';
 import { usePlayerActivity, formatPlaytime } from '@/hooks/usePlayerActivity';
@@ -97,7 +98,7 @@ export default function AccountPage() {
         <h2 className="text-2xl font-bold">Your Account</h2>
         <p className="text-muted-foreground text-center max-w-sm">Sign in to view your characters, stats, wallet, and connect with other players.</p>
         <Button asChild size="lg">
-          <a href="https://id.grudge-studio.com/auth?app=grudgedot"><LogIn className="mr-2 h-4 w-4" /> Sign In</a>
+          <a href={getLoginHref()}><LogIn className="mr-2 h-4 w-4" /> Sign In</a>
         </Button>
       </div>
     );

@@ -1,3 +1,4 @@
+import { getLoginHref } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
@@ -188,7 +189,7 @@ export default function SettingsPage() {
           <p className="text-muted-foreground">Sign in to access your account settings and preferences</p>
         </div>
         <Button asChild data-testid="button-login">
-          <a href="https://id.grudge-studio.com/auth?app=grudgedot">
+          <a href={getLoginHref()}>
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
           </a>

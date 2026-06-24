@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getLoginHref } from '@/lib/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { useGrudgeAccount, type GrudgeCharacterLocal } from '@/hooks/useGrudgeAccount';
 import { useGrudgePlayer } from '@/hooks/useGrudgePlayer';
@@ -86,7 +87,7 @@ export default function BettaWarlords() {
         <Sword className="h-16 w-16 text-amber-500" />
         <h2 className="text-2xl font-bold">Gruda Wars</h2>
         <p className="text-muted-foreground text-center max-w-sm">Sign in with your Grudge Studio account to play with your characters, inventory, and stats.</p>
-        <Button asChild><a href="https://id.grudge-studio.com/auth?app=grudgedot"><LogIn className="mr-2 h-4 w-4" /> Sign In</a></Button>
+        <Button asChild><a href={getLoginHref()}><LogIn className="mr-2 h-4 w-4" /> Sign In</a></Button>
       </div>
     );
   }

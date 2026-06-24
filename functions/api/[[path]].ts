@@ -9,7 +9,7 @@
  * Routing matrix (matches the rules from the old _redirects):
  *   /api/auth/discord            -> https://grudgewarlords.com/discord
  *   /api/auth/discord/<rest>     -> https://grudgewarlords.com/api/discord/<rest>
- *   /api/auth/<rest>             -> https://id.grudge-studio.com/auth/<rest>
+ *   /api/auth/<rest>             -> https://id.grudge-studio.com/api/auth/<rest>
  *   /api/<rest>                  -> https://api.grudge-studio.com/api/<rest>
  *
  * Why a Function instead of _redirects?
@@ -59,10 +59,10 @@ function buildTarget(path: string, search: string): string {
     return `https://grudgewarlords.com/api/discord/${rest}${search}`;
   }
 
-  // All other auth → id.grudge-studio.com (which mounts /auth/*, NOT /api/auth/*)
+  // All other auth → id.grudge-studio.com Grudge ID API (canonical /api/auth/*)
   if (path.startsWith("/api/auth/")) {
     const rest = path.slice("/api/auth/".length);
-    return `https://id.grudge-studio.com/auth/${rest}${search}`;
+    return `https://id.grudge-studio.com/api/auth/${rest}${search}`;
   }
 
   // Everything else under /api → game backend on api.grudge-studio.com

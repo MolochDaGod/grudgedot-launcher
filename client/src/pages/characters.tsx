@@ -17,6 +17,7 @@ import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { getLoginHref } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useGrudgeAccount, type GrudgeCharacterLocal } from "@/hooks/useGrudgeAccount";
 import { mintCharacterAsNFT } from "@/lib/nft-service";
@@ -167,7 +168,7 @@ export default function CharactersPage() {
           <p className="text-muted-foreground">Sign in to create and manage your Grudge Warlords</p>
         </div>
         <Button asChild>
-          <a href="https://id.grudge-studio.com/auth?app=grudgedot"><LogIn className="mr-2 h-4 w-4" /> Sign In</a>
+          <a href={getLoginHref()}><LogIn className="mr-2 h-4 w-4" /> Sign In</a>
         </Button>
       </div>
     );

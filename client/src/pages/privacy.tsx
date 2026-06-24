@@ -1,3 +1,4 @@
+import { getLoginHref } from "@/lib/auth";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
@@ -149,7 +150,7 @@ export default function PrivacyPage() {
         <div className="mt-10 pt-6 border-t border-stone-800 text-stone-600 text-xs text-center">
           <Link href="/tos" className="hover:text-stone-400">Terms of Service</Link>
           <span className="mx-2">·</span>
-          <a href="https://id.grudge-studio.com/auth?app=grudgedot" className="hover:text-stone-400">Sign In</a>
+          <a href={getLoginHref()} className="hover:text-stone-400">Sign In</a>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
  * grudgeDot Auth Routes
  *
  * grudgeDot does NOT host its own login. The user is sent to the unified
- * Grudge ID SSO at https://id.grudge-studio.com/auth for every login flow
+ * Grudge ID SSO at https://id.grudge-studio.com/api/auth/page for every login flow
  * (password, OAuth, wallet, Puter, phone, guest). This module only keeps the
  * thin proxies that the authenticated client still needs:
  *
@@ -62,26 +62,26 @@ function ssoRedirect(req: Request): string {
   const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
   const host = req.get("host");
   const returnUrl = encodeURIComponent(`${proto}://${host}/`);
-  return `${AUTH_URL}/auth?redirect=${returnUrl}&app=${APP_ID}`;
+  return `${AUTH_URL}/api/auth/page?app=${APP_ID}&redirect=${returnUrl}`;
 }
 
 export function setupGrudgeAuth(app: Express) {
   // ── Token-only proxies (the only things the app still needs) ──
   app.get("/api/auth/verify", (req, res) =>
-    proxyAuth("/auth/verify", req, res, { method: "GET", forwardBody: false }),
+    proxyAuth("/api/auth/verify", req, res, { method: "GET", forwardBody: false }),
   );
   app.get("/api/auth/user", (req, res) =>
-    proxyAuth("/auth/user", req, res, { method: "GET", forwardBody: false }),
+    proxyAuth("/api/auth/user", req, res, { method: "GET", forwardBody: false }),
   );
   app.get("/api/auth/me", (req, res) =>
-    proxyAuth("/auth/user", req, res, { method: "GET", forwardBody: false }),
+    proxyAuth("/api/auth/user", req, res, { method: "GET", forwardBody: false }),
   );
-  app.post("/api/auth/logout", (req, res) => proxyAuth("/auth/logout", req, res));
+  app.post("/api/auth/logout", (req, res) => proxyAuth("/api/auth/logout", req, res));
 
   // Puter cloud linkage for an already-authenticated Grudge account (NOT a login).
   // The user is already signed in via Grudge ID; this associates their Puter UUID
   // so Puter KV/FS can persist per-user saves.
-  app.post("/api/auth/link-puter", (req, res) => proxyAuth("/auth/puter-link", req, res));
+  app.post("/api/auth/link-puter", (req, res) => proxyAuth("/api/auth/puter-link", req, res));
 
   // ── Backwards-compatible redirects for old login links ──
   app.get("/api/login", (req, res) => res.redirect(302, ssoRedirect(req)));
