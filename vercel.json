@@ -5,6 +5,28 @@
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist/public",
   "installCommand": "npm install",
+  "redirects": [
+    {
+      "source": "/warlords",
+      "destination": "https://forge.grudge-studio.com?from=launcher-warlord",
+      "permanent": false
+    },
+    {
+      "source": "/warlords/:path*",
+      "destination": "https://forge.grudge-studio.com?from=launcher-warlord",
+      "permanent": false
+    },
+    {
+      "source": "/engine",
+      "destination": "https://forge.grudge-studio.com?from=launcher-babylon-deprecated&mode=scene",
+      "permanent": false
+    },
+    {
+      "source": "/babygrudge",
+      "destination": "https://forge.grudge-studio.com?from=launcher-babylon-hub",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/auth/discord",
@@ -61,7 +83,8 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.puter.com https://*.grudge-studio.com https://grudachain-rho.vercel.app https://*.vercel.app https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' https: wss:; frame-src 'self' https://*.puter.com https://*.puter.site https://grudge-studio.com https://grudgewarlords.com https://*.grudge-studio.com https://*.vercel.app https://vercel.live; media-src 'self' https://assets.grudge-studio.com blob:; worker-src 'self' blob:" }
       ]
     },
     {
