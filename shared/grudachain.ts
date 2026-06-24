@@ -15,9 +15,11 @@ export const WCS_URL = process.env.WCS_URL || "https://warlord-crafting-suite.ve
 // GAME_API_GRUDA is the canonical Grudge Studio API endpoint (same as GRUDACHAIN_URL by default)
 export const GAME_API_GRUDA = process.env.GAME_API_GRUDA || GRUDACHAIN_URL;
 
-// Vercel deployment (static landing page + serverless functions)
-export const GRUDACHAIN_VERCEL_URL = "https://grudachain.grudge-studio.com";
-export const GRUDACHAIN_NEXUS_URL = GRUDACHAIN_VERCEL_URL;
+// Nexus frontend (Vercel) — canonical custom domain returns 522 until DNS CNAME is repaired
+export const GRUDACHAIN_CANONICAL_URL = "https://grudachain.grudge-studio.com";
+export const GRUDACHAIN_NEXUS_URL =
+  process.env.GRUDACHAIN_NEXUS_URL || "https://grudachain-rho.vercel.app";
+export const GRUDACHAIN_VERCEL_URL = GRUDACHAIN_NEXUS_URL;
 export const FLEET_CONNECT_SCRIPT = `${GRUDACHAIN_NEXUS_URL}/grudge-fleet-connect.js`;
 
 // WCS pages available for iframe embedding
