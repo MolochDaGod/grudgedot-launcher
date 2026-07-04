@@ -25,10 +25,10 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build
-        run: npm run build
+        run: npm run vercel-build
         env:
           VITE_AUTH_GATEWAY_URL: https://id.grudge-studio.com
           VITE_API_URL: https://api.grudge-studio.com
