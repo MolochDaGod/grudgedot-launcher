@@ -25,6 +25,9 @@
 # Use the pretty URL `/admin` (no .html) so Pages' canonicalizer doesn't loop.
 /admin        /admin       200
 
+# Static build output — must precede the SPA catch-all.
+# Rewriting `/*` to `/` previously shadowed `/assets/*` and served portal.html for JS/CSS.
+/assets/*     /assets/:splat  200
+
 # SPA fallback — must be last so it doesn't shadow the rules above.
-# Rewrite to `/` (which Pages serves as `index.html`) instead of explicit `/index.html`.
-/*            /            200
+/*            /index.html  200
