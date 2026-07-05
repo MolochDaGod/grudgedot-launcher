@@ -6,6 +6,7 @@ import {
   ExternalLink, Play, GitBranch, Layers, Keyboard, Swords, Building2,
   Factory, FlaskConical, ArrowRight,
 } from 'lucide-react';
+import { Link } from 'wouter';
 import {
   HERO_RTS_DEPLOY,
   HERO_RTS_LINKS,
@@ -95,6 +96,18 @@ export function HeroRtsOverviewPanel() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Combat & weapon skills (WCS)</CardTitle>
+            <CardDescription>MM distance bias + 4-skill weapon matrix (separate from Hero RTS hotkeys)</CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <Link href="/warlord-suite/weapon-skills">
+              <Button variant="outline" size="sm">Open MM & Weapon Skills reference</Button>
+            </Link>
           </CardContent>
         </Card>
 
