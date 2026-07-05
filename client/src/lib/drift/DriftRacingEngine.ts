@@ -14,7 +14,22 @@ import {
   pulseShake,
   SPEED_FX,
 } from './speedPresentation';
-import type { DriftEngineCallbacks, DriftHudSnapshot, DriftInput, DriftVehicleConfig } from './types';
+import { SpeedLines } from './SpeedLines';
+import type {
+  DriftEngineCallbacks,
+  DriftHudSnapshot,
+  DriftInput,
+  DriftSessionOptions,
+  DriftVehicleConfig,
+} from './types';
+import {
+  contractPayout,
+  contractProgress,
+  evaluateContract,
+  gradeStyle,
+  isSessionTimedOut,
+  type DriftSessionResult,
+} from '@/lib/velocity/contracts';
 import {
   loadRvpTrackModel,
   buildRaceRouteFromTrack,
@@ -62,15 +77,30 @@ export class DriftRacingEngine {
 
   private callbacks: DriftEngineCallbacks;
   private vehicleConfig: DriftVehicleConfig;
+  private sessionOptions: DriftSessionOptions;
+  private speedLines: SpeedLines | null = null;
+  private smokeMaterial: THREE.PointsMaterial;
+
+  private drivingActive = false;
+  private sessionStart = 0;
+  private offTrackTime = 0;
+  private sessionTime = 0;
+  private isOffTrack = false;
+  private longestCombo = 1;
+  private lapTimes: number[] = [];
+  private sessionEnded = false;
+  private launchBoostRemaining = 0;
 
   private constructor(
     container: HTMLElement,
     vehicleConfig: DriftVehicleConfig,
+    sessionOptions: DriftSessionOptions,
     callbacks: DriftEngineCallbacks = {},
   ) {
     this.container = container;
     this.callbacks = callbacks;
     this.vehicleConfig = vehicleConfig;
+    this.sessionOptions = sessionOptions;
     setVehicleStatMultipliers(vehicleConfig.statMultipliers);
 
     const w = Math.max(1, container.clientWidth);
@@ -93,19 +123,18 @@ export class DriftRacingEngine {
 
     const smokeGeo = new THREE.BufferGeometry();
     smokeGeo.setAttribute('position', new THREE.BufferAttribute(this.smokePositions, 3));
-    this.smokeParticles = new THREE.Points(
-      smokeGeo,
-      new THREE.PointsMaterial({
-        color: 0xcccccc,
-        size: 0.35,
-        transparent: true,
-        opacity: 0.5,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
+    this.smokeMaterial = new THREE.PointsMaterial({
+      color: 0xcccccc,
+      size: 0.4,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    this.smokeParticles = new THREE.Points(smokeGeo, this.smokeMaterial);
     this.scene.add(this.smokeParticles);
 
+    this.speedLines = new SpeedLines(this.camera);
     this.buildLighting();
 
     window.addEventListener('keydown', this.onKeyDown);
@@ -116,11 +145,22 @@ export class DriftRacingEngine {
   static async create(
     container: HTMLElement,
     vehicleConfig: DriftVehicleConfig,
+    sessionOptions: DriftSessionOptions,
     callbacks: DriftEngineCallbacks = {},
   ): Promise<DriftRacingEngine> {
-    const engine = new DriftRacingEngine(container, vehicleConfig, callbacks);
+    const engine = new DriftRacingEngine(container, vehicleConfig, sessionOptions, callbacks);
     await engine.initWorld();
     return engine;
+  }
+
+  /** Called after 3-2-1-GO countdown — starts timers and launch boost. */
+  beginDriving(): void {
+    if (this.drivingActive || this.sessionEnded) return;
+    this.drivingActive = true;
+    this.sessionStart = performance.now();
+    this.lapStart = performance.now();
+    this.launchBoostRemaining = 2;
+    pulseShake(this.speedFx, 0.08);
   }
 
   private async initWorld() {
@@ -155,7 +195,6 @@ export class DriftRacingEngine {
       this.fitCameraToTrack();
       this.resetToStart();
       this.ready = true;
-      this.lapStart = performance.now();
       this.callbacks.onLoadState?.('ready');
       this.tick();
     } catch (err) {
@@ -310,9 +349,15 @@ export class DriftRacingEngine {
     const closestT = getClosestRouteProgress(this.route, this.vehicleState.position);
     this.vehicleState.lapProgress = closestT;
 
-    if (this.lastProgress > 0.88 && closestT < 0.12 && this.vehicleState.speed > 4) {
+    if (
+      this.drivingActive &&
+      this.lastProgress > 0.88 &&
+      closestT < 0.12 &&
+      this.vehicleState.speed > 4
+    ) {
       this.vehicleState.lap++;
       this.lapTime = performance.now() - this.lapStart;
+      this.lapTimes.push(this.lapTime);
       if (this.bestLap === 0 || this.lapTime < this.bestLap) {
         this.bestLap = this.lapTime;
       }
@@ -331,10 +376,46 @@ export class DriftRacingEngine {
     const routeDist = position.distanceTo(routePoint);
     const legal = onStreet && routeDist < this.route.legalRadius * 1.35;
 
+    this.isOffTrack = !legal;
     if (!legal) {
       this.vehicleState.velocity.multiplyScalar(0.92);
       pulseShake(this.speedFx, 0.05);
     }
+  }
+
+  private checkSessionComplete(): void {
+    if (!this.drivingActive || this.sessionEnded) return;
+    const contract = this.sessionOptions.contract;
+    const offTrackPct =
+      this.sessionTime > 0 ? (this.offTrackTime / this.sessionTime) * 100 : 0;
+    const passed = evaluateContract(contract, {
+      laps: this.vehicleState.lap,
+      driftScore: this.vehicleState.driftScore,
+      sessionSec: this.sessionTime,
+      offTrackPct,
+      bestLapMs: this.bestLap,
+      prevBestLapMs: 0,
+    });
+    const timedOut = isSessionTimedOut(contract, this.sessionTime);
+    const shouldEnd = passed || timedOut;
+    if (!shouldEnd) return;
+
+    this.sessionEnded = true;
+    this.drivingActive = false;
+    const grade = gradeStyle(this.vehicleState.driftScore, offTrackPct, passed);
+    const result: DriftSessionResult = {
+      contractId: contract.id,
+      passed,
+      driftScore: Math.floor(this.vehicleState.driftScore),
+      bestLapMs: this.bestLap,
+      totalTimeMs: performance.now() - this.sessionStart,
+      lapTimes: [...this.lapTimes],
+      offTrackPct,
+      longestCombo: this.longestCombo,
+      styleGrade: grade,
+      currencyEarned: contractPayout(grade, passed),
+    };
+    this.callbacks.onSessionComplete?.(result);
   }
 
   private snapVehicleToGround() {
@@ -364,7 +445,7 @@ export class DriftRacingEngine {
         this.smokePositions[i * 3 + 1] += this.smokeVelocities[i * 3 + 1] * dt;
         this.smokePositions[i * 3 + 2] += this.smokeVelocities[i * 3 + 2] * dt;
         this.smokeVelocities[i * 3 + 1] += 0.8 * dt;
-      } else if (drifting && Math.random() < 0.4) {
+      } else if (drifting && Math.random() < (this.vehicleState.nitroActive ? 0.55 : 0.42)) {
         const rearOffset = new THREE.Vector3(0, 0.15, 0.9)
           .applyAxisAngle(new THREE.Vector3(0, 1, 0), this.vehicleState.heading);
         const side = i % 2 === 0 ? -0.55 : 0.55;
@@ -382,19 +463,46 @@ export class DriftRacingEngine {
       }
     }
     positions.needsUpdate = true;
+
+    if (this.vehicleState.nitroActive) {
+      this.smokeMaterial.color.setHex(0x66ccff);
+      this.smokeMaterial.size = 0.5;
+    } else if (drifting) {
+      this.smokeMaterial.color.setHex(0xffaa44);
+      this.smokeMaterial.size = 0.45;
+    } else {
+      this.smokeMaterial.color.setHex(0xbbbbbb);
+      this.smokeMaterial.size = 0.35;
+    }
   }
 
   private emitHud() {
+    const contract = this.sessionOptions.contract;
+    const offTrackPct =
+      this.sessionTime > 0 ? (this.offTrackTime / this.sessionTime) * 100 : 0;
     const snapshot: DriftHudSnapshot = {
       speedKmh: speedToKmh(this.vehicleState.speed),
       driftScore: Math.floor(this.vehicleState.driftScore),
       combo: Math.round(this.vehicleState.comboMultiplier * 10) / 10,
       boost: this.vehicleState.boost,
       lap: this.vehicleState.lap,
-      lapTime: (performance.now() - this.lapStart) / 1000,
+      lapTime: this.drivingActive ? (performance.now() - this.lapStart) / 1000 : 0,
       bestLap: this.bestLap / 1000,
       isDrifting: this.vehicleState.isDrifting,
       nitroActive: this.vehicleState.nitroActive,
+      isOffTrack: this.isOffTrack,
+      offTrackPct,
+      longestCombo: this.longestCombo,
+      targetLaps: contract.targetLaps ?? contract.cleanRunLaps ?? 3,
+      contractLabel: contract.name,
+      contractProgress: contractProgress(contract, {
+        laps: this.vehicleState.lap,
+        driftScore: this.vehicleState.driftScore,
+        sessionSec: this.sessionTime,
+        offTrackPct,
+      }),
+      sessionSec: this.sessionTime,
+      drivingActive: this.drivingActive,
     };
     this.callbacks.onHudUpdate?.(snapshot);
   }
@@ -405,12 +513,31 @@ export class DriftRacingEngine {
     const dt = Math.min(this.clock.getDelta(), 0.05);
 
     this.readInput();
-    updateDriftPhysics(this.vehicleState, this.input, dt);
-    this.snapVehicleToGround();
-    this.enforceLegalTrack();
-    this.updateLap();
+
+    if (this.drivingActive) {
+      this.sessionTime = (performance.now() - this.sessionStart) / 1000;
+      if (this.isOffTrack) this.offTrackTime += dt;
+      this.longestCombo = Math.max(this.longestCombo, this.vehicleState.comboMultiplier);
+
+      const physicsInput = { ...this.input };
+      if (this.launchBoostRemaining > 0) {
+        this.launchBoostRemaining -= dt;
+        physicsInput.throttle = Math.min(1, physicsInput.throttle * 1.4);
+      }
+      updateDriftPhysics(this.vehicleState, physicsInput, dt);
+      this.snapVehicleToGround();
+      this.enforceLegalTrack();
+      this.updateLap();
+      this.checkSessionComplete();
+    }
+
     updateSpeedPresentation(this.speedFx, this.vehicleState, dt);
     this.updateSmoke(dt);
+    this.speedLines?.update(
+      this.speedFx.speedRatio,
+      this.vehicleState.nitroActive,
+      dt,
+    );
 
     this.vehicle.position.copy(this.vehicleState.position);
     this.vehicle.rotation.y = this.vehicleState.heading;
@@ -470,6 +597,8 @@ export class DriftRacingEngine {
         mats.forEach((m) => m.dispose());
       }
     });
+    this.speedLines?.dispose();
+    this.smokeMaterial.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

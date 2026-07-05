@@ -1,4 +1,5 @@
 import type * as THREE from 'three';
+import type { DriftSessionResult, RunContract } from '@/lib/velocity/contracts';
 
 export interface DriftInput {
   throttle: number;
@@ -43,14 +44,27 @@ export interface DriftHudSnapshot {
   bestLap: number;
   isDrifting: boolean;
   nitroActive: boolean;
+  isOffTrack: boolean;
+  offTrackPct: number;
+  longestCombo: number;
+  targetLaps: number;
+  contractLabel: string;
+  contractProgress: number;
+  sessionSec: number;
+  drivingActive: boolean;
 }
 
 export type DriftLoadState = 'loading' | 'ready' | 'error';
+
+export interface DriftSessionOptions {
+  contract: RunContract;
+}
 
 export interface DriftEngineCallbacks {
   onHudUpdate?: (snapshot: DriftHudSnapshot) => void;
   onLapComplete?: (lap: number, timeMs: number) => void;
   onLoadState?: (state: DriftLoadState, message?: string) => void;
+  onSessionComplete?: (result: DriftSessionResult) => void;
 }
 
 export interface DriftVehicleConfig {

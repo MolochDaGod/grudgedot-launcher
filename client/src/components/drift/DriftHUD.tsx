@@ -21,7 +21,15 @@ export function DriftHUD({ hud }: DriftHUDProps) {
       <div className="absolute left-4 right-4 top-4 flex items-start justify-between">
         <div className="rounded-lg border border-cyan-500/20 bg-black/60 px-4 py-2 backdrop-blur-md">
           <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">Grudge Velocity</div>
-          <div className="text-xs text-white/50">RVP Street · Lap {hud.lap + 1}</div>
+          <div className="text-xs text-white/50">
+            {hud.contractLabel} · Lap {Math.min(hud.lap + 1, hud.targetLaps)}/{hud.targetLaps}
+          </div>
+          <div className="mt-1.5 h-1 w-32 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-rose-500 to-cyan-400 transition-all duration-200"
+              style={{ width: `${Math.round(hud.contractProgress * 100)}%` }}
+            />
+          </div>
         </div>
 
         <div className="text-right">
@@ -102,6 +110,15 @@ export function DriftHUD({ hud }: DriftHUDProps) {
         <div>A/D Steer · Space Handbrake</div>
         <div>Shift Nitro · R Reset</div>
       </div>
+
+      {/* Off-track warning */}
+      {hud.drivingActive && hud.isOffTrack && (
+        <div className="absolute left-1/2 top-32 -translate-x-1/2">
+          <div className="animate-pulse rounded border border-rose-500/50 bg-rose-500/20 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.25em] text-rose-300 shadow-[0_0_16px_rgba(255,50,80,0.4)]">
+            Off Track · {hud.offTrackPct.toFixed(0)}%
+          </div>
+        </div>
+      )}
 
       {/* Drift indicator */}
       {hud.isDrifting && (

@@ -23,6 +23,7 @@ import {
   getMod,
 } from '@/lib/velocity/garage';
 import type { GarageState } from '@/lib/velocity/garageState';
+import { RUN_CONTRACTS, type RunContractId } from '@/lib/velocity/contracts';
 
 interface VelocityGarageProps {
   garage: GarageState;
@@ -67,7 +68,13 @@ export function VelocityGarage({ garage, onChange, onRace }: VelocityGarageProps
   };
 
   const pickStarter = (c: CarDef) => {
-    set({ carId: c.id, onboarded: true });
+    set({ carId: c.id, onboarded: true, tutorialDone: true });
+  };
+
+  const formatLap = (ms: number) => {
+    if (ms <= 0) return '—';
+    const s = ms / 1000;
+    return `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, '0')}`;
   };
 
   const buyUpgrade = () => {
@@ -133,6 +140,39 @@ export function VelocityGarage({ garage, onChange, onRace }: VelocityGarageProps
               <p className="mt-1 text-sm text-white/70">
                 Effective — SPD {(effective.topSpeed * 100).toFixed(0)}% · ACC {(effective.accel * 100).toFixed(0)}% · GRP {(effective.grip * 100).toFixed(0)}%
               </p>
+            </div>
+          </div>
+
+          {(garage.lastDriftScore > 0 || garage.bestLapMs > 0) && (
+            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/55">
+              Last run — {garage.lastDriftScore.toLocaleString()} pts
+              {garage.lastStyleGrade && (
+                <span className="ml-2 text-amber-300">{garage.lastStyleGrade}</span>
+              )}
+              {garage.bestLapMs > 0 && (
+                <span className="ml-2 text-emerald-400/80">PB {formatLap(garage.bestLapMs)}</span>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-[10px] uppercase tracking-widest text-white/40">Run contract</p>
+            <div className="grid gap-2">
+              {RUN_CONTRACTS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => set({ contractId: c.id as RunContractId })}
+                  className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
+                    garage.contractId === c.id
+                      ? 'border-cyan-400/50 bg-cyan-500/10 text-cyan-100'
+                      : 'border-white/10 text-white/60 hover:border-white/25'
+                  }`}
+                >
+                  <p className="font-semibold text-white">{c.name}</p>
+                  <p className="mt-0.5 text-white/45">{c.description}</p>
+                </button>
+              ))}
             </div>
           </div>
 

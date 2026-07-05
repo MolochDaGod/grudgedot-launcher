@@ -4,10 +4,11 @@ interface SpeedOverlayProps {
   fx: SpeedPresentationState;
   isDrifting: boolean;
   nitroActive: boolean;
+  isOffTrack?: boolean;
 }
 
-export function SpeedOverlay({ fx, isDrifting, nitroActive }: SpeedOverlayProps) {
-  const vignetteOpacity = fx.vignette;
+export function SpeedOverlay({ fx, isDrifting, nitroActive, isOffTrack }: SpeedOverlayProps) {
+  const vignetteOpacity = isOffTrack ? Math.max(fx.vignette, 0.55) : fx.vignette;
   const blurStrength = fx.motionBlur;
   const lineOpacity = fx.speedRatio * 0.55 + (nitroActive ? 0.25 : 0);
   const driftGlow = isDrifting ? fx.driftIntensity * 0.35 : 0;
@@ -18,7 +19,9 @@ export function SpeedOverlay({ fx, isDrifting, nitroActive }: SpeedOverlayProps)
       <div
         className="absolute inset-0 transition-opacity duration-75"
         style={{
-          background: `radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,${vignetteOpacity}) 100%)`,
+          background: isOffTrack
+            ? `radial-gradient(ellipse at center, transparent 25%, rgba(120,20,40,${vignetteOpacity * 0.85}) 55%, rgba(0,0,0,${vignetteOpacity}) 100%)`
+            : `radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,${vignetteOpacity}) 100%)`,
           opacity: 1,
         }}
       />
