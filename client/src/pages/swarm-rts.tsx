@@ -3,8 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Home, ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useState } from 'react';
+import { GAME_URLS } from '@shared/gameUrls';
 
-const RTS_URL = 'https://grudge-warlords-rts.vercel.app';
+const RTS_URL = GAME_URLS.warlordsRts;
 
 export default function SwarmRTS() {
   const [fullscreen, setFullscreen] = useState(false);

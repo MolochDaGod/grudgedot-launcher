@@ -13,6 +13,16 @@ import * as THREE from 'three';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LIGHTING_PRESETS } from '@/lib/engine3d';
+import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
+import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
+
+export default function GrudgeArena() {
+  return (
+    <GrudgeGameWrapper gameSlug="grudge-arena" gameName="Grudge Arena" xpPerThousand={12} goldPerGame={8} hideHud>
+      {(session) => <GrudgeArenaInner session={session} />}
+    </GrudgeGameWrapper>
+  );
+}
 
 interface Enemy {
   mesh: THREE.Mesh;
@@ -21,14 +31,23 @@ interface Enemy {
   speed: number;
 }
 
-export default function GrudgeArena() {
+function GrudgeArenaInner({ session }: { session: GrudgeGameSession }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [playerHP, setPlayerHP] = useState(100);
   const [stamina, setStamina] = useState(100);
   const [score, setScore] = useState(0);
   const [dead, setDead] = useState(false);
+  const reportedRef = useRef(false);
 
   const stateRef = useRef({ playerHP: 100, stamina: 100, score: 0, dead: false });
+
+  useEffect(() => {
+    if (dead && !reportedRef.current) {
+      reportedRef.current = true;
+      session.reportScore(score, { outcome: 'defeated' });
+    }
+    if (!dead) reportedRef.current = false;
+  }, [dead, score, session]);
 
   useEffect(() => {
     if (!containerRef.current) return;

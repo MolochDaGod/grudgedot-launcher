@@ -20,6 +20,8 @@ import { useGrudgePlayer } from '@/hooks/useGrudgePlayer';
 import { ATTRIBUTE_DEFINITIONS, BASE_STATS } from '@/lib/character-stats';
 import { Loader2, LogIn, Sword, Shield, Heart, Zap, Star, Package, Play, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
+import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
+import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
 
 // ── Compute derived stats from attributes ──
 function computeStats(attrs: Record<string, number>) {
@@ -54,6 +56,14 @@ interface GameEnemy {
 }
 
 export default function BettaWarlords() {
+  return (
+    <GrudgeGameWrapper gameSlug="betta-warlords" gameName="Betta Warlords" xpPerThousand={14} goldPerGame={10} hideHud>
+      {(session) => <BettaWarlordsInner session={session} />}
+    </GrudgeGameWrapper>
+  );
+}
+
+function BettaWarlordsInner({ session }: { session: GrudgeGameSession }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { characters, charactersLoading } = useGrudgeAccount();
   const { activeChar: grudgeChar, inventory, professions } = useGrudgePlayer();
@@ -71,6 +81,15 @@ export default function BettaWarlords() {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
   const gameRef = useRef<{ running: boolean; keys: Set<string> } | null>(null);
+  const reportedRef = useRef(false);
+
+  useEffect(() => {
+    if (phase === 'dead' && !reportedRef.current) {
+      reportedRef.current = true;
+      session.reportScore(killCount * 100 + xpGained, { kills: killCount, xpGained, goldGained });
+    }
+    if (phase !== 'dead') reportedRef.current = false;
+  }, [phase, killCount, xpGained, goldGained, session]);
 
   // Auto-select first character
   useEffect(() => {

@@ -23,10 +23,20 @@ import { ShooterController, ShooterControllerState } from '@/lib/tps/shooter-con
 import { HealthComponent, CombatManager } from '@/lib/tps/combat-system';
 import { EnemySpawner } from '@/lib/tps/enemy-ai';
 import { WEAPONS } from '@/lib/tps/weapons';
+import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
+import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
 
 type GamePhase = 'menu' | 'playing' | 'paused' | 'dead' | 'victory';
 
 export default function Shooter3D() {
+  return (
+    <GrudgeGameWrapper gameSlug="shooter-3d" gameName="Grudge Assault" xpPerThousand={15} goldPerGame={12} hideHud>
+      {(session) => <Shooter3DInner session={session} />}
+    </GrudgeGameWrapper>
+  );
+}
+
+function Shooter3DInner({ session }: { session: GrudgeGameSession }) {
   const [, navigate] = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BABYLON.Engine | null>(null);
@@ -46,6 +56,15 @@ export default function Shooter3D() {
   const [kills, setKills] = useState(0);
   const [score, setScore] = useState(0);
   const [waveText, setWaveText] = useState('');
+  const reportedRef = useRef(false);
+
+  useEffect(() => {
+    if ((phase === 'dead' || phase === 'victory') && !reportedRef.current) {
+      reportedRef.current = true;
+      session.reportScore(score, { wave, kills, outcome: phase });
+    }
+    if (phase === 'menu' || phase === 'playing') reportedRef.current = false;
+  }, [phase, score, wave, kills, session]);
 
   // ── Build Scene ──
 

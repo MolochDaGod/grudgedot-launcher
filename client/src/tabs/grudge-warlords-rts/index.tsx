@@ -1,7 +1,8 @@
 import React, { useRef, useCallback, useEffect } from 'react';
+import { GAME_URLS } from '@shared/gameUrls';
 
-const GAME_URL = 'https://grudge-warlords-rts.vercel.app/play';
-const GAME_ORIGIN = 'https://grudge-warlords-rts.vercel.app';
+const GAME_URL = GAME_URLS.warlordsRts;
+const GAME_ORIGIN = new URL(GAME_URL).origin;
 
 /**
  * Grudge Warlords RTS tab — embeds the standalone RTS in an iframe

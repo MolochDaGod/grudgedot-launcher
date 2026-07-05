@@ -1,16 +1,23 @@
-// Grudge Swarm uses the working Swarm RTS game
-import SwarmRTS from './swarm-rts';
+import { Suspense, lazy } from 'react';
+import { Loader2 } from 'lucide-react';
 import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
-import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
+
+const SwarmRTSEnhanced = lazy(() => import('./swarm-rts-enhanced'));
 
 export default function GrudgeSwarmPage() {
   return (
-    <GrudgeGameWrapper gameSlug="grudge-swarm" gameName="Grudge Swarm" xpPerThousand={12} goldPerGame={8}>
-      {(session) => <GrudgeSwarmPageInner session={session} />}
+    <GrudgeGameWrapper gameSlug="grudge-swarm" gameName="Grudge Swarm" xpPerThousand={12} goldPerGame={8} hideHud>
+      {() => (
+        <Suspense
+          fallback={
+            <div className="flex h-full min-h-[320px] items-center justify-center bg-black">
+              <Loader2 className="h-8 w-8 animate-spin text-amber-400" />
+            </div>
+          }
+        >
+          <SwarmRTSEnhanced />
+        </Suspense>
+      )}
     </GrudgeGameWrapper>
   );
-}
-
-function GrudgeSwarmPageInner({ session }: { session: GrudgeGameSession }) {
-  return <SwarmRTS />;
 }
