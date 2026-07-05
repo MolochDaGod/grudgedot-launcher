@@ -1,0 +1,15 @@
+{
+  "id": "island-crusade-dangerroom",
+  "label": "Dangerroom",
+  "description": "Unified Grudge combat training — HYDRA HUD, soft-lock focus, Rapier physics, settlements, and boss-ready AI brains.",
+  "liveUrl": "https://island-crusade-dangerroom.vercel.app",
+  "repo": "https://github.com/MolochDaGod/Island-Crusade-Realm-2",
+  "artifactPath": "artifacts/dangerroom",
+  "tags": [
+    "combat",
+    "rapier",
+    "soft-lock",
+    "animations",
+    "boss-fights"
+  ]
+}

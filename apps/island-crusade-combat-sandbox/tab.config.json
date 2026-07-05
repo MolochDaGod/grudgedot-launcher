@@ -1,0 +1,14 @@
+{
+  "id": "island-crusade-combat-sandbox",
+  "label": "Combat Sandbox",
+  "description": "Island Crusade realm combat prototype — seeded terrain, faction zones, NPC towns, huntable animals, and class abilities.",
+  "liveUrl": "https://island-crusade-combat-sandbox.vercel.app",
+  "repo": "https://github.com/MolochDaGod/Island-Crusade-Realm-2",
+  "artifactPath": "artifacts/combat-sandbox",
+  "tags": [
+    "combat",
+    "sandbox",
+    "island",
+    "r2-assets"
+  ]
+}
