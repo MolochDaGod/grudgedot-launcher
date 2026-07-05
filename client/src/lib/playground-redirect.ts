@@ -41,11 +41,6 @@ export const EDITOR_REDIRECTS: Record<string, { url: string; label: string; desc
     label: 'World Builder',
     description: 'Full 3D world builder (replaces RTS scene editor)',
   },
-  '/rts-builder': {
-    url: `${PLAYGROUND_BASE}/`,
-    label: 'World Builder',
-    description: 'Full 3D world builder (replaces RTS builder)',
-  },
 }
 
 /**

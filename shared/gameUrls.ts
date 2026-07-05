@@ -16,6 +16,8 @@ export const GAME_URLS = {
   drive: resolveFleetUrl('drive'),
   dcq: resolveFleetUrl('dcq'),
   platform: resolveFleetUrl('platform'),
+  heroRts: resolveFleetUrl('hero-rts'),
+  heroRtsPlay: `${resolveFleetUrl('hero-rts')}/?play=1`,
 } as const;
 
 export { BLOCKLIST_URLS };

@@ -13,11 +13,14 @@ import { Slider } from "@/components/ui/slider";
 import { 
   Plus, Users, Sword, Navigation, Sparkles, Target, TreePine, 
   Settings, Play, Save, Trash2, Copy, Eye, Crosshair, Shield,
-  Heart, Zap, Move, Wind, Swords, Filter, ExternalLink
+  Heart, Zap, Move, Wind, Swords, Filter, ExternalLink,
+  GitBranch, Layers, Map,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { GrudgeEmbed } from "@/components/GrudgeEmbed";
+import { HeroRtsOverviewPanel, HeroRtsFlowPanel, HeroRtsAssetsPanel } from "@/components/hero-rts/HubPanels";
+import { HERO_RTS_LINKS } from "@shared/heroRtsFlow";
 import type { 
   OpenRTSUnit, OpenRTSWeapon, OpenRTSMover, OpenRTSEffect, 
   OpenRTSActor, OpenRTSProjectile, OpenRTSTrinket 
@@ -75,12 +78,36 @@ const DAMAGE_TYPES: { value: DamageType; label: string; icon: typeof Sword }[] =
   { value: "poison", label: "Poison", icon: Shield },
 ];
 
-/** Live, deployable top-down RTS game (grudge-warlords-rts.vercel.app). */
-const RTS_GAME_URL = "https://grudge-warlords-rts.vercel.app/play";
+/** Hero Commander RTS — live Nexus-era top-down 3D RTS. */
+const RTS_GAME_URL = HERO_RTS_LINKS.play;
+
+type HubTab = "overview" | "flow" | "assets" | "play" | "openrts";
+type OpenRtsTab = "units" | "weapons" | "movers" | "effects" | "actors" | "trinkets";
 
 export default function RtsBuilder() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("units");
+  const [activeTab, setActiveTab] = useState<HubTab | OpenRtsTab>("overview");
+  const [openRtsTab, setOpenRtsTab] = useState<OpenRtsTab>("units");
+  const isOpenRtsMode = activeTab === "openrts" || (
+    activeTab !== "overview" && activeTab !== "flow" && activeTab !== "assets" && activeTab !== "play"
+  );
+  const resolvedOpenRtsTab: OpenRtsTab = isOpenRtsMode
+    ? (activeTab === "openrts" ? openRtsTab : activeTab as OpenRtsTab)
+    : openRtsTab;
+
+  const selectHubTab = (tab: HubTab) => {
+    if (tab === "openrts") {
+      setActiveTab("openrts");
+      setOpenRtsTab(resolvedOpenRtsTab);
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
+  const selectOpenRtsTab = (tab: OpenRtsTab) => {
+    setOpenRtsTab(tab);
+    setActiveTab(tab);
+  };
   const [selectedUnit, setSelectedUnit] = useState<OpenRTSUnit | null>(null);
   const [selectedWeapon, setSelectedWeapon] = useState<OpenRTSWeapon | null>(null);
   const [isCreateUnitOpen, setIsCreateUnitOpen] = useState(false);
@@ -155,140 +182,155 @@ export default function RtsBuilder() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Target className="h-6 w-6 text-primary" />
-              OpenRTS Builder
+              Hero Commander RTS
             </h1>
             <p className="text-sm text-muted-foreground">
-              Create units, weapons, movers, and effects for your RTS game
+              Organization, game flow, asset wiring, and live playtest hub
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" data-testid="button-export-dsl">
-              <Copy className="mr-2 h-4 w-4" />
-              Export DSL
+            <Button variant="outline" size="sm" onClick={() => window.open(HERO_RTS_LINKS.showcase, "_blank")}>
+              <Layers className="mr-2 h-4 w-4" />
+              Showcase
             </Button>
-            <Button size="sm" data-testid="button-preview-game" onClick={() => setActiveTab("playtest")}>
+            <Button size="sm" data-testid="button-preview-game" onClick={() => selectHubTab("play")}>
               <Play className="mr-2 h-4 w-4" />
-              Playtest
+              Play
             </Button>
           </div>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1">
+        <Tabs
+          value={isOpenRtsMode ? "openrts" : activeTab}
+          onValueChange={(v) => {
+            if (v === "openrts") selectHubTab("openrts");
+            else selectHubTab(v as HubTab);
+          }}
+          className="flex flex-1"
+        >
           <div className="w-48 border-r bg-muted/30 p-2">
             <TabsList className="flex h-auto flex-col w-full gap-1 bg-transparent">
-              <TabsTrigger 
-                value="units" 
-                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                data-testid="tab-units"
-              >
-                <Users className="h-4 w-4" />
-                Units ({units.length})
+              <TabsTrigger value="overview" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-overview">
+                <Layers className="h-4 w-4" />
+                Overview
               </TabsTrigger>
-              <TabsTrigger 
-                value="weapons" 
-                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                data-testid="tab-weapons"
-              >
-                <Sword className="h-4 w-4" />
-                Weapons ({weapons.length})
+              <TabsTrigger value="flow" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-flow">
+                <GitBranch className="h-4 w-4" />
+                Game Flow
               </TabsTrigger>
-              <TabsTrigger 
-                value="movers" 
-                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                data-testid="tab-movers"
-              >
-                <Navigation className="h-4 w-4" />
-                Movers ({movers.length})
+              <TabsTrigger value="assets" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-assets">
+                <Map className="h-4 w-4" />
+                Asset Map
               </TabsTrigger>
-              <TabsTrigger 
-                value="effects" 
-                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                data-testid="tab-effects"
-              >
-                <Sparkles className="h-4 w-4" />
-                Effects ({effects.length})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="actors" 
-                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                data-testid="tab-actors"
-              >
-                <Swords className="h-4 w-4" />
-                Actors (3D)
-              </TabsTrigger>
-              <TabsTrigger 
-                value="trinkets" 
-                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                data-testid="tab-trinkets"
-              >
-                <TreePine className="h-4 w-4" />
-                Trinkets
-              </TabsTrigger>
-              <TabsTrigger 
-                value="playtest" 
-                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                data-testid="tab-playtest"
-              >
+              <TabsTrigger value="play" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-play">
                 <Play className="h-4 w-4" />
-                Playtest
+                Play
+              </TabsTrigger>
+              <TabsTrigger value="openrts" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-openrts">
+                <Sword className="h-4 w-4" />
+                OpenRTS DSL
               </TabsTrigger>
             </TabsList>
+
+            {(activeTab === "openrts" || isOpenRtsMode) && (
+              <Tabs
+                value={resolvedOpenRtsTab}
+                onValueChange={(v) => selectOpenRtsTab(v as OpenRtsTab)}
+                className="mt-3"
+              >
+                <TabsList className="flex h-auto flex-col w-full gap-1 bg-transparent">
+                  <TabsTrigger value="units" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-units">
+                    <Users className="h-3 w-3" />
+                    Units ({units.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="weapons" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-weapons">
+                    <Sword className="h-3 w-3" />
+                    Weapons ({weapons.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="movers" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-movers">
+                    <Navigation className="h-3 w-3" />
+                    Movers ({movers.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="effects" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-effects">
+                    <Sparkles className="h-3 w-3" />
+                    Effects ({effects.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="actors" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-actors">
+                    <Swords className="h-3 w-3" />
+                    Actors (3D)
+                  </TabsTrigger>
+                  <TabsTrigger value="trinkets" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-trinkets">
+                    <TreePine className="h-3 w-3" />
+                    Trinkets
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <TabsContent value="units" className="h-full m-0 p-0">
-              <UnitsPanel 
-                units={units} 
-                weapons={weapons}
-                movers={movers}
-                selectedUnit={selectedUnit}
-                setSelectedUnit={setSelectedUnit}
-                isCreateOpen={isCreateUnitOpen}
-                setIsCreateOpen={setIsCreateUnitOpen}
-                createMutation={createUnitMutation}
-                deleteMutation={deleteUnitMutation}
-                isLoading={unitsLoading}
-              />
+            <TabsContent value="overview" className="h-full m-0 p-0">
+              <HeroRtsOverviewPanel />
             </TabsContent>
 
-            <TabsContent value="weapons" className="h-full m-0 p-0">
-              <WeaponsPanel
-                weapons={weapons}
-                effects={effects}
-                selectedWeapon={selectedWeapon}
-                setSelectedWeapon={setSelectedWeapon}
-                isCreateOpen={isCreateWeaponOpen}
-                setIsCreateOpen={setIsCreateWeaponOpen}
-                createMutation={createWeaponMutation}
-                deleteMutation={deleteWeaponMutation}
-                isLoading={weaponsLoading}
-              />
+            <TabsContent value="flow" className="h-full m-0 p-0">
+              <HeroRtsFlowPanel />
             </TabsContent>
 
-            <TabsContent value="movers" className="h-full m-0 p-0">
-              <MoversPanel movers={movers} isLoading={moversLoading} />
+            <TabsContent value="assets" className="h-full m-0 p-0">
+              <HeroRtsAssetsPanel />
             </TabsContent>
 
-            <TabsContent value="effects" className="h-full m-0 p-0">
-              <EffectsPanel effects={effects} />
-            </TabsContent>
-
-            <TabsContent value="actors" className="h-full m-0 p-0">
-              <ActorsPanel />
-            </TabsContent>
-
-            <TabsContent value="trinkets" className="h-full m-0 p-0">
-              <TrinketsPanel />
-            </TabsContent>
-
-            <TabsContent value="playtest" className="h-full m-0 p-0">
+            <TabsContent value="play" className="h-full m-0 p-0">
               <GrudgeEmbed
                 src={RTS_GAME_URL}
-                title="Grudge Warlords RTS — Playtest"
+                title="Hero Commander RTS"
                 minHeight="100%"
               />
+            </TabsContent>
+
+            <TabsContent value="openrts" className="h-full m-0 p-0">
+              {resolvedOpenRtsTab === "units" && (
+                <UnitsPanel 
+                  units={units} 
+                  weapons={weapons}
+                  movers={movers}
+                  selectedUnit={selectedUnit}
+                  setSelectedUnit={setSelectedUnit}
+                  isCreateOpen={isCreateUnitOpen}
+                  setIsCreateOpen={setIsCreateUnitOpen}
+                  createMutation={createUnitMutation}
+                  deleteMutation={deleteUnitMutation}
+                  isLoading={unitsLoading}
+                />
+              )}
+              {resolvedOpenRtsTab === "weapons" && (
+                <WeaponsPanel
+                  weapons={weapons}
+                  effects={effects}
+                  selectedWeapon={selectedWeapon}
+                  setSelectedWeapon={setSelectedWeapon}
+                  isCreateOpen={isCreateWeaponOpen}
+                  setIsCreateOpen={setIsCreateWeaponOpen}
+                  createMutation={createWeaponMutation}
+                  deleteMutation={deleteWeaponMutation}
+                  isLoading={weaponsLoading}
+                />
+              )}
+              {resolvedOpenRtsTab === "movers" && (
+                <MoversPanel movers={movers} isLoading={moversLoading} />
+              )}
+              {resolvedOpenRtsTab === "effects" && (
+                <EffectsPanel effects={effects} />
+              )}
+              {resolvedOpenRtsTab === "actors" && (
+                <ActorsPanel />
+              )}
+              {resolvedOpenRtsTab === "trinkets" && (
+                <TrinketsPanel />
+              )}
             </TabsContent>
           </div>
         </Tabs>

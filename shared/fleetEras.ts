@@ -83,7 +83,7 @@ export const ARMADA_ERA: FleetEntry[] = [
   { id: 'armada', era: 'armada', label: 'Grim Armada', canonicalUrl: 'https://armada.grudge-studio.com', fallbackUrl: 'https://grim-armada-web.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'grim-armada-web', repo: 'grim-armada-web' },
   { id: 'space-rts', era: 'armada', label: 'GrudgeSpace RTS', canonicalUrl: 'https://grudge-space-rts.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'grudge-space-rts', repo: 'GrudgeSpaceRTS' },
   { id: 'grand-battle', era: 'armada', label: 'Grand Battle Arena', canonicalUrl: 'https://grand-battle-arena.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'grand-battle-arena' },
-  { id: 'hero-rts', era: 'armada', label: 'Hero Commander RTS', canonicalUrl: 'https://hero-rts.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'hero-rts' },
+  { id: 'hero-rts', era: 'armada', label: 'Hero Commander RTS', canonicalUrl: 'https://hero-rts-grudgenexus.vercel.app', fallbackUrl: 'https://hero-rts.vercel.app', platform: 'vercel', status: 'live', vercelProject: 'hero-commander-rts', repo: 'grudge-studio-games' },
 ];
 
 /**

@@ -54,7 +54,7 @@ const mainMenuItems = [
     icon: MessageSquare,
   },
   {
-    title: "RTS Builder",
+    title: "Hero RTS Hub",
     url: "/rts-builder",
     icon: Swords,
   },

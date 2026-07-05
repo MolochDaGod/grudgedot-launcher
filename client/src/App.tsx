@@ -162,7 +162,7 @@ function Header() {
   const getPageTitle = () => {
     if (location === "/") return "Battle Station";
     if (location === "/projects") return "War Room";
-    if (location.startsWith("/rts-builder")) return "RTS Forge";
+    if (location.startsWith("/rts-builder")) return "Hero Commander RTS";
 
     if (location === "/asset-gallery") return "Asset Gallery";
     if (location === "/docs") return "Strategy Guide";
