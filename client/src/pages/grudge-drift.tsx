@@ -19,6 +19,7 @@ import { prepareVehicle } from '@/lib/velocity/vehicleFactory';
 import { getContract, type DriftSessionResult } from '@/lib/velocity/contracts';
 
 import { GrudgeDriveGame } from '@/pages/grudge-drive';
+import { GRUDGE_DRIVE_VIDEO } from '@/lib/grudgeConfig';
 
 type HubTab = 'garage' | 'overdrive';
 type RacePhase = 'brief' | 'countdown' | 'driving' | 'results';
@@ -165,6 +166,20 @@ function GrudgeVelocityInner({ session }: { session: GrudgeGameSession }) {
           </Button>
         </div>
       </header>
+
+      <div className="relative max-h-44 shrink-0 overflow-hidden border-b border-cyan-500/10">
+        <video
+          src={GRUDGE_DRIVE_VIDEO}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="h-44 w-full object-cover"
+          poster="/assets/games/grudge-brand.png"
+          data-testid="grudge-drive-trailer"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060810] via-[#060810]/20 to-transparent" />
+      </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
         {hubTab === 'garage' ? (

@@ -1,5 +1,6 @@
-﻿import { useState } from "react";
+﻿import { useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { GRUDGE_DRIVE_VIDEO } from "@/lib/grudgeConfig";
 
 interface GameEntry {
   id: string;
@@ -10,6 +11,7 @@ interface GameEntry {
   tags: string[];
   category: "games" | "tools" | "platform";
   external?: boolean;
+  video?: string;
 }
 
 const GAMES: GameEntry[] = [
@@ -22,7 +24,7 @@ const GAMES: GameEntry[] = [
   { id: "dangerroom", title: "Dangerroom", description: "Unified combat training — HYDRA HUD, soft-lock focus, Rapier physics, faction settlements, and boss-ready AI", image: "/assets/games/arena.jpg", route: "https://island-crusade-dangerroom.vercel.app", tags: ["3D", "Combat", "Rapier"], category: "games", external: true },
   { id: "combat-sandbox", title: "Combat Sandbox", description: "Island Crusade realm prototype — seeded map, towns, animals, class abilities, and R2 asset pipeline", image: "/assets/games/warlords.jpg", route: "https://island-crusade-combat-sandbox.vercel.app", tags: ["3D", "Sandbox"], category: "games", external: true },
   { id: "grudge-gangs", title: "Grudge Gangs", description: "Team-based MOBA brawler gameplay", image: "/assets/games/scourge.png", route: "/moba", tags: ["MOBA"], category: "games" },
-  { id: "grudge-velocity", title: "Grudge Velocity", description: "Voxel garage builder, 3D RVP drift racing, and Overdrive arcade modes", image: "/assets/games/grudge-brand.png", route: "/drift", tags: ["Racing", "3D", "Builder"], category: "games" },
+  { id: "grudge-velocity", title: "Grudge Velocity", description: "Voxel garage builder, 3D RVP drift racing, and Overdrive arcade modes", image: "/assets/games/grudge-brand.png", video: GRUDGE_DRIVE_VIDEO, route: "/drift", tags: ["Racing", "3D", "Builder"], category: "games" },
   { id: "decay", title: "Decay", description: "Survival FPS â€” fight the horde", image: "/assets/games/warlords.jpg", route: "/decay", tags: ["FPS", "Survival"], category: "games" },
   { id: "swarm-rts", title: "Swarm RTS", description: "Embedded Warlords RTS skirmish (fleet-hosted)", image: "/assets/games/world-map.gif", route: "/swarm-rts", tags: ["RTS"], category: "games" },
   { id: "mmo-world", title: "MMO World", description: "Massively multiplayer RPG prototype", image: "/assets/games/mmo-world.png", route: "/mmo", tags: ["MMO"], category: "games" },
@@ -60,6 +62,50 @@ const CATEGORIES = [
   { key: "tools", label: "Tools" },
   { key: "platform", label: "Platform" },
 ];
+
+function GameCardMedia({ game }: { game: GameEntry }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const playPreview = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = 0;
+    void v.play().catch(() => {});
+  };
+
+  const stopPreview = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.pause();
+    v.currentTime = 0;
+  };
+
+  return (
+    <div
+      className="game-media"
+      onMouseEnter={game.video ? playPreview : undefined}
+      onMouseLeave={game.video ? stopPreview : undefined}
+    >
+      <img
+        src={game.image}
+        alt={game.title}
+        className={`game-image${game.video ? " has-video" : ""}`}
+        loading="lazy"
+      />
+      {game.video && (
+        <video
+          ref={videoRef}
+          src={game.video}
+          className="game-video"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+      )}
+    </div>
+  );
+}
 
 export default function FeaturedGames() {
   const [category, setCategory] = useState("all");
@@ -188,17 +234,40 @@ export default function FeaturedGames() {
           border-color: #ff6b6b;
         }
 
-        .game-image {
+        .game-media {
+          position: relative;
           width: 100%;
           height: 160px;
+          margin-bottom: 0.75rem;
+          border-radius: 8px;
+          overflow: hidden;
+          background: rgba(255,255,255,0.05);
+        }
+        .game-image {
+          width: 100%;
+          height: 100%;
           object-fit: cover;
           border-radius: 8px;
-          margin-bottom: 0.75rem;
-          transition: filter 0.3s;
-          background: rgba(255,255,255,0.05);
+          transition: opacity 0.35s ease, filter 0.3s;
+        }
+        .game-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 8px;
+          opacity: 0;
+          transition: opacity 0.35s ease;
         }
         .game-card:hover .game-image {
           filter: brightness(1.1);
+        }
+        .game-card:hover .game-video {
+          opacity: 1;
+        }
+        .game-card:hover .game-image.has-video {
+          opacity: 0;
         }
 
         .game-title {
@@ -329,7 +398,7 @@ export default function FeaturedGames() {
               }
             }}
           >
-            <img src={game.image} alt={game.title} className="game-image" loading="lazy" />
+            <GameCardMedia game={game} />
             <div className="game-title">{game.title}</div>
             <div className="game-desc">{game.description}</div>
             <div className="game-tags">
