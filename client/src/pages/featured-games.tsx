@@ -16,7 +16,7 @@ interface GameEntry {
 
 const GAMES: GameEntry[] = [
   // ── Sagas ──
-  { id: "armada-saga", title: "Armada Saga", description: "3D space RTS — conquer planets, build fleets, command 50+ ship types across a galactic campaign", image: "/assets/games/grudge-brand.png", route: "/armada-saga", tags: ["RTS", "3D", "Space"], category: "games" },
+  { id: "armada-saga", title: "Gruda Armada RTS Star", description: "Tactical space RTS — fleet battles, star map, ground ops, and campaign conquest. Now live with cinematic intro.", image: "/assets/games/grudge-brand.png", route: "/armada-saga", tags: ["RTS", "3D", "Space", "Live"], category: "games" },
   // ── Games ──
   { id: "gruda-wars", title: "Gruda Wars", description: "RPG dungeon crawler with hero system, arena PvP, and 32 world zones", image: "/assets/games/gruda-wars.png", route: "/gruda-wars", tags: ["RPG", "PvP"], category: "games" },
   { id: "crown-clash", title: "Crown Clash", description: "Strategic card battle arena with deck building", image: "/assets/games/crown-clash.png", route: "/crown-clash", tags: ["PvE", "Cards"], category: "games" },

@@ -176,7 +176,7 @@ function Header() {
     if (location === "/realm") return "Realm Protector";
     if (location === "/moba") return "Grudge Gangs";
     if (location === "/arena" || location === "/grudge-arena") return "Grudge Arena";
-    if (location === "/armada-saga") return "Armada Saga";
+    if (location === "/armada-saga") return "Gruda Armada RTS Star";
     if (location === "/reef-hunt") return "Reef Hunt";
     if (location === "/grudge-factory") return "Grudge Factory";
     if (location === "/grudge-crafting") return "Grudge Crafting";

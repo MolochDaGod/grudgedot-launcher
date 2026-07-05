@@ -139,10 +139,10 @@ const warlordSuiteItems = [
 
 const featured3DGames = [
   {
-    title: "Armada Saga",
+    title: "Gruda Armada RTS Star",
     url: "/armada-saga",
     icon: Rocket,
-    badge: "RTS",
+    badge: "Live",
   },
   {
     title: "Betta Warlords",

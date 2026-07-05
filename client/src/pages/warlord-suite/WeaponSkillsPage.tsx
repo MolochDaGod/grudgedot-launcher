@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronRight, Clock, Droplet, GitBranch, Swords } from "lucide-react";
+import { ChevronRight, Clock, Crosshair, Droplet, GitBranch, Swords } from "lucide-react";
 import MmReferencePanel from "./MmReferencePanel";
+import CombatTargetingPanel from "./CombatTargetingPanel";
 import {
   WEAPON_SKILL_TREES,
   getSkillsForSlot,
@@ -33,12 +34,52 @@ const SLOT_LABELS: Record<number, { name: string; hotkey: string; color: string;
   5: { name: "Ultimate", hotkey: "5", color: "hsl(35 100% 55%)" },
 };
 
-type WeaponSkillsView = "trees" | "mm";
+type WeaponSkillsView = "trees" | "mm" | "targeting";
+
+function ViewTabs({ view, setView }: { view: WeaponSkillsView; setView: (v: WeaponSkillsView) => void }) {
+  const tabs: { id: WeaponSkillsView; label: string; icon: typeof GitBranch }[] = [
+    { id: "mm", label: "MM Reference", icon: GitBranch },
+    { id: "targeting", label: "Soft & Focus", icon: Crosshair },
+    { id: "trees", label: "Skill Trees (hotkeys 1–5)", icon: Swords },
+  ];
+  return (
+    <div className="flex gap-2 flex-wrap">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => setView(tab.id)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-heading)] tracking-wide rounded ${
+            view === tab.id ? "gilded-button" : "dark-button"
+          }`}
+        >
+          <tab.icon className="h-3.5 w-3.5" />
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function initialView(): WeaponSkillsView {
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  if (tab === "targeting") return "targeting";
+  if (tab === "trees") return "trees";
+  return "mm";
+}
 
 export default function WeaponSkillsPage() {
-  const [view, setView] = useState<WeaponSkillsView>("mm");
+  const [view, setView] = useState<WeaponSkillsView>(initialView);
   const [selectedWeapon, setSelectedWeapon] = useState<string>("SWORD");
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tab = view === "mm" ? "" : view;
+    const url = new URL(window.location.href);
+    if (tab) url.searchParams.set("tab", tab);
+    else url.searchParams.delete("tab");
+    window.history.replaceState({}, "", url.pathname + url.search);
+  }, [view]);
 
   const weaponTypes = Object.keys(WEAPON_SKILL_TREES);
   const tree = WEAPON_SKILL_TREES[selectedWeapon];
@@ -64,49 +105,24 @@ export default function WeaponSkillsPage() {
   if (view === "mm") {
     return (
       <div className="p-4 space-y-4">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setView("mm")}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-heading)] tracking-wide rounded gilded-button"
-          >
-            <GitBranch className="h-3.5 w-3.5" />
-            MM Reference
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("trees")}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-heading)] tracking-wide rounded dark-button"
-          >
-            <Swords className="h-3.5 w-3.5" />
-            Skill Trees (hotkeys 1–5)
-          </button>
-        </div>
+        <ViewTabs view={view} setView={setView} />
         <MmReferencePanel />
+      </div>
+    );
+  }
+
+  if (view === "targeting") {
+    return (
+      <div className="p-4 space-y-4">
+        <ViewTabs view={view} setView={setView} />
+        <CombatTargetingPanel />
       </div>
     );
   }
 
   return (
     <div className="p-4 space-y-4">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setView("mm")}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-heading)] tracking-wide rounded dark-button"
-        >
-          <GitBranch className="h-3.5 w-3.5" />
-          MM Reference
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("trees")}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-heading)] tracking-wide rounded gilded-button"
-        >
-          <Swords className="h-3.5 w-3.5" />
-          Skill Trees (hotkeys 1–5)
-        </button>
-      </div>
+      <ViewTabs view={view} setView={setView} />
 
       {/* Weapon Type Selector */}
       <div className="flex gap-2 flex-wrap">

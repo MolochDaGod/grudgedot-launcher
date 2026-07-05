@@ -9,6 +9,8 @@ export const GAME_URLS = {
   play: resolveFleetUrl('warlords-play'),
   arena: resolveFleetUrl('arena'),
   armada: resolveFleetUrl('armada'),
+  /** Gruda Armada RTS Star — tactical space RTS (GrudgeSpaceRTS) */
+  spaceRts: resolveFleetUrl('space-rts'),
   nemesis: resolveFleetUrl('nemesis'),
   warlordsRts: resolveFleetUrl('warlords-rts'),
   bettaWarlords: `${resolveFleetUrl('warlords-client')}/play`,

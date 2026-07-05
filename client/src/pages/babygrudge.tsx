@@ -15,6 +15,7 @@ import {
   Layers,
   Cuboid,
   Play,
+  Crosshair,
 } from 'lucide-react';
 import { FORGE_ORIGIN, forgeUrl } from '@shared/forgeUrls';
 
@@ -75,6 +76,19 @@ const FORGE_ENTRIES: HubItem[] = [
     tags: ['warlords', 'builder'],
     badge: 'Warlords',
     cta: 'Open builder',
+  },
+];
+
+const ARMADA_GAMES: HubItem[] = [
+  {
+    id: 'gruda-armada-rts-star',
+    title: 'Gruda Armada RTS Star',
+    description:
+      'GrudgeSpaceRTS is now open — solar-system scrims, star map (M), ship forge, and Racalvin producer intro on R2 CDN.',
+    href: '/armada-saga',
+    tags: ['rts', 'space', 'live'],
+    badge: 'Live',
+    cta: 'Play now',
   },
 ];
 
@@ -148,6 +162,45 @@ export default function StudioForgeHub() {
                   ))}
                 </div>
                 <Button size="sm" variant="secondary" asChild>
+                  <Link href={item.href}>{item.cta}</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Crosshair className="h-5 w-5 text-cyan-400" /> Armada era — now open
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {ARMADA_GAMES.map((item) => (
+            <Card key={item.id} className="border-cyan-900/40 bg-stone-950/80 overflow-hidden">
+              <div className="aspect-video bg-black border-b border-cyan-900/30">
+                <video
+                  src="https://assets.grudge-studio.com/gruda-armada/space/videos/intro.mp4"
+                  className="w-full h-full object-cover opacity-90"
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                />
+              </div>
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base">{item.title}</CardTitle>
+                  <Badge className="bg-emerald-600/90 text-white text-[10px] shrink-0">{item.badge}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">{item.description}</p>
+                <div className="flex flex-wrap gap-1">
+                  {item.tags.map((t) => (
+                    <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
+                  ))}
+                </div>
+                <Button size="sm" asChild>
                   <Link href={item.href}>{item.cta}</Link>
                 </Button>
               </CardContent>

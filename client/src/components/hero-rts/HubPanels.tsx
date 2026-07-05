@@ -102,11 +102,14 @@ export function HeroRtsOverviewPanel() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Combat & weapon skills (WCS)</CardTitle>
-            <CardDescription>MM distance bias + 4-skill weapon matrix (separate from Hero RTS hotkeys)</CardDescription>
+            <CardDescription>MM distance bias, soft/focus targeting, and 4-skill weapon matrix</CardDescription>
           </CardHeader>
-          <CardContent className="text-sm">
+          <CardContent className="text-sm flex flex-wrap gap-2">
             <Link href="/warlord-suite/weapon-skills">
-              <Button variant="outline" size="sm">Open MM & Weapon Skills reference</Button>
+              <Button variant="outline" size="sm">MM & Weapon Skills</Button>
+            </Link>
+            <Link href="/warlord-suite/weapon-skills?tab=targeting">
+              <Button variant="outline" size="sm">Soft & Focus targeting</Button>
             </Link>
           </CardContent>
         </Card>
