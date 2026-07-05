@@ -1,12 +1,19 @@
 /**
  * MM (Melee / Movement Modifier) — distance bias for combat skills.
- * Reference diagrams: user-authored imgur sheets (see MM_REFERENCE_IMAGES).
+ * Reference diagrams: user-authored sheets (hosted under /assets/reference/).
  *
  * Scale: +100 = close gap (melee preference) … 0 = neutral … -100 = keep distance (ranged).
  * Formula: MM = lerp(+100, -100, d) where d = DistanceBias in [0, 1].
  */
 
 export const MM_REFERENCE_IMAGES = {
+  scaleAndAbilities: '/assets/reference/mm-weapons-1.png',
+  weaponMatrix: '/assets/reference/mm-weapons-2.png',
+  skillSprites: '/assets/reference/mm-weapons-3.png',
+} as const;
+
+/** Original imgur sources (author uploads). */
+export const MM_REFERENCE_IMAGES_REMOTE = {
   scaleAndAbilities: 'https://i.imgur.com/tprSl2o.png',
   weaponMatrix: 'https://i.imgur.com/abQfBd7.png',
   skillSprites: 'https://i.imgur.com/FonlVod.png',
