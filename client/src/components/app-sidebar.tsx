@@ -163,16 +163,10 @@ const featured3DGames = [
     badge: "Crawl",
   },
   {
-    title: "Overdrive",
-    url: "/grudge-drive",
-    icon: Car,
-    badge: "2D",
-  },
-  {
-    title: "Grudge Drift",
+    title: "Grudge Velocity",
     url: "/drift",
     icon: Car,
-    badge: "3D",
+    badge: "Race",
   },
   {
     title: "Crown Clash",

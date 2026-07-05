@@ -32,6 +32,27 @@ export const DRIFT_TUNING = {
   mass: 1,
 } as const;
 
+export interface VehicleStatMultipliers {
+  topSpeed: number;
+  accel: number;
+  grip: number;
+}
+
+const DEFAULT_STATS: VehicleStatMultipliers = { topSpeed: 1, accel: 1, grip: 1 };
+let activeStats = { ...DEFAULT_STATS };
+
+export function setVehicleStatMultipliers(stats: VehicleStatMultipliers): void {
+  activeStats = {
+    topSpeed: Math.max(0.5, stats.topSpeed),
+    accel: Math.max(0.5, stats.accel),
+    grip: Math.max(0.5, stats.grip),
+  };
+}
+
+export function getVehicleStatMultipliers(): VehicleStatMultipliers {
+  return { ...activeStats };
+}
+
 export function createVehicleState(): DriftVehicleState {
   return {
     position: new THREE.Vector3(0, 0.35, 0),
@@ -55,10 +76,16 @@ export function updateDriftPhysics(
   dt: number,
 ): void {
   const t = DRIFT_TUNING;
+  const maxSpeed = t.maxSpeed * activeStats.topSpeed;
+  const acceleration = t.acceleration * activeStats.accel;
+  const gripScale = activeStats.grip;
+  const gripNormal = t.gripNormal * gripScale;
+  const gripDrift = t.gripDrift / gripScale;
+  const handbrakeGrip = t.handbrakeGrip / gripScale;
 
   // Steering with speed-sensitive response
   const steerRate = input.steer === 0 ? t.steerReturn : t.steerSpeed;
-  const speedFactor = THREE.MathUtils.clamp(state.speed / t.maxSpeed, 0.25, 1);
+  const speedFactor = THREE.MathUtils.clamp(state.speed / maxSpeed, 0.25, 1);
   state.heading += input.steer * t.maxSteer * steerRate * dt * speedFactor;
 
   // Yaw boost during handbrake drift
@@ -74,7 +101,7 @@ export function updateDriftPhysics(
   const nitro = input.nitro && state.boost > 0.05;
   state.nitroActive = nitro;
 
-  const driveForce = throttle * t.acceleration * (nitro ? t.nitroMultiplier : 1);
+  const driveForce = throttle * acceleration * (nitro ? t.nitroMultiplier : 1);
   const brakeForce = brake * t.brakeForce;
 
   state.velocity.addScaledVector(HEADING_FWD, driveForce * dt);
@@ -91,8 +118,8 @@ export function updateDriftPhysics(
   LATERAL.subVectors(VEL_FLAT, LATERAL); // lateral component
 
   const drifting = input.handbrake && Math.abs(forwardSpeed) > t.minDriftSpeed;
-  let grip = drifting ? t.gripDrift : t.gripNormal;
-  if (input.handbrake) grip *= t.handbrakeGrip;
+  let grip = drifting ? gripDrift : gripNormal;
+  if (input.handbrake) grip *= handbrakeGrip;
 
   const lateralDamp = Math.exp(-grip * dt);
   LATERAL.multiplyScalar(lateralDamp);
@@ -103,11 +130,11 @@ export function updateDriftPhysics(
 
   // Speed clamp
   state.speed = VEL_FLAT.length();
-  if (state.speed > t.maxSpeed) {
-    VEL_FLAT.normalize().multiplyScalar(t.maxSpeed);
+  if (state.speed > maxSpeed) {
+    VEL_FLAT.normalize().multiplyScalar(maxSpeed);
     state.velocity.x = VEL_FLAT.x;
     state.velocity.z = VEL_FLAT.z;
-    state.speed = t.maxSpeed;
+    state.speed = maxSpeed;
   }
 
   // Drift angle between velocity and heading
@@ -127,7 +154,7 @@ export function updateDriftPhysics(
   // Drift score + combo
   if (state.isDrifting) {
     const intensity = THREE.MathUtils.clamp(
-      (Math.abs(state.driftAngle) / 0.8) * (state.speed / t.maxSpeed),
+      (Math.abs(state.driftAngle) / 0.8) * (state.speed / maxSpeed),
       0,
       1,
     );

@@ -14,9 +14,9 @@ const RVP_TRACK_CDN =
   'https://assets.grudge-studio.com/game-assets/drift/chicken_gun_rvp_track2.glb';
 const RVP_TRACK_LOCAL = '/assets/drift/chicken_gun_rvp_track2.glb';
 
-/** Production CDN first; local public copy for offline dev. */
-export const RVP_TRACK_URL =
-  import.meta.env.PROD ? RVP_TRACK_CDN : RVP_TRACK_LOCAL;
+/** CDN first; local public copy as fallback when CDN is unreachable. */
+export const RVP_TRACK_URL = RVP_TRACK_CDN;
+export const RVP_TRACK_FALLBACK = RVP_TRACK_LOCAL;
 export const TRACK_WORLD_SCALE = 0.14;
 
 export interface LoadedRaceTrack {
@@ -39,20 +39,35 @@ export interface LoadedTrackModel {
   center: THREE.Vector3;
 }
 
+async function loadGltfWithFallback(
+  loader: GLTFLoader,
+  primary: string,
+  fallback: string,
+  onProgress?: (pct: number) => void,
+): Promise<GLTF> {
+  const tryLoad = (url: string) =>
+    new Promise<GLTF>((resolve, reject) => {
+      loader.load(
+        url,
+        resolve,
+        (ev) => {
+          if (ev.total) onProgress?.(ev.loaded / ev.total);
+        },
+        reject,
+      );
+    });
+  try {
+    return await tryLoad(primary);
+  } catch {
+    return tryLoad(fallback);
+  }
+}
+
 export async function loadRvpTrackModel(
   onProgress?: (pct: number) => void,
 ): Promise<LoadedTrackModel> {
   const loader = new GLTFLoader();
-  const gltf = await new Promise<GLTF>((resolve, reject) => {
-    loader.load(
-      RVP_TRACK_URL,
-      (data) => resolve(data),
-      (ev) => {
-        if (ev.total) onProgress?.(ev.loaded / ev.total);
-      },
-      reject,
-    );
-  });
+  const gltf = await loadGltfWithFallback(loader, RVP_TRACK_URL, RVP_TRACK_FALLBACK, onProgress);
 
   const root = new THREE.Group();
   root.name = 'RVP_RaceTrack';

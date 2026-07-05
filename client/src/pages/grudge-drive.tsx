@@ -281,10 +281,14 @@ function HoustonMapPreview({ tracks, selectedId }: { tracks: Track[]; selectedId
   return <canvas ref={ref} width={300} height={320} className="w-full rounded-lg border border-gray-700" />;
 }
 
+export function GrudgeDriveGame({ session }: { session: GrudgeGameSession }) {
+  return <GrudgeDriveInner session={session} />;
+}
+
 export default function GrudgeDrive() {
   return (
     <GrudgeGameWrapper gameSlug="grudge-drive" gameName="Overdrive" xpPerThousand={10} goldPerGame={8}>
-      {(session) => <GrudgeDriveInner session={session} />}
+      {(session) => <GrudgeDriveGame session={session} />}
     </GrudgeGameWrapper>
   );
 }

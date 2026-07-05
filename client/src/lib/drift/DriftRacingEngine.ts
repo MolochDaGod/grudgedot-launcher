@@ -4,6 +4,7 @@ import {
   updateDriftPhysics,
   getVelocityHeading,
   speedToKmh,
+  setVehicleStatMultipliers,
   DRIFT_TUNING,
 } from './driftPhysics';
 import {
@@ -13,7 +14,7 @@ import {
   pulseShake,
   SPEED_FX,
 } from './speedPresentation';
-import type { DriftEngineCallbacks, DriftHudSnapshot, DriftInput } from './types';
+import type { DriftEngineCallbacks, DriftHudSnapshot, DriftInput, DriftVehicleConfig } from './types';
 import {
   loadRvpTrackModel,
   buildRaceRouteFromTrack,
@@ -60,10 +61,17 @@ export class DriftRacingEngine {
   private lastProgress = 0;
 
   private callbacks: DriftEngineCallbacks;
+  private vehicleConfig: DriftVehicleConfig;
 
-  private constructor(container: HTMLElement, callbacks: DriftEngineCallbacks = {}) {
+  private constructor(
+    container: HTMLElement,
+    vehicleConfig: DriftVehicleConfig,
+    callbacks: DriftEngineCallbacks = {},
+  ) {
     this.container = container;
     this.callbacks = callbacks;
+    this.vehicleConfig = vehicleConfig;
+    setVehicleStatMultipliers(vehicleConfig.statMultipliers);
 
     const w = Math.max(1, container.clientWidth);
     const h = Math.max(1, container.clientHeight);
@@ -98,7 +106,6 @@ export class DriftRacingEngine {
     );
     this.scene.add(this.smokeParticles);
 
-    this.buildVehicle();
     this.buildLighting();
 
     window.addEventListener('keydown', this.onKeyDown);
@@ -108,11 +115,27 @@ export class DriftRacingEngine {
 
   static async create(
     container: HTMLElement,
+    vehicleConfig: DriftVehicleConfig,
     callbacks: DriftEngineCallbacks = {},
   ): Promise<DriftRacingEngine> {
-    const engine = new DriftRacingEngine(container, callbacks);
-    await engine.initTrack();
+    const engine = new DriftRacingEngine(container, vehicleConfig, callbacks);
+    await engine.initWorld();
     return engine;
+  }
+
+  private async initWorld() {
+    this.callbacks.onLoadState?.('loading', 'Loading voxel ride…');
+    try {
+      const voxelRoot = await this.vehicleConfig.prepareVehicle();
+      this.vehicle.clear();
+      this.vehicle.add(voxelRoot);
+      this.scene.add(this.vehicle);
+    } catch (err) {
+      console.warn('[GrudgeDrift] voxel car failed, using fallback mesh:', err);
+      this.buildFallbackVehicle();
+      this.scene.add(this.vehicle);
+    }
+    await this.initTrack();
   }
 
   private async initTrack() {
@@ -213,7 +236,7 @@ export class DriftRacingEngine {
     this.camera.updateProjectionMatrix();
   }
 
-  private buildVehicle() {
+  private buildFallbackVehicle() {
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(1.35, 0.42, 2.55),
       new THREE.MeshStandardMaterial({ color: 0xff2244, metalness: 0.6, roughness: 0.25 }),
@@ -250,8 +273,6 @@ export class DriftRacingEngine {
       this.vehicle.add(wheel);
       this.wheelMeshes.push(wheel);
     }
-
-    this.scene.add(this.vehicle);
   }
 
   private resetToStart() {

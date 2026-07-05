@@ -14,6 +14,7 @@ import { LoadingProvider } from "@/hooks/useLoading";
 import { PuterProvider } from "@/contexts/puter-context";
 import { AuthGuard } from "@/components/AuthGuard";
 
+
 import ChatPage from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 
@@ -44,8 +45,8 @@ const SettingsPage = lazy(() => import("@/pages/settings"));
 const GrudgeWarlords = lazy(() => import("@/pages/grudge-warlords"));
 const MapEditor = lazy(() => import("@/pages/map-editor"));
 const CharacterEditor = lazy(() => import("@/pages/character-editor"));
-const GrudgeDrive = lazy(() => import("@/pages/grudge-drive"));
 const GrudgeDrift = lazy(() => import("@/pages/grudge-drift"));
+const GrudgeDriveRedirect = lazy(() => import("@/pages/grudge-drive-redirect"));
 const Decay = lazy(() => import("@/pages/decay"));
 const AdminStorage = lazy(() => import("@/pages/admin-storage"));
 const SkillTreeEditor = lazy(() => import("@/pages/skill-tree-editor"));
@@ -124,7 +125,7 @@ function Router() {
         <Route path="/warlords" component={GrudgeWarlords} />
         <Route path="/map-editor" component={MapEditor} />
         <Route path="/character-editor" component={CharacterEditor} />
-        <Route path="/grudge-drive" component={GrudgeDrive} />
+        <Route path="/grudge-drive" component={GrudgeDriveRedirect} />
         <Route path="/drift" component={GrudgeDrift} />
         <Route path="/decay" component={Decay} />
         <Route path="/admin-storage" component={AdminStorage} />
@@ -189,8 +190,7 @@ function Header() {
     if (location === "/settings") return "Settings";
 
     if (location === "/character-editor") return "Character Editor";
-    if (location === "/grudge-drive") return "Overdrive";
-    if (location === "/drift") return "Grudge Drift";
+    if (location === "/grudge-drive" || location === "/drift") return "Grudge Velocity";
     if (location === "/decay") return "Decay";
     if (location === "/admin-storage") return "Storage Admin";
     if (location === "/skill-tree") return "Skill Tree Editor";

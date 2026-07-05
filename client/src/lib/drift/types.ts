@@ -52,3 +52,8 @@ export interface DriftEngineCallbacks {
   onLapComplete?: (lap: number, timeMs: number) => void;
   onLoadState?: (state: DriftLoadState, message?: string) => void;
 }
+
+export interface DriftVehicleConfig {
+  prepareVehicle: () => Promise<THREE.Group>;
+  statMultipliers: { topSpeed: number; accel: number; grip: number };
+}
