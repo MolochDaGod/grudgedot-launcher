@@ -37,11 +37,12 @@ const GAMES: GameEntry[] = [
   { id: "pixel-warrior", title: "Pixel Warrior", description: "2D platformer action game", image: "/assets/games/gruda-wars.png", route: "/platformer", tags: ["2D"], category: "games" },
   { id: "nexus-nemesis", title: "Nexus Nemesis", description: "Web3 trading card game with PvP battles, NFT minting, and Season 0 cards", image: "/assets/games/card-game.jpg", route: "/nexus-nemesis", tags: ["TCG", "Web3", "PvP"], category: "games" },
   // â”€â”€ Tools â”€â”€
+  { id: "studio-forge", title: "Studio Forge", description: "Canonical Grudge editor at forge.grudge-studio.com — scenes, maps, effects, play mode", image: "/assets/games/grudge-brand.png", route: "/forge", tags: ["Editor", "3D"], category: "tools" },
   { id: "rts-builder", title: "RTS Builder", description: "Visual RTS game level designer", image: "/assets/games/world-map.gif", route: "/rts-builder", tags: ["Builder"], category: "tools" },
-  { id: "map-editor", title: "Map Editor", description: "2D/3D tile-based map editor", image: "/assets/games/world-map.gif", route: "/map-editor", tags: ["2D/3D"], category: "tools" },
+  { id: "map-editor", title: "Map Editor", description: "Terrain and entity placement in Studio Forge", image: "/assets/games/world-map.gif", route: "/map-editor", tags: ["Forge"], category: "tools" },
   { id: "char-editor", title: "Character Editor", description: "Design and balance characters", image: "/assets/games/arena.jpg", route: "/character-editor", tags: ["AI"], category: "tools" },
   { id: "skill-tree", title: "Skill Tree Editor", description: "Create ability progression trees", image: "/assets/games/crown-clash.png", route: "/skill-tree", tags: ["Editor"], category: "tools" },
-  { id: "effects", title: "Effects Lab", description: "Particle & shader effects playground", image: "/assets/games/grudge-brand.png", route: "/effects", tags: ["VFX"], category: "tools" },
+  { id: "effects", title: "Effects Lab", description: "Particles, shaders, and post-processing in Studio Forge", image: "/assets/games/grudge-brand.png", route: "/effects", tags: ["VFX", "Forge"], category: "tools" },
   { id: "asset-gallery", title: "Asset Gallery", description: "Browse and manage game assets", image: "/assets/games/card-game.jpg", route: "/asset-gallery", tags: ["Assets"], category: "tools" },
   // â”€â”€ Platform â”€â”€
   { id: "warlords-steam", title: "Grudge Warlords", description: "Main game on Steam â€” 3D MMORPG", image: "/assets/games/warlords.jpg", route: "https://store.steampowered.com/app/2707990/Grudge/", tags: ["Steam", "3D"], category: "platform", external: true },

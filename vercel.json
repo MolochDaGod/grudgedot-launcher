@@ -18,12 +18,32 @@
     },
     {
       "source": "/engine",
-      "destination": "https://forge.grudge-studio.com?from=launcher-babylon-deprecated&mode=scene",
+      "destination": "https://forge.grudge-studio.com?from=launcher-engine&mode=scene",
+      "permanent": false
+    },
+    {
+      "source": "/three-engine",
+      "destination": "https://forge.grudge-studio.com?from=launcher-three&mode=scene",
+      "permanent": false
+    },
+    {
+      "source": "/forge",
+      "destination": "https://forge.grudge-studio.com?from=launcher",
       "permanent": false
     },
     {
       "source": "/babygrudge",
-      "destination": "https://forge.grudge-studio.com?from=launcher-babylon-hub",
+      "destination": "https://forge.grudge-studio.com?from=launcher-hub",
+      "permanent": false
+    },
+    {
+      "source": "/map-editor",
+      "destination": "https://forge.grudge-studio.com?from=launcher-map&mode=map",
+      "permanent": false
+    },
+    {
+      "source": "/effects",
+      "destination": "https://forge.grudge-studio.com?from=launcher-effects&mode=effects",
       "permanent": false
     }
   ],

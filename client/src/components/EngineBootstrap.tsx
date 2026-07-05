@@ -13,9 +13,9 @@ interface EngineBootstrapProps {
 }
 
 const ENGINE_META: Record<EngineType, { label: string; color: string; route: string }> = {
-  threejs:  { label: 'Three.js',   color: 'bg-blue-500/20 text-blue-400',    route: '/three-engine' },
-  babylon:  { label: 'Babylon.js', color: 'bg-amber-500/20 text-amber-400',  route: '/engine' },
-  '2d':     { label: '2D Engine',  color: 'bg-emerald-500/20 text-emerald-400', route: '/flat-engine' },
+  threejs:  { label: 'Studio Forge', color: 'bg-amber-500/20 text-amber-300', route: '/forge' },
+  babylon:  { label: 'Studio Forge', color: 'bg-amber-500/20 text-amber-300', route: '/forge' },
+  '2d':     { label: '2D Engine',    color: 'bg-emerald-500/20 text-emerald-400', route: '/flat-engine' },
 };
 
 /**
@@ -44,7 +44,7 @@ export function EngineBootstrap({ title, description, engine, concepts }: Engine
       <Button variant="outline" asChild>
         <Link href={meta.route}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Open {meta.label} Editor
+          Open {meta.label}
         </Link>
       </Button>
     </div>

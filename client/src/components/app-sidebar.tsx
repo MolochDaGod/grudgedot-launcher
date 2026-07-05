@@ -5,7 +5,7 @@ import {
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
   Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse, Link2,
   CreditCard, Download, Brain, MapPin,
-  Cog, Layers, Cuboid,
+  Cog, Layers,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,18 +28,16 @@ import { getAuthData, logout } from "@/lib/auth";
 
 const engineItems = [
   {
-    // Single hub for all Babylon content — engine, shooter-3d, external Babylon
-    // projects, playground/docs. The rest of the launcher stays three.js-only.
-    title: "BabyGrudge",
-    url: "/babygrudge",
-    icon: Cog,
-    badge: "Babylon",
+    title: "Studio Forge",
+    url: "/forge",
+    icon: Hammer,
+    badge: "Editor",
   },
   {
-    title: "Grudge Three Engine",
-    url: "/three-engine",
-    icon: Cuboid,
-    badge: "Three",
+    title: "Forge Hub",
+    url: "/babygrudge",
+    icon: Cog,
+    badge: "Hub",
   },
   {
     title: "Grudge Flat Engine",

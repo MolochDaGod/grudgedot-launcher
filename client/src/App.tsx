@@ -64,6 +64,7 @@ const WarlordSuite = lazy(() => import("@/pages/warlord-suite"));
 const ConnectionsPage = lazy(() => import("@/pages/connections"));
 const NexusNemesis = lazy(() => import("@/pages/nexus-nemesis"));
 const CardForge = lazy(() => import("@/pages/card-forge"));
+const ForgeEditor = lazy(() => import("@/pages/forge-editor"));
 const GrudgeEngine = lazy(() => import("@/pages/grudge-engine"));
 const GrudgeThreeEngine = lazy(() => import("@/pages/grudge-three-engine"));
 const GrudgeFlatEngine = lazy(() => import("@/pages/grudge-flat-engine"));
@@ -143,6 +144,7 @@ function Router() {
         <Route path="/warlord-suite/:page?" component={WarlordSuite} />
         <Route path="/nexus-nemesis" component={NexusNemesis} />
         <Route path="/card-forge" component={CardForge} />
+        <Route path="/forge" component={ForgeEditor} />
         <Route path="/engine" component={GrudgeEngine} />
         <Route path="/three-engine" component={GrudgeThreeEngine} />
         <Route path="/flat-engine" component={GrudgeFlatEngine} />
@@ -161,7 +163,7 @@ function Header() {
     if (location === "/") return "Battle Station";
     if (location === "/projects") return "War Room";
     if (location.startsWith("/rts-builder")) return "RTS Forge";
-    if (location === "/effects") return "Power Core";
+
     if (location === "/asset-gallery") return "Asset Gallery";
     if (location === "/docs") return "Strategy Guide";
     if (location === "/crown-clash") return "Crown Clash";
@@ -185,7 +187,7 @@ function Header() {
     if (location === "/achievements") return "Glory Hall";
     if (location === "/profile") return "Commander";
     if (location === "/settings") return "Settings";
-    if (location === "/map-editor") return "Map Editor";
+
     if (location === "/character-editor") return "Character Editor";
     if (location === "/grudge-drive") return "Overdrive";
     if (location === "/drift") return "Grudge Drift";
@@ -206,15 +208,18 @@ function Header() {
     if (location.startsWith("/warlord-suite")) return "Warlord Suite";
     if (location === "/nexus-nemesis") return "Nexus Nemesis";
     if (location === "/card-forge") return "Card Forge";
-    if (location === "/engine") return "Grudge Web Engine";
-    if (location === "/three-engine") return "Grudge Three Engine";
+    if (location === "/forge") return "Studio Forge";
+    if (location === "/engine") return "Studio Forge";
+    if (location === "/three-engine") return "Studio Forge";
     if (location === "/flat-engine") return "Grudge Flat Engine";
     if (location === "/shooter-3d") return "Grudge Assault";
-    if (location === "/babygrudge") return "BabyGrudge";
+    if (location === "/babygrudge") return "Studio Forge Hub";
+    if (location === "/map-editor") return "Studio Forge — Maps";
+    if (location === "/effects") return "Studio Forge — Effects";
     return "Grudge Brawl";
   };
 
-  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-rts-enhanced", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/engine", "/three-engine", "/flat-engine", "/shooter-3d", "/armada-saga", "/reef-hunt", "/grudge-factory", "/grudge-crafting", "/grudge-warlords-rts"].some(
+  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-rts-enhanced", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/flat-engine", "/shooter-3d", "/armada-saga", "/reef-hunt", "/grudge-factory", "/grudge-crafting", "/grudge-warlords-rts"].some(
     path => location === path || location.startsWith(`${path}/`)
   );
 
