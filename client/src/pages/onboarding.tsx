@@ -43,7 +43,7 @@ const launchers: LauncherItem[] = [
   { title: "Crown Clash", url: "/crown-clash", icon: Crown, description: "PvE battle royale arena", badge: "PvE", category: "games" },
   { title: "Grudge Arena", url: "/arena", icon: Crosshair, description: "3D combat arena", badge: "3D", category: "games" },
   { title: "Grudge Gangs", url: "/moba", icon: Target, description: "Team-based MOBA gameplay", badge: "MOBA", category: "games" },
-  { title: "Overdrive", url: "/grudge-drive", icon: Car, description: "High-speed racing action", badge: "Racing", category: "games" },
+  { title: "Grudge Velocity", url: "/drift", icon: Car, description: "Voxel garage, drift racing, and Overdrive", badge: "Racing", category: "games" },
   { title: "Decay", url: "/decay", icon: Bug, description: "Survival FPS", badge: "FPS", category: "games" },
   { title: "Swarm RTS", url: "/swarm-rts", icon: Hexagon, description: "Real-time swarm strategy", badge: "RTS", category: "games" },
   { title: "MMO World", url: "/mmo", icon: Users, description: "Massively multiplayer RPG world", badge: "MMO", category: "games" },

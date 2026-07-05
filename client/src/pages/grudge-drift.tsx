@@ -60,6 +60,14 @@ function GrudgeVelocityInner({ session }: { session: GrudgeGameSession }) {
     document.title = 'Grudge Velocity — Voxel Garage & Drift';
   }, []);
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const next = hubTab === 'overdrive' ? 'overdrive' : null;
+    if (next) url.searchParams.set('tab', next);
+    else url.searchParams.delete('tab');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+  }, [hubTab]);
+
   const persistGarage = useCallback((next: GarageState) => {
     setGarage(next);
     saveGarage(next);

@@ -20,7 +20,7 @@ export function DriftHUD({ hud }: DriftHUDProps) {
       {/* Top bar */}
       <div className="absolute left-4 right-4 top-4 flex items-start justify-between">
         <div className="rounded-lg border border-cyan-500/20 bg-black/60 px-4 py-2 backdrop-blur-md">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">Grudge Drift</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-400/70">Grudge Velocity</div>
           <div className="text-xs text-white/50">RVP Street · Lap {hud.lap + 1}</div>
         </div>
 
