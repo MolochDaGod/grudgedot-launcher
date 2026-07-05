@@ -25,6 +25,9 @@ export const GRUDGE_DRIVE_VIDEO = `${ASSETS_CDN}/game-assets/videos/grudgedrive.
 /** Cinematic cutscene between Velocity race phases (brief → grid, finish → results) */
 export const GRUDGE_DRIVE_SCENE_VIDEO = `${ASSETS_CDN}/game-assets/videos/grudge-drive-scene.mp4`;
 
+/** Open + loading reel — intro on game open and looped while assets load */
+export const GRUDGE_DRIVE_LOADING_VIDEO = `${ASSETS_CDN}/game-assets/videos/grudge-drive-loading.mp4`;
+
 export const AI_GATEWAY: string =
   env.VITE_AI_URL || 'https://ale.grudge-studio.com';
 

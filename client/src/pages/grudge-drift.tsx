@@ -9,6 +9,8 @@ import { RaceBrief } from '@/components/drift/RaceBrief';
 import { RaceCountdown } from '@/components/drift/RaceCountdown';
 import { RaceResults } from '@/components/drift/RaceResults';
 import { SceneInterstitial } from '@/components/drift/SceneInterstitial';
+import { GameOpenSequence } from '@/components/drift/GameOpenSequence';
+import { LoadingVideoOverlay } from '@/components/drift/LoadingVideoOverlay';
 import { VelocityGarage } from '@/components/velocity/VelocityGarage';
 import { DriftRacingEngine, type DriftLoadState } from '@/lib/drift/DriftRacingEngine';
 import type { DriftHudSnapshot, SpeedPresentationState } from '@/lib/drift/types';
@@ -20,7 +22,11 @@ import { prepareVehicle } from '@/lib/velocity/vehicleFactory';
 import { getContract, type DriftSessionResult } from '@/lib/velocity/contracts';
 
 import { GrudgeDriveGame } from '@/pages/grudge-drive';
-import { GRUDGE_DRIVE_SCENE_VIDEO, GRUDGE_DRIVE_VIDEO } from '@/lib/grudgeConfig';
+import {
+  GRUDGE_DRIVE_LOADING_VIDEO,
+  GRUDGE_DRIVE_SCENE_VIDEO,
+  GRUDGE_DRIVE_VIDEO,
+} from '@/lib/grudgeConfig';
 
 type HubTab = 'garage' | 'overdrive';
 type RacePhase = 'brief' | 'cutscene' | 'countdown' | 'driving' | 'results';
@@ -70,6 +76,7 @@ function GrudgeVelocityInner({ session }: { session: GrudgeGameSession }) {
     return tab === 'overdrive' ? 'overdrive' : 'garage';
   });
   const [inRace, setInRace] = useState(false);
+  const [openComplete, setOpenComplete] = useState(false);
   const [garage, setGarage] = useState<GarageState>(() => loadGarage());
 
   useEffect(() => {
@@ -122,6 +129,19 @@ function GrudgeVelocityInner({ session }: { session: GrudgeGameSession }) {
         onExit={() => setInRace(false)}
         onSessionComplete={handleSessionComplete}
       />
+    );
+  }
+
+  if (!openComplete) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black" data-testid="page-grudge-velocity-open">
+        <GameOpenSequence
+          introSrc={GRUDGE_DRIVE_LOADING_VIDEO}
+          trailerSrc={GRUDGE_DRIVE_VIDEO}
+          poster="/assets/games/grudge-brand.png"
+          onComplete={() => setOpenComplete(true)}
+        />
+      </div>
     );
   }
 
@@ -378,12 +398,17 @@ function GrudgeDriftRace({
         className="relative min-h-0 flex-1"
         style={{ fontFamily: 'JetBrains Mono, monospace' }}
       >
-        {loadState !== 'ready' && (
+        {loadState === 'loading' && (
+          <LoadingVideoOverlay
+            src={GRUDGE_DRIVE_LOADING_VIDEO}
+            message={loadMessage}
+            ready={false}
+            poster="/assets/games/grudge-brand.png"
+          />
+        )}
+        {loadState === 'error' && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#060810]/90 backdrop-blur-sm">
-            {loadState === 'loading' && (
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-cyan-500/30 border-t-cyan-400" />
-            )}
-            <p className="text-sm text-white/70">{loadMessage}</p>
+            <p className="text-sm text-red-300">{loadMessage}</p>
           </div>
         )}
 
