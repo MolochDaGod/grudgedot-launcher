@@ -8,6 +8,7 @@ import { SpeedOverlay } from '@/components/drift/SpeedOverlay';
 import { RaceBrief } from '@/components/drift/RaceBrief';
 import { RaceCountdown } from '@/components/drift/RaceCountdown';
 import { RaceResults } from '@/components/drift/RaceResults';
+import { SceneInterstitial } from '@/components/drift/SceneInterstitial';
 import { VelocityGarage } from '@/components/velocity/VelocityGarage';
 import { DriftRacingEngine, type DriftLoadState } from '@/lib/drift/DriftRacingEngine';
 import type { DriftHudSnapshot, SpeedPresentationState } from '@/lib/drift/types';
@@ -19,10 +20,11 @@ import { prepareVehicle } from '@/lib/velocity/vehicleFactory';
 import { getContract, type DriftSessionResult } from '@/lib/velocity/contracts';
 
 import { GrudgeDriveGame } from '@/pages/grudge-drive';
-import { GRUDGE_DRIVE_VIDEO } from '@/lib/grudgeConfig';
+import { GRUDGE_DRIVE_SCENE_VIDEO, GRUDGE_DRIVE_VIDEO } from '@/lib/grudgeConfig';
 
 type HubTab = 'garage' | 'overdrive';
-type RacePhase = 'brief' | 'countdown' | 'driving' | 'results';
+type RacePhase = 'brief' | 'cutscene' | 'countdown' | 'driving' | 'results';
+type CutsceneNext = 'countdown' | 'results';
 
 const DEFAULT_HUD: DriftHudSnapshot = {
   speedKmh: 0,
@@ -206,6 +208,7 @@ function GrudgeDriftRace({
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<DriftRacingEngine | null>(null);
   const [racePhase, setRacePhase] = useState<RacePhase>('brief');
+  const [cutsceneNext, setCutsceneNext] = useState<CutsceneNext>('countdown');
   const [countdown, setCountdown] = useState(3);
   const [hud, setHud] = useState<DriftHudSnapshot>(DEFAULT_HUD);
   const [fx, setFx] = useState<SpeedPresentationState>(DEFAULT_FX);
@@ -234,14 +237,28 @@ function GrudgeDriftRace({
     setTimeout(() => setLapToast(null), 2500);
   }, []);
 
+  const beginCutscene = useCallback((next: CutsceneNext) => {
+    setCutsceneNext(next);
+    setRacePhase('cutscene');
+  }, []);
+
   const handleSessionEnd = useCallback(
     (result: DriftSessionResult) => {
       onSessionComplete(result);
       setSessionResult(result);
-      setRacePhase('results');
+      beginCutscene('results');
     },
-    [onSessionComplete],
+    [onSessionComplete, beginCutscene],
   );
+
+  const handleCutsceneComplete = useCallback(() => {
+    if (cutsceneNext === 'countdown') {
+      setCountdown(3);
+      setRacePhase('countdown');
+      return;
+    }
+    setRacePhase('results');
+  }, [cutsceneNext]);
 
   useEffect(() => {
     document.title = 'Grudge Velocity — RVP Drift';
@@ -305,9 +322,9 @@ function GrudgeDriftRace({
 
   useEffect(() => {
     if (racePhase !== 'brief' || loadState !== 'ready') return;
-    const t = setTimeout(() => setRacePhase('countdown'), 2800);
+    const t = setTimeout(() => beginCutscene('countdown'), 2800);
     return () => clearTimeout(t);
-  }, [racePhase, loadState]);
+  }, [racePhase, loadState, beginCutscene]);
 
   useEffect(() => {
     if (racePhase !== 'countdown') return;
@@ -327,6 +344,7 @@ function GrudgeDriftRace({
     prevBestScoreRef.current = garage.bestDriftScore;
     setSessionResult(null);
     setRacePhase('brief');
+    setCutsceneNext('countdown');
     setCountdown(3);
     setHud(DEFAULT_HUD);
     setLoadState('loading');
@@ -369,7 +387,15 @@ function GrudgeDriftRace({
           </div>
         )}
 
-        {loadState === 'ready' && racePhase !== 'results' && (
+        {loadState === 'ready' && racePhase === 'cutscene' && (
+          <SceneInterstitial
+            src={GRUDGE_DRIVE_SCENE_VIDEO}
+            poster="/assets/games/grudge-brand.png"
+            onComplete={handleCutsceneComplete}
+          />
+        )}
+
+        {loadState === 'ready' && racePhase !== 'results' && racePhase !== 'cutscene' && (
           <>
             {(racePhase === 'driving' || racePhase === 'countdown') && (
               <>
@@ -383,7 +409,7 @@ function GrudgeDriftRace({
                 carName={car.name}
                 effectiveStats={stats}
                 bestLapMs={garage.bestLapMs}
-                onContinue={() => setRacePhase('countdown')}
+                onContinue={() => beginCutscene('countdown')}
               />
             )}
             {racePhase === 'countdown' && <RaceCountdown value={countdown} />}

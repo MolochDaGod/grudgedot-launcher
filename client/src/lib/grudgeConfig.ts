@@ -22,6 +22,9 @@ export const ASSETS_CDN: string =
 /** Grudge Drive / Velocity trailer — served from R2 via assets CDN */
 export const GRUDGE_DRIVE_VIDEO = `${ASSETS_CDN}/game-assets/videos/grudgedrive.mp4`;
 
+/** Cinematic cutscene between Velocity race phases (brief → grid, finish → results) */
+export const GRUDGE_DRIVE_SCENE_VIDEO = `${ASSETS_CDN}/game-assets/videos/grudge-drive-scene.mp4`;
+
 export const AI_GATEWAY: string =
   env.VITE_AI_URL || 'https://ale.grudge-studio.com';
 
