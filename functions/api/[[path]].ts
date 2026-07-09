@@ -93,10 +93,11 @@ function buildTarget(path: string, search: string): string {
     return `${WARLORDS}/api/discord/${rest}${search}`;
   }
 
-  // Grudge ID hub — login page, puter bridge, grudge-bridge, verify, me, …
+  // Auth implementation lives on Railway (same as id.grudge-studio.com hub rewrites).
+  // Proxying API calls straight to Railway avoids id hub 404s on puter/login/bridge.
+  // Browser login UI still uses https://id.grudge-studio.com/login (pretty domain).
   if (path.startsWith("/api/auth/")) {
-    const rest = path.slice("/api/auth/".length);
-    return `${AUTH_HUB}/api/auth/${rest}${search}`;
+    return `${RAILWAY}${path}${search}`;
   }
 
   // Explicit game-data prefixes + default remainder → Railway SSOT
