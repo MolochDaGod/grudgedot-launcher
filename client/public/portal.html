@@ -1,15 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html translate="no" lang="en" translate="no">
 <head>
 <meta charset="UTF-8">
     <meta name="google" content="notranslate" />
     <script src="https://client.grudge-studio.com/grudge-game-bootstrap.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>grudgeDot — Grudge Studio Launcher</title>
+<title>grudgeDot � Grudge Studio Launcher</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Puter SDK — Free AI, Cloud Storage, KV, Auth (User Pays Model = $0 cost) -->
+<!-- Puter SDK � Free AI, Cloud Storage, KV, Auth (User Pays Model = $0 cost) -->
 <script src="https://js.puter.com/v2/"></script>
 
 <style>
@@ -463,7 +463,7 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
   .hero-banner { flex-direction: column; }
 }
 
-/* ═══ GRUDGE MODAL SYSTEM (extracted from reference designs) ═══ */
+/* --- GRUDGE MODAL SYSTEM (extracted from reference designs) --- */
 .gm-overlay {
   position:fixed;inset:0;background:rgba(4,2,1,0.88);
   display:flex;align-items:center;justify-content:center;z-index:9999;
@@ -526,29 +526,29 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 
     <!-- SOCIAL LOGINS -->
     <div class="social-grid">
-      <button class="social-btn puter" onclick="loginPuter()" title="Sign in with your Grudge ID — backed by Puter cloud">
-        <span class="social-icon">⚔</span> Grudge ID
+      <button class="social-btn puter" onclick="loginWithGrudgeId()" title="Canonical Grudge ID � loads Warlords Railway characters">
+        <span class="social-icon">?</span> Grudge ID
       </button>
       <button class="social-btn discord" onclick="loginDiscord()">
-        <span class="social-icon">🎮</span> Discord
+        <span class="social-icon">??</span> Discord
       </button>
       <button class="social-btn solana" onclick="loginPhantom()">
-        <span class="social-icon">◎</span> Phantom
+        <span class="social-icon">?</span> Phantom
       </button>
       <button class="social-btn phone" onclick="loginPhone()">
-        <span class="social-icon">📱</span> Phone
+        <span class="social-icon">??</span> Phone
       </button>
       <button class="social-btn google" onclick="loginGoogle()" title="Google sign-in via Puter">
-        <span class="social-icon">🔴</span> Google
+        <span class="social-icon">??</span> Google
       </button>
       <button class="social-btn github" onclick="loginGithub()">
-        <span class="social-icon">🐙</span> GitHub
+        <span class="social-icon">??</span> GitHub
       </button>
     </div>
 
     <div class="divider-or">OR</div>
 
-    <!-- EMAIL/PASS FORM — LOGIN -->
+    <!-- EMAIL/PASS FORM � LOGIN -->
     <div id="login-form">
       <div class="field-group">
         <label class="field-label">USERNAME OR EMAIL</label>
@@ -556,9 +556,9 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
       </div>
       <div class="field-group">
         <label class="field-label">PASSWORD</label>
-        <input class="field-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+        <input class="field-input" id="login-pass" type="password" placeholder="��������" autocomplete="current-password">
       </div>
-      <button class="submit-btn" onclick="loginEmail()">⚔ ENTER THE HUB</button>
+      <button class="submit-btn" onclick="loginEmail()">? ENTER THE HUB</button>
       <div class="auth-footer">
         <span class="auth-link" onclick="showForgot()">Forgot password?</span>
       </div>
@@ -587,21 +587,21 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
       <div class="field-row">
         <div class="field-group">
           <label class="field-label">PASSWORD</label>
-          <input class="field-input" id="reg-pass" type="password" placeholder="••••••••" autocomplete="new-password">
+          <input class="field-input" id="reg-pass" type="password" placeholder="��������" autocomplete="new-password">
         </div>
         <div class="field-group">
           <label class="field-label">CONFIRM</label>
-          <input class="field-input" id="reg-pass2" type="password" placeholder="••••••••" autocomplete="new-password">
+          <input class="field-input" id="reg-pass2" type="password" placeholder="��������" autocomplete="new-password">
         </div>
       </div>
-      <button class="submit-btn" onclick="registerEmail()">⚔ FORGE MY GRUDGE ID</button>
+      <button class="submit-btn" onclick="registerEmail()">? FORGE MY GRUDGE ID</button>
       <div class="auth-footer" style="margin-top:10px; font-size:11px; color:rgba(201,168,76,0.25)">
         By creating an account you get a Grudge ID + Puter ID automatically. 
         Solana wallet optional but recommended.
       </div>
     </div>
 
-    <button class="guest-btn" onclick="loginGuest()">▷ PLAY AS GUEST — NO ACCOUNT NEEDED</button>
+    <button class="guest-btn" onclick="loginGuest()">? PLAY AS GUEST � NO ACCOUNT NEEDED</button>
   </div>
 </div>
 
@@ -633,54 +633,61 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
     <div class="panel active" id="panel-overview">
       <div class="status-bar">
         <span><span class="status-dot-live"></span>SYSTEMS ONLINE</span>
-        <span>⚡ PUTER CLOUD</span>
-        <span>🗺️ GRUDGEWARLORDS.COM</span>
+        <span id="fleet-health" style="font-family:'Share Tech Mono',monospace;font-size:10px">PROBE�</span>
+        <span>? GRUDGE ID</span>
+        <span>?? WARLORDS</span>
         <span id="status-date"></span>
-        <span style="margin-left:auto">☠ RACALVIN THE PIRATE KING</span>
+        <span style="margin-left:auto">? RACALVIN THE PIRATE KING</span>
       </div>
 
       <div class="hero-banner">
         <div class="hero-text">
-          <h2>Grudge Game Editor</h2>
-          <p>Central hub for all Grudge Studio production systems. Games, assets, AI tools, 
-          community management, Web3 identity, and live deployments — unified under one roof.</p>
+          <h2>grudgeDot Command Hub</h2>
+          <p>Launch games and studio tools against the <strong>one fleet truth</strong>:
+          Grudge ID auth � Railway Postgres characters/account � ObjectStore definitions � R2 assets.</p>
           <div class="hero-actions">
-            <a class="hero-cta" href="https://puter.com/app/Grudge-Game-Editor" target="_blank">⚙ OPEN EDITOR</a>
-            <a class="hero-cta secondary" href="https://grudgewarlords.com" target="_blank">🗺 WARLORDS LIVE</a>
-            <a class="hero-cta secondary" href="https://grudachain.grudgestudio.com" target="_blank">⛓ GRUDACHAIN</a>
+            <a class="hero-cta" href="https://grudgewarlords.com" target="_blank">?? WARLORDS LIVE</a>
+            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/" target="_blank">?? CRAFTING</a>
+            <a class="hero-cta secondary" href="https://forge.grudge-studio.com" target="_blank">? FORGE</a>
+            <a class="hero-cta secondary" href="https://character.grudge-studio.com?era=warlords" target="_blank">? CHARACTERS</a>
           </div>
         </div>
       </div>
 
       <div class="stats-row">
-        <div class="stat-box"><div class="stat-num">61</div><div class="stat-lbl">PUTER APPS</div></div>
-        <div class="stat-box"><div class="stat-num">120+</div><div class="stat-lbl">DEPLOYMENTS</div></div>
-        <div class="stat-box"><div class="stat-num">7</div><div class="stat-lbl">LIVE GAMES</div></div>
-        <div class="stat-box"><div class="stat-num" id="stat-users">—</div><div class="stat-lbl">USERS</div></div>
-        <div class="stat-box"><div class="stat-num" style="color:#a855f7">◎</div><div class="stat-lbl">SOLANA ACTIVE</div></div>
-        <div class="stat-box"><div class="stat-num" style="color:var(--green)">✓</div><div class="stat-lbl">MySQL 8 LIVE</div></div>
+        <div class="stat-box"><div class="stat-num">FLEET</div><div class="stat-lbl">ONE TRUTH</div></div>
+        <div class="stat-box"><div class="stat-num">ID</div><div class="stat-lbl">GRUDGE AUTH</div></div>
+        <div class="stat-box"><div class="stat-num">PG</div><div class="stat-lbl">RAILWAY SSOT</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-users">�</div><div class="stat-lbl">CHARS LOADED</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#a855f7">?</div><div class="stat-lbl">SOLANA</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:var(--green)">?</div><div class="stat-lbl">RAILWAY LIVE</div></div>
       </div>
 
-      <!-- ===== GATED SERVICES PREVIEW ===== -->
-      <div class="sh"><div class="sh-title">SERVICES</div><div class="sh-line"></div><div class="sh-badge" id="services-status">SIGN IN TO UNLOCK</div></div>
+      <div class="sh"><div class="sh-title">YOUR CHARACTERS</div><div class="sh-line"></div><div class="sh-badge">RAILWAY POSTGRES</div></div>
+      <div id="launcher-characters" style="margin-bottom:24px;padding:4px 0">
+        <div style="font-size:12px;color:rgba(201,168,76,0.45)">Sign in with Grudge ID to load characters�</div>
+      </div>
+
+      <!-- ===== FLEET SERVICES ===== -->
+      <div class="sh"><div class="sh-title">FLEET TOOLS</div><div class="sh-line"></div><div class="sh-badge" id="services-status">SIGN IN FOR ACCOUNT DATA</div></div>
       <div id="services-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:28px">
-        <!-- Cards rendered by renderServices() — each is locked until auth -->
+        <!-- Cards rendered by renderServices() -->
       </div>
 
       <div class="sh"><div class="sh-title">QUICK ACCESS</div><div class="sh-line"></div></div>
       <div class="qlinks">
-        <a class="qlink" href="https://puter.com/app/Grudge-Game-Editor" target="_blank"><span class="qlink-icon">⚙️</span>GAME EDITOR</a>
-        <a class="qlink" href="https://puter.com/app/grudge-warlords" target="_blank"><span class="qlink-icon">⚔️</span>WARLORDS</a>
-        <a class="qlink" href="https://puter.com/app/grudachain" target="_blank"><span class="qlink-icon">⛓️</span>GRUDACHAIN</a>
-        <a class="qlink" href="https://puter.com/app/DiGrudge" target="_blank"><span class="qlink-icon">🗡️</span>DIGRUDGE</a>
-        <a class="qlink" href="https://puter.com/app/grudge-client" target="_blank"><span class="qlink-icon">🖥️</span>GRUDGE CLIENT</a>
-        <a class="qlink" href="https://grudgewarlords.com" target="_blank"><span class="qlink-icon">🌐</span>WARLORDS.COM</a>
-        <a class="qlink" href="https://grudachain.grudgestudio.com" target="_blank"><span class="qlink-icon">🔗</span>GRUDA SITE</a>
-        <a class="qlink" href="https://vercel.com/grudgenexus" target="_blank"><span class="qlink-icon">▲</span>VERCEL</a>
-        <a class="qlink" href="https://github.com" target="_blank"><span class="qlink-icon">🐙</span>GITHUB</a>
-        <a class="qlink" href="https://puter.com" target="_blank"><span class="qlink-icon">☁️</span>PUTER</a>
-        <a class="qlink" href="https://grudgestudio.com" target="_blank"><span class="qlink-icon">🏰</span>GRUDGE STUDIO</a>
-        <a class="qlink" href="https://puter.com/app/grudge-angler" target="_blank"><span class="qlink-icon">🎣</span>ANGLER GAME</a>
+        <a class="qlink" href="https://grudgewarlords.com" target="_blank"><span class="qlink-icon">??</span>WARLORDS</a>
+        <a class="qlink" href="https://grudge-crafting.puter.site/" target="_blank"><span class="qlink-icon">??</span>CRAFTING</a>
+        <a class="qlink" href="https://character.grudge-studio.com?era=warlords" target="_blank"><span class="qlink-icon">??</span>GCS</a>
+        <a class="qlink" href="https://forge.grudge-studio.com" target="_blank"><span class="qlink-icon">??</span>FORGE</a>
+        <a class="qlink" href="https://id.grudge-studio.com/login" target="_blank"><span class="qlink-icon">??</span>GRUDGE ID</a>
+        <a class="qlink" href="https://fleet.grudge-studio.com" target="_blank"><span class="qlink-icon">???</span>FLEET MAP</a>
+        <a class="qlink" href="https://objectstore.grudge-studio.com/api/v1/" target="_blank"><span class="qlink-icon">??</span>OBJECTSTORE</a>
+        <a class="qlink" href="https://assets.grudge-studio.com" target="_blank"><span class="qlink-icon">???</span>ASSETS CDN</a>
+        <a class="qlink" href="https://github.com" target="_blank"><span class="qlink-icon">??</span>GITHUB</a>
+        <a class="qlink" href="https://puter.com" target="_blank"><span class="qlink-icon">??</span>PUTER</a>
+        <a class="qlink" href="https://grudgestudio.com" target="_blank"><span class="qlink-icon">??</span>GRUDGE STUDIO</a>
+        <a class="qlink" href="https://puter.com/app/grudge-angler" target="_blank"><span class="qlink-icon">??</span>ANGLER GAME</a>
       </div>
     </div>
 
@@ -698,16 +705,16 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
               <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);font-size:8px;text-align:center;padding:2px 0;color:var(--gold);letter-spacing:1px;opacity:0;transition:opacity .2s" class="avatar-edit-hint">CHANGE</div>
             </div>
             <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
-            <div class="account-username" id="acct-username">—</div>
-            <div class="account-id" id="acct-display">—</div>
+            <div class="account-username" id="acct-username">�</div>
+            <div class="account-id" id="acct-display">�</div>
 
             <div class="grudge-id-box">
               <div class="grudge-id-label">GRUDGE ID</div>
-              <div class="grudge-id-value" id="acct-grudge-id">—</div>
+              <div class="grudge-id-value" id="acct-grudge-id">�</div>
             </div>
             <div class="grudge-id-box" style="border-left-color: rgba(6,182,212,0.7)">
               <div class="grudge-id-label">PUTER ID</div>
-              <div class="grudge-id-value" id="acct-puter-id">—</div>
+              <div class="grudge-id-value" id="acct-puter-id">�</div>
             </div>
 
             <!-- Solana Wallet -->
@@ -715,16 +722,16 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
               <div class="sh" style="margin-bottom:8px"><div class="sh-title" style="font-size:10px;color:rgba(153,69,255,0.8)">SOLANA WALLET</div><div class="sh-line" style="background:linear-gradient(90deg,rgba(153,69,255,0.3),transparent)"></div></div>
               <div id="wallet-display">
                 <button class="social-btn solana" style="width:100%;justify-content:center;margin-bottom:8px" onclick="loginPhantom()">
-                  <span class="social-icon">◎</span> Connect Phantom Wallet
+                  <span class="social-icon">?</span> Connect Phantom Wallet
                 </button>
                 <button class="social-btn phone" style="width:100%;justify-content:center" onclick="loginPhone()">
-                  <span class="social-icon">📱</span> Link Phone Number
+                  <span class="social-icon">??</span> Link Phone Number
                 </button>
               </div>
               <div id="wallet-connected" style="display:none">
                 <div class="wallet-addr" id="wallet-addr">
-                  —
-                  <span class="copy-btn" onclick="copyWallet()">📋</span>
+                  �
+                  <span class="copy-btn" onclick="copyWallet()">??</span>
                 </div>
               </div>
             </div>
@@ -782,79 +789,116 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
       <div class="deploy-grid" id="deploy-grid"></div>
     </div>
 
-    <!-- DNS / SERVER SETUP -->
+    <!-- FLEET TRUTH / OPS -->
     <div class="panel" id="panel-dns">
-      <div class="sh"><div class="sh-title">DNS & SERVER SETUP</div><div class="sh-line"></div><div class="sh-badge">GRUDGEWARLORDS.COM</div></div>
+      <div class="sh"><div class="sh-title">FLEET ONE TRUTH</div><div class="sh-line"></div><div class="sh-badge">PRODUCTION</div></div>
 
       <div class="dns-card">
-        <h3>⚙ api.grudge-studio.com — Backend + AI Workers</h3>
-        <p style="font-size:13px;color:rgba(201,168,76,0.5);margin-bottom:14px">Add these records in your DNS provider (Cloudflare / Namecheap / etc)</p>
+        <h3>? Production endpoints (do not invent parallel SSOT)</h3>
+        <p style="font-size:13px;color:rgba(201,168,76,0.5);margin-bottom:14px">Launcher same-origin <code>/api/*</code> rewrites to these hosts.</p>
         <table class="dns-table">
-          <tr><th>TYPE</th><th>NAME</th><th>VALUE</th><th>TTL</th><th>NOTE</th></tr>
+          <tr><th>ROLE</th><th>HOST</th><th>SSOT</th><th>NOTE</th></tr>
           <tr>
-            <td>CNAME</td><td>server</td>
-            <td class="value">cname.vercel-dns.com</td>
-            <td>Auto</td>
-            <td class="note">Then add api.grudge-studio.com as custom domain in Vercel dashboard</td>
+            <td>Auth</td>
+            <td class="value">id.grudge-studio.com</td>
+            <td>JWT / SSO</td>
+            <td class="note">/login?redirect_uri= ? Railway auth impl</td>
           </tr>
           <tr>
-            <td style="color:rgba(201,168,76,0.35)">— OR —</td>
-            <td>server</td>
-            <td class="value">74.208.155.229</td>
-            <td>300</td>
-            <td class="note">A record pointing directly to your GrudgeNetwork/Radmin IP</td>
+            <td>Game data</td>
+            <td class="value">grudge-api-production-0d46.up.railway.app</td>
+            <td>Postgres</td>
+            <td class="note">characters � account bag � island � wallet</td>
+          </tr>
+          <tr>
+            <td>Definitions</td>
+            <td class="value">objectstore.grudge-studio.com/api/v1</td>
+            <td>JSON</td>
+            <td class="note">recipes, items, races � not player state</td>
+          </tr>
+          <tr>
+            <td>Binaries</td>
+            <td class="value">assets.grudge-studio.com</td>
+            <td>R2</td>
+            <td class="note">icons, GLB, audio</td>
+          </tr>
+          <tr>
+            <td>AI</td>
+            <td class="value">ai.grudge-studio.com</td>
+            <td>Workers</td>
+            <td class="note">+ Puter AI (user-pays)</td>
           </tr>
         </table>
       </div>
 
       <div class="dns-card">
-        <h3>🏰 gruda.grudgewarlords.com — Studio Deployment Hub</h3>
+        <h3>?? Retired / never use as player SSOT</h3>
         <table class="dns-table">
-          <tr><th>TYPE</th><th>NAME</th><th>VALUE</th><th>TTL</th><th>NOTE</th></tr>
+          <tr><th>BAD</th><th>WHY</th><th>USE INSTEAD</th></tr>
           <tr>
-            <td>CNAME</td><td>gruda</td>
-            <td class="value">grudgestudio.puter.site</td>
-            <td>Auto</td>
-            <td class="note">Points to your Puter deployment — upload this hub file there</td>
+            <td class="value">api.grudge-studio.com</td>
+            <td class="note">Split-brain � not Railway characters</td>
+            <td class="value">Railway /api/characters</td>
+          </tr>
+          <tr>
+            <td class="value">MySQL 8 on VPS</td>
+            <td class="note">Legacy docs only</td>
+            <td class="value">Railway Postgres</td>
+          </tr>
+          <tr>
+            <td class="value">D1 for islands/chars</td>
+            <td class="note">Asset registry only</td>
+            <td class="value">Railway home_islands</td>
+          </tr>
+          <tr>
+            <td class="value">Puter KV as sole truth</td>
+            <td class="note">Cache only</td>
+            <td class="value">Railway + optional KV mirror</td>
           </tr>
         </table>
       </div>
 
       <div class="dns-card">
-        <h3>📡 Radmin VPN Local Server Config</h3>
-        <p style="font-size:13px;color:rgba(201,168,76,0.5);margin-bottom:14px">Run this on your GrudgeNetwork machine (WSL/Linux) to expose the Node backend:</p>
+        <h3>?? Scope matrix (account vs character)</h3>
         <div class="code-block">
-<span class="comment"># WSL / Linux terminal on GrudgeNetwork (74.208.155.229)</span>
-<span class="comment"># Install Node + PM2 if not already done</span>
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-sudo npm install -g pm2
+<span class="comment"># Account scope � shared bag across all characters</span>
+GET  <span class="key">/api/account</span>
+GET  <span class="key">/api/account/resources</span>
+GET  <span class="key">/api/account/inventory</span>
+GET  <span class="key">/api/wallet</span>
 
-<span class="comment"># Clone or create your server project</span>
-mkdir -p ~/grudge-server && cd ~/grudge-server
-npm init -y
-npm install express cors dotenv mysql2/promise
+<span class="comment"># Character scope � UUID primary key, profession XP, equipment</span>
+GET  <span class="key">/api/characters?era=warlords</span>
+GET  <span class="key">/api/characters/:id</span>
+POST <span class="key">/api/characters/:id/progress</span>  <span class="comment"># expectedRevision</span>
 
-<span class="comment"># Create .env</span>
-<span class="key">DATABASE_URL</span>=<span class="val">"your-neon-pooler-connection-string"</span>
-<span class="key">GEMINI_API_KEY</span>=<span class="val">"PROXIED_VIA_BACKEND"</span>
-<span class="key">PORT</span>=<span class="val">9666</span>
-<span class="key">CORS_ORIGIN</span>=<span class="val">"https://grudgewarlords.com,https://gruda.grudgewarlords.com"</span>
-
-<span class="comment"># Start with PM2 (persists across reboots)</span>
-pm2 start server.js --name grudge-server
-pm2 startup && pm2 save
-
-<span class="comment"># Your server is now at:</span>
-<span class="comment"># http://74.208.155.229:9666  (local VPN)</span>
-<span class="comment"># https://api.grudge-studio.com  (after DNS propagates)</span>
+<span class="comment"># Auth handoff from id.grudge-studio.com</span>
+?grudge_token=� ? POST <span class="key">/api/auth/grudge-bridge</span> { token, audience }
+?sso_token=� or ?token=� ? store as grudge_auth_token
         </div>
       </div>
 
       <div class="dns-card">
-        <h3>🗄️ MySQL 8 — Single Source of Truth Schema</h3>
+        <h3>?? Live product links</h3>
         <div class="code-block">
-<span class="comment">-- Run in MySQL CLI</span>
+<span class="key">Warlords</span>     <span class="val">https://grudgewarlords.com</span>
+<span class="key">Crafting</span>     <span class="val">https://grudge-crafting.puter.site</span>
+<span class="key">GCS</span>          <span class="val">https://character.grudge-studio.com</span>
+<span class="key">Forge</span>        <span class="val">https://forge.grudge-studio.com</span>
+<span class="key">Fleet map</span>    <span class="val">https://fleet.grudge-studio.com</span>
+<span class="key">Launcher</span>     <span class="val">https://launcher.grudge-studio.com</span>
+
+<span class="comment"># Probe health</span>
+curl <span class="val">https://launcher.grudge-studio.com/api/health</span>
+curl <span class="val">https://grudge-api-production-0d46.up.railway.app/api/health</span>
+        </div>
+      </div>
+
+      <div class="dns-card">
+        <h3>??? Player state lives in Railway Postgres (not this MySQL sketch)</h3>
+        <div class="code-block">
+<span class="comment">-- Conceptual only � real schema is Drizzle on Railway (GrudgeBuilder)</span>
+<span class="comment">-- users.grudge_id � accounts � characters (UUID) � home_islands � inventory</span>
 
 CREATE TABLE IF NOT EXISTS <span class="key">users</span> (
   id          CHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -905,16 +949,16 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
       </div>
 
       <div class="dns-card">
-        <h3>🚀 Deploy This Hub to gruda.grudgewarlords.com</h3>
+        <h3>?? Deploy This Hub to gruda.grudgewarlords.com</h3>
         <div class="code-block">
 <span class="comment"># 1. Upload grudge-hub-v2.html to Puter as index.html</span>
 <span class="comment">#    in the folder mapped to grudgestudio.puter.site</span>
 <span class="comment">#    (or any puter.site you add the CNAME for)</span>
 
 <span class="comment"># 2. In Puter File Manager:</span>
-<span class="comment">#    → Navigate to your site folder</span>
-<span class="comment">#    → Upload this file as index.html</span>
-<span class="comment">#    → Done — changes are instant</span>
+<span class="comment">#    ? Navigate to your site folder</span>
+<span class="comment">#    ? Upload this file as index.html</span>
+<span class="comment">#    ? Done � changes are instant</span>
 
 <span class="comment"># 3. DNS CNAME added? Wait 5-30 min for propagation</span>
 <span class="comment">#    then visit: https://gruda.grudgewarlords.com</span>
@@ -927,30 +971,30 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
       <div class="sh"><div class="sh-title">TECH STACK & DEPENDENCIES</div><div class="sh-line"></div><div class="sh-badge">VPS 74.208.155.229</div></div>
 
       <div class="dns-card">
-        <h3>🏗️ Backend Services (Docker Compose)</h3>
+        <h3>??? Backend Services (Docker Compose)</h3>
         <table class="dns-table">
           <tr><th>SERVICE</th><th>CONTAINER</th><th>PORT</th><th>URL</th></tr>
           <tr><td>Grudge Identity</td><td class="value">grudge-id</td><td>3001</td><td class="value">id.grudge-studio.com</td></tr>
           <tr><td>Wallet Service</td><td class="value">wallet-service</td><td>3002</td><td class="note">(internal only)</td></tr>
-          <tr><td>Game API</td><td class="value">game-api</td><td>3003</td><td class="value">api.grudge-studio.com</td></tr>
-          <tr><td>AI Agent</td><td class="value">ai-agent</td><td>3004</td><td class="note">(internal only)</td></tr>
-          <tr><td>Account API</td><td class="value">account-api</td><td>3005</td><td class="value">account.grudge-studio.com</td></tr>
-          <tr><td>Launcher API</td><td class="value">launcher-api</td><td>3006</td><td class="value">launcher.grudge-studio.com</td></tr>
-          <tr><td>WebSocket</td><td class="value">ws-service</td><td>3007</td><td class="value">ws.grudge-studio.com</td></tr>
-          <tr><td>MySQL 8</td><td class="value">grudge-mysql</td><td>3306</td><td class="note">(internal only)</td></tr>
-          <tr><td>Redis 7</td><td class="value">grudge-redis</td><td>6379</td><td class="note">(internal only)</td></tr>
+          <tr><td>Game API</td><td class="value">Railway</td><td>—</td><td class="value">grudge-api-production-0d46</td></tr>
+          <tr><td>AI Gateway</td><td class="value">CF Worker</td><td>—</td><td class="value">ai.grudge-studio.com</td></tr>
+          <tr><td>Account / chars</td><td class="value">Railway</td><td>—</td><td class="value">/api/account · /api/characters</td></tr>
+          <tr><td>Launcher</td><td class="value">Vercel</td><td>—</td><td class="value">launcher.grudge-studio.com</td></tr>
+          <tr><td>Colyseus WS</td><td class="value">Railway</td><td>—</td><td class="value">wss://grudge-api-production-0d46…</td></tr>
+          <tr><td>Postgres</td><td class="value">Railway</td><td>—</td><td class="note">characters · account · islands SSOT</td></tr>
+          <tr><td>ObjectStore</td><td class="value">Worker</td><td>—</td><td class="value">objectstore.grudge-studio.com</td></tr>
         </table>
       </div>
 
       <div class="dns-card">
-        <h3>📦 Core Dependencies</h3>
+        <h3>?? Core Dependencies</h3>
         <table class="dns-table">
           <tr><th>PACKAGE</th><th>PURPOSE</th><th>LAYER</th></tr>
           <tr><td>Node.js 20</td><td>Runtime for all backend services</td><td class="value">Backend</td></tr>
           <tr><td>Express.js 4</td><td>REST API framework for all services</td><td class="value">Backend</td></tr>
-          <tr><td>Socket.IO 4.7</td><td>WebSocket — /game, /crew, /global, /pvp namespaces</td><td class="value">Backend</td></tr>
-          <tr><td>mysql2</td><td>MySQL 8 driver with connection pooling</td><td class="value">Backend</td></tr>
-          <tr><td>ioredis</td><td>Redis 7 client — rate limiting, pub/sub, caching</td><td class="value">Backend</td></tr>
+          <tr><td>Socket.IO 4.7</td><td>WebSocket � /game, /crew, /global, /pvp namespaces</td><td class="value">Backend</td></tr>
+          <tr><td>pg / drizzle</td><td>Railway Postgres — player SSOT</td><td class="value">Backend</td></tr>
+          <tr><td>ioredis</td><td>Redis 7 client � rate limiting, pub/sub, caching</td><td class="value">Backend</td></tr>
           <tr><td>jsonwebtoken</td><td>JWT auth (issued by grudge-id, verified everywhere)</td><td class="value">Backend</td></tr>
           <tr><td>bcryptjs</td><td>Password hashing for local auth</td><td class="value">Backend</td></tr>
           <tr><td>Colyseus</td><td>Multiplayer game server framework (headless-server)</td><td class="value">Game Server</td></tr>
@@ -964,24 +1008,24 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
       </div>
 
       <div class="dns-card">
-        <h3>☁️ Infrastructure & DevOps</h3>
+        <h3>?? Infrastructure & DevOps</h3>
         <table class="dns-table">
           <tr><th>TOOL</th><th>PURPOSE</th><th>STATUS</th></tr>
           <tr><td>Docker Compose</td><td>Container orchestration for all services</td><td class="value">ACTIVE</td></tr>
           <tr><td>Coolify</td><td>Self-hosted PaaS on VPS (deploy management)</td><td class="value">ACTIVE</td></tr>
-          <tr><td>Traefik</td><td>Reverse proxy — TLS termination, routing</td><td class="value">ACTIVE</td></tr>
-          <tr><td>Cloudflare Workers</td><td>Edge compute — site, dashboard, R2 CDN, auth-gateway</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Traefik</td><td>Reverse proxy � TLS termination, routing</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Cloudflare Workers</td><td>Edge compute � site, dashboard, R2 CDN, auth-gateway</td><td class="value">ACTIVE</td></tr>
           <tr><td>Cloudflare R2</td><td>S3-compatible object storage for game assets</td><td class="value">ACTIVE</td></tr>
-          <tr><td>Cloudflare KV</td><td>Edge key-value — status caching, rate limiting</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Cloudflare KV</td><td>Edge key-value � status caching, rate limiting</td><td class="value">ACTIVE</td></tr>
           <tr><td>Vercel</td><td>Frontend deployments (all game clients + apps)</td><td class="value">ACTIVE</td></tr>
-          <tr><td>GitHub Actions</td><td>CI/CD — lint, test, deploy on push</td><td class="value">ACTIVE</td></tr>
+          <tr><td>GitHub Actions</td><td>CI/CD � lint, test, deploy on push</td><td class="value">ACTIVE</td></tr>
           <tr><td>PM2</td><td>Process manager for non-Docker Node services</td><td class="value">AVAILABLE</td></tr>
           <tr><td>Wrangler CLI</td><td>Cloudflare Worker deploy tool</td><td class="value">ACTIVE</td></tr>
         </table>
       </div>
 
       <div class="dns-card">
-        <h3>🧠 AI & Tooling</h3>
+        <h3>?? AI & Tooling</h3>
         <table class="dns-table">
           <tr><th>SERVICE</th><th>USE CASE</th><th>INTEGRATION</th></tr>
           <tr><td>Claude (Anthropic)</td><td>Character generation, story AI, code assist</td><td class="value">Server-side API</td></tr>
@@ -994,11 +1038,11 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
       </div>
 
       <div class="dns-card">
-        <h3>🎮 Game Server Stack</h3>
+        <h3>?? Game Server Stack</h3>
         <table class="dns-table">
           <tr><th>COMPONENT</th><th>PURPOSE</th><th>PORT / URL</th></tr>
           <tr><td>Colyseus Server</td><td>Authoritative multiplayer rooms (combat, islands)</td><td class="value">7777 (internal)</td></tr>
-          <tr><td>Socket.IO /game</td><td>Island rooms — real-time player movement, events</td><td class="value">ws.grudge-studio.com</td></tr>
+          <tr><td>Socket.IO /game</td><td>Island rooms � real-time player movement, events</td><td class="value">ws.grudge-studio.com</td></tr>
           <tr><td>Socket.IO /crew</td><td>Crew chat + coordination</td><td class="value">ws.grudge-studio.com</td></tr>
           <tr><td>Socket.IO /global</td><td>Server-wide broadcasts (kills, claims, events)</td><td class="value">ws.grudge-studio.com</td></tr>
           <tr><td>Socket.IO /pvp</td><td>PvP matchmaking + arena state</td><td class="value">ws.grudge-studio.com</td></tr>
@@ -1008,13 +1052,13 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
       </div>
 
       <div class="dns-card">
-        <h3>🔐 Auth Providers</h3>
+        <h3>?? Auth Providers</h3>
         <table class="dns-table">
           <tr><th>PROVIDER</th><th>ENDPOINT</th><th>STATUS</th></tr>
           <tr><td>Email / Password</td><td class="value">POST /auth/login + /auth/register</td><td class="value">LIVE</td></tr>
-          <tr><td>Discord OAuth</td><td class="value">GET /auth/discord → callback</td><td class="value">LIVE</td></tr>
-          <tr><td>Google OAuth</td><td class="value">GET /auth/google → callback</td><td class="value">LIVE</td></tr>
-          <tr><td>GitHub OAuth</td><td class="value">GET /auth/github → callback</td><td class="value">LIVE</td></tr>
+          <tr><td>Discord OAuth</td><td class="value">GET /auth/discord ? callback</td><td class="value">LIVE</td></tr>
+          <tr><td>Google OAuth</td><td class="value">GET /auth/google ? callback</td><td class="value">LIVE</td></tr>
+          <tr><td>GitHub OAuth</td><td class="value">GET /auth/github ? callback</td><td class="value">LIVE</td></tr>
           <tr><td>Web3Auth (Phantom)</td><td class="value">POST /auth/wallet</td><td class="value">LIVE</td></tr>
           <tr><td>Puter Cloud</td><td class="value">POST /auth/puter</td><td class="value">LIVE</td></tr>
           <tr><td>Phone SMS (Twilio)</td><td class="value">POST /auth/phone-send + /phone-verify</td><td class="value">LIVE</td></tr>
@@ -1029,14 +1073,14 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
       <div class="sh"><div class="sh-title">AI COMMAND CONSOLE</div><div class="sh-line"></div><div class="sh-badge">GRUDGE AI</div></div>
 
       <div class="ai-shortcuts">
-        <button class="ai-sc" onclick="aiPrompt('What DNS records do I need for api.grudge-studio.com on Vercel?')">📡 DNS HELP</button>
-        <button class="ai-sc" onclick="aiPrompt('Write a MySQL 8 connection module with pooling for Node.js')">🗄️ MySQL 8 MODULE</button>
-        <button class="ai-sc" onclick="aiPrompt('Write a Solana wallet auth middleware for Express')">◎ SOLANA AUTH</button>
-        <button class="ai-sc" onclick="aiPrompt('How do I set up Crossmint server-side wallet creation for game users?')">💳 CROSSMINT SETUP</button>
-        <button class="ai-sc" onclick="aiPrompt('Write a Discord OAuth2 callback route for Express')">🎮 DISCORD OAUTH</button>
-        <button class="ai-sc" onclick="aiPrompt('Write a PM2 ecosystem config for the grudge-server backend')">⚙️ PM2 CONFIG</button>
-        <button class="ai-sc" onclick="aiPrompt('Give me the full Grudge ID generation logic — unique, readable IDs for game players')">🆔 GRUDGE ID GEN</button>
-        <button class="ai-sc" onclick="aiPrompt('What should my Grudge Studio backend API look like for the games system?')">🗺️ API DESIGN</button>
+        <button class="ai-sc" onclick="aiPrompt('Explain Grudge fleet ONE TRUTH: id.grudge-studio.com auth and Railway Postgres characters')">? FLEET TRUTH</button>
+        <button class="ai-sc" onclick="aiPrompt('How does launcher.grudge-studio.com proxy /api/characters to Railway?')">?? API PROXY</button>
+        <button class="ai-sc" onclick="aiPrompt('Write a Solana wallet auth middleware for Express')">? SOLANA AUTH</button>
+        <button class="ai-sc" onclick="aiPrompt('How do I set up Crossmint server-side wallet creation for game users?')">?? CROSSMINT SETUP</button>
+        <button class="ai-sc" onclick="aiPrompt('Write a Discord OAuth2 callback route for Express')">?? DISCORD OAUTH</button>
+        <button class="ai-sc" onclick="aiPrompt('Write a PM2 ecosystem config for the grudge-server backend')">?? PM2 CONFIG</button>
+        <button class="ai-sc" onclick="aiPrompt('Give me the full Grudge ID generation logic � unique, readable IDs for game players')">?? GRUDGE ID GEN</button>
+        <button class="ai-sc" onclick="aiPrompt('What should my Grudge Studio backend API look like for the games system?')">??? API DESIGN</button>
       </div>
 
       <div class="terminal-wrap">
@@ -1045,14 +1089,14 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
           <span class="terminal-label">GRUDGE AI // Grudge AI Backend</span>
         </div>
         <div class="terminal-body" id="terminal-body">
-          <div class="terminal-line t-ok">✓ GRUDGE AI CONSOLE INITIALIZED</div>
-          <div class="terminal-line t-info">→ GRUDGE AI API connected</div>
-          <div class="terminal-line t-cmd">→ Context: Grudge Studio | Owner: Racalvin The Pirate King</div>
-          <div class="terminal-line t-cmd">→ Stack: Node/TS, Solana, MySQL 8, Puter, Vercel, Radmin VPN</div>
-          <div class="terminal-line t-ok">✓ Ready — type a command or use shortcuts above</div>
+          <div class="terminal-line t-ok">? GRUDGE AI CONSOLE INITIALIZED</div>
+          <div class="terminal-line t-info">? GRUDGE AI API connected</div>
+          <div class="terminal-line t-cmd">? Context: Grudge Studio | Owner: Racalvin The Pirate King</div>
+          <div class="terminal-line t-cmd"> Stack: Grudge ID · Railway Postgres · ObjectStore · R2 · Puter · Vercel</div>
+          <div class="terminal-line t-ok">? Ready � type a command or use shortcuts above</div>
         </div>
         <div class="terminal-input-row">
-          <span class="t-prompt">GRUDGE ❯</span>
+          <span class="t-prompt">GRUDGE ?</span>
           <input id="ai-input" type="text" placeholder="ask anything about servers, DNS, auth, Web3, games..."
                  onkeydown="if(event.key==='Enter') sendAI()">
           <button class="t-send" onclick="sendAI()">RUN</button>
@@ -1064,71 +1108,215 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
 </div>
 
 <script>
-// ===== GRUDGE STUDIO CLIENT PORTAL — REAL BACKEND =====
-// Auth calls go through THIS origin so the browser never sees a cross-origin
-// request. The Cloudflare Pages Function at `functions/api/[[path]].ts`
-// proxies /api/auth/* server-side to id.grudge-studio.com (and Discord OAuth
-// to grudgewarlords.com). Same-origin = no CORS preflights, no
-// `Access-Control-Allow-Origin` mismatches, and the upstream sees a clean
-// edge-to-edge request.
-const ID_API   = '/api/auth';                           // proxied -> https://id.grudge-studio.com/api/auth
-const WARLORDS = '/api/auth/discord';                   // proxied -> https://grudgewarlords.com/discord
-const GAME_API = '/api';                                // proxied -> https://api.grudge-studio.com/api
-const LAUNCHER_APP_PATH = '/';                          // Where to send users after auth (React SPA root)
+// ===== GRUDGE STUDIO LAUNCHER � FLEET ONE TRUTH (2026-07) =====
+// Same-origin /api/* rewrites:
+//   /api/auth/*  ? id.grudge-studio.com  (Grudge ID)
+//   /api/*       ? Railway Postgres SSOT (characters, account, island, wallet)
+// Never use api.grudge-studio.com or MySQL as player-state SSOT.
+const FLEET = {
+  auth: 'https://id.grudge-studio.com',
+  gameData: 'https://grudge-api-production-0d46.up.railway.app',
+  assets: 'https://assets.grudge-studio.com',
+  objectStore: 'https://objectstore.grudge-studio.com/api/v1',
+  ai: 'https://ai.grudge-studio.com',
+  warlords: 'https://grudgewarlords.com',
+  crafting: 'https://grudge-crafting.puter.site',
+  characters: 'https://character.grudge-studio.com',
+  forge: 'https://forge.grudge-studio.com',
+  fleetMap: 'https://fleet.grudge-studio.com',
+};
+const ID_API   = '/api/auth';
+const WARLORDS = '/api/auth/discord';
+const GAME_API = '/api'; // same-origin ? Railway
+const TOKEN_KEYS = ['grudge_auth_token', 'grudge_session_token', 'grudge.token', 'sso_token'];
 const CLIENT_URL = location.origin;
 
 let currentUser = null;
 let authToken = null;
+let grudgeCharacters = [];
 let activeTag = 'all';
 
 // ===== INIT =====
 document.getElementById('status-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
-// Check for OAuth callback token in URL
-const urlParams = new URLSearchParams(window.location.search);
-const callbackToken = urlParams.get('token') || urlParams.get('sso_token');
-if (callbackToken) {
-  authToken = callbackToken;
-  // Clean URL
-  window.history.replaceState({}, '', window.location.pathname);
-  initFromToken(authToken);
-} else {
-  // Check for saved token
-  const saved = sessionStorage.getItem('grudge_token');
-  if (saved) { authToken = saved; initFromToken(saved); }
-  else { tryPuterAutoLogin(); }
+function readStoredToken() {
+  try {
+    for (const k of TOKEN_KEYS) {
+      const v = localStorage.getItem(k);
+      if (v) return v;
+    }
+    return sessionStorage.getItem('grudge_token') || null;
+  } catch { return null; }
 }
 
-async function initFromToken(token) {
+function persistToken(token) {
+  authToken = token;
   try {
-    const res = await fetch(`${ID_API}/user`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('Token expired');
-    const data = await res.json();
-    currentUser = data;
-    authToken = token;
+    localStorage.setItem('grudge_auth_token', token);
+    localStorage.setItem('grudge_session_token', token);
     sessionStorage.setItem('grudge_token', token);
+  } catch {}
+}
+
+function clearTokens() {
+  authToken = null;
+  try {
+    TOKEN_KEYS.forEach((k) => localStorage.removeItem(k));
+    sessionStorage.removeItem('grudge_token');
+  } catch {}
+}
+
+function cleanAuthUrl() {
+  const u = new URL(location.href);
+  ['token','sso_token','jwt','access_token','grudge_token','launch_token','grudge_id','grudgeId','user_id','username','grudge_username'].forEach((k) => u.searchParams.delete(k));
+  const hash = location.hash && !/token|jwt|grudge_token/i.test(location.hash) ? location.hash : '';
+  history.replaceState({}, '', u.pathname + (u.search || '') + hash);
+}
+
+/** Auth page returns ?grudge_token= � exchange for Railway session JWT. */
+async function bridgeLaunchToken(launchToken) {
+  const res = await fetch(`${ID_API}/grudge-bridge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: launchToken, audience: CLIENT_URL }),
+  });
+  if (!res.ok) {
+    // Fallback: some handoffs already return a usable JWT as sso_token
+    return null;
+  }
+  return res.json();
+}
+
+async function bootstrapAuth() {
+  const params = new URLSearchParams(location.search);
+  let hashParams = null;
+  if (location.hash && location.hash.length > 1) {
+    hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  }
+  const pget = (k) => params.get(k) || (hashParams && hashParams.get(k)) || null;
+
+  const launch = pget('grudge_token') || pget('launch_token');
+  if (launch) {
+    try {
+      const bridged = await bridgeLaunchToken(launch);
+      if (bridged && (bridged.sessionToken || bridged.token)) {
+        cleanAuthUrl();
+        await initFromToken(bridged.sessionToken || bridged.token, bridged);
+        return;
+      }
+    } catch (e) { console.warn('grudge-bridge', e); }
+  }
+
+  const callbackToken = pget('token') || pget('sso_token') || pget('jwt');
+  if (callbackToken) {
+    cleanAuthUrl();
+    await initFromToken(callbackToken);
+    return;
+  }
+
+  const saved = readStoredToken();
+  if (saved) {
+    await initFromToken(saved);
+    return;
+  }
+  // Do NOT silent-mint empty Puter guest accounts (empty roster trap).
+  showAuthGate();
+}
+
+async function initFromToken(token, seed) {
+  try {
+    persistToken(token);
+    // Prefer Railway account (player SSOT); fall back to auth/me
+    let data = seed?.user || null;
+    if (!data) {
+      let res = await fetch(`${GAME_API}/account`, {
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      });
+      if (res.ok) data = await res.json();
+      if (!res.ok) {
+        res = await fetch(`${ID_API}/me`, { headers: { Authorization: 'Bearer ' + token } });
+        if (!res.ok) res = await fetch(`${ID_API}/user`, { headers: { Authorization: 'Bearer ' + token } });
+        if (!res.ok) throw new Error('Token expired');
+        data = await res.json();
+      }
+    }
+    currentUser = {
+      ...data,
+      username: data.username || data.displayName || seed?.username,
+      displayName: data.displayName || data.username || seed?.username,
+      grudgeId: data.grudgeId || data.grudge_id || seed?.grudgeId,
+    };
+    if (currentUser.grudgeId) {
+      try {
+        localStorage.setItem('grudge_id', currentUser.grudgeId);
+        localStorage.setItem('grudge_account_id', currentUser.grudgeId);
+      } catch {}
+    }
+    if (currentUser.username) {
+      try { localStorage.setItem('grudge_username', currentUser.username); } catch {}
+    }
     showHub();
     updateUserUI();
     loadSavedAvatar();
-    showToast('\u2694 Welcome, ' + (currentUser.displayName || currentUser.username));
-  } catch(e) {
-    sessionStorage.removeItem('grudge_token');
-    authToken = null;
+    await loadCharactersFromRailway();
+    unlockGatedServices();
+    showToast('\u2694 Welcome, ' + (currentUser.displayName || currentUser.username || 'Warlord'));
+  } catch (e) {
+    console.warn('initFromToken', e);
+    clearTokens();
     showAuthGate();
   }
 }
 
-async function tryPuterAutoLogin() {
+/** Characters from Railway Postgres � same DB as Warlords / GCS / crafting. */
+async function loadCharactersFromRailway() {
+  if (!authToken) { grudgeCharacters = []; return []; }
   try {
-    if (typeof puter !== 'undefined' && puter.auth && puter.auth.isSignedIn()) {
-      const pu = await puter.auth.getUser();
-      if (pu) { await authViaPuter(pu.uuid, pu.username); return; }
-    }
-  } catch(e) {}
-  showAuthGate();
+    let res = await fetch(`${GAME_API}/characters?era=warlords`, {
+      headers: { Authorization: 'Bearer ' + authToken },
+    });
+    if (!res.ok) res = await fetch(`${GAME_API}/characters`, {
+      headers: { Authorization: 'Bearer ' + authToken },
+    });
+    if (!res.ok) { grudgeCharacters = []; return []; }
+    const raw = await res.json();
+    grudgeCharacters = Array.isArray(raw) ? raw : (raw.characters || []);
+    renderCharactersStrip();
+    return grudgeCharacters;
+  } catch (e) {
+    console.warn('characters', e);
+    grudgeCharacters = [];
+    return [];
+  }
 }
+
+function renderCharactersStrip() {
+  const el = document.getElementById('launcher-characters');
+  if (!el) return;
+  if (!authToken) {
+    el.innerHTML = '<div style="font-size:12px;color:rgba(201,168,76,0.45)">Sign in with Grudge ID to load Railway characters.</div>';
+    return;
+  }
+  if (!grudgeCharacters.length) {
+    el.innerHTML = `<div style="font-size:12px;color:rgba(201,168,76,0.55);line-height:1.5">
+      No characters on this account.
+      <a href="${FLEET.characters}?era=warlords" target="_blank" style="color:var(--gold)">Create at Character Studio</a>
+      � <a href="${FLEET.warlords}/character" target="_blank" style="color:var(--gold)">Warlords</a>
+    </div>`;
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' + grudgeCharacters.map((c) => {
+    const name = c.name || c.displayName || c.grudgeCode || 'Warlord';
+    const meta = [c.race || c.raceId, c.class || c.classId, 'Lv ' + (c.level || 1)].filter(Boolean).join(' � ');
+    return `<a href="${FLEET.warlords}/?characterId=${encodeURIComponent(c.id)}" target="_blank"
+      style="display:block;padding:10px 12px;border:1px solid rgba(201,168,76,0.25);border-radius:8px;text-decoration:none;background:rgba(201,168,76,0.06);min-width:140px">
+      <div style="font-size:13px;font-weight:700;color:var(--gold)">${name}</div>
+      <div style="font-size:11px;color:rgba(201,168,76,0.55)">${meta}</div>
+    </a>`;
+  }).join('') + '</div>';
+}
+
+bootstrapAuth();
 
 // ===== API HELPER =====
 async function apiPost(url, body) {
@@ -1142,7 +1330,7 @@ async function apiPost(url, body) {
   return data;
 }
 
-// ===== AUTH FLOWS — ALL REAL =====
+// ===== AUTH FLOWS � ALL REAL =====
 function showAuthGate() { document.getElementById('auth-gate').classList.remove('hidden'); }
 function hideAuthGate() { document.getElementById('auth-gate').classList.add('hidden'); }
 function showHub() { hideAuthGate(); }
@@ -1162,23 +1350,36 @@ function showAuthErr(msg) {
 }
 
 function handleAuthSuccess(data) {
-  authToken = data.token;
+  const token = data.sessionToken || data.token;
+  if (!token) { showAuthErr('No session token in response'); return; }
   currentUser = data.user || data;
-  sessionStorage.setItem('grudge_token', data.token);
-  // Persist for the React SPA on the same origin so /character /wallet etc. boot already-authed.
-  try { localStorage.setItem('grudge_auth_token', data.token); } catch(e) {}
+  persistToken(token);
+  if (data.grudgeId || currentUser.grudgeId) {
+    try {
+      localStorage.setItem('grudge_id', data.grudgeId || currentUser.grudgeId);
+      localStorage.setItem('grudge_account_id', data.grudgeId || currentUser.grudgeId);
+    } catch {}
+  }
   showHub();
   updateUserUI();
   unlockGatedServices();
+  loadCharactersFromRailway();
 }
 
-// ===== LOGIN (email/username + password) =====
+/** Primary sign-in: Grudge ID (real Warlords account). */
+function loginWithGrudgeId() {
+  const ret = CLIENT_URL + '/';
+  window.location.href = FLEET.auth + '/login?redirect_uri=' + encodeURIComponent(ret);
+}
+
+// ===== LOGIN (email/username + password) � Railway via ID hub =====
 async function loginEmail() {
   const identifier = document.getElementById('login-user').value.trim();
   const password = document.getElementById('login-pass').value;
   if (!identifier || !password) return showAuthErr('Username and password required');
   try {
-    const data = await apiPost(`${ID_API}/login`, { identifier, password });
+    // Railway expects { username, password }
+    const data = await apiPost(`${ID_API}/login`, { username: identifier, password, identifier });
     handleAuthSuccess(data);
     showToast('\u2694 Welcome back, ' + (data.username || identifier));
   } catch(e) { showAuthErr(e.message); }
@@ -1208,12 +1409,12 @@ function loginDiscord() {
   window.location.href = `${WARLORDS}?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
 }
 
-// ===== GOOGLE — routed via Puter (their modal supports Google sign-in) =====
+// ===== GOOGLE � routed via Puter (their modal supports Google sign-in) =====
 // Falls back to direct backend Google OAuth if Puter SDK is unavailable.
 async function loginGoogle() {
   try {
     if (typeof puter !== 'undefined' && puter.auth) {
-      // Puter's signIn modal lets user pick Google — preferred path
+      // Puter's signIn modal lets user pick Google � preferred path
       await puter.auth.signIn();
       const pu = await puter.auth.getUser();
       if (pu) { await authViaPuter(pu.uuid, pu.username); return; }
@@ -1227,22 +1428,35 @@ function loginGithub() {
   window.location.href = `${ID_API}/github?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
 }
 
-// ===== PUTER AUTH =====
+// ===== PUTER AUTH (secondary � prefer Grudge ID for Warlords characters) =====
 async function loginPuter() {
-  try {
-    if (typeof puter !== 'undefined' && puter.auth) {
-      await puter.auth.signIn();
-      const pu = await puter.auth.getUser();
-      await authViaPuter(pu.uuid, pu.username);
-    } else { showAuthErr('Puter SDK not loaded. Try refreshing.'); }
-  } catch(e) { showAuthErr('Puter sign-in failed: ' + e.message); }
+  // Prefer canonical Grudge ID so roster matches Warlords / crafting
+  if (!confirm('Open Grudge ID sign-in?\n\n(OK = Grudge ID � recommended for characters)\n(Cancel = Puter UUID only � may create empty roster)')) {
+    try {
+      if (typeof puter !== 'undefined' && puter.auth) {
+        await puter.auth.signIn();
+        const pu = await puter.auth.getUser();
+        await authViaPuter(pu.uuid, pu.username);
+      } else { showAuthErr('Puter SDK not loaded. Try refreshing.'); }
+    } catch(e) { showAuthErr('Puter sign-in failed: ' + e.message); }
+    return;
+  }
+  loginWithGrudgeId();
 }
 
 async function authViaPuter(puterUuid, puterUsername) {
   try {
-    const data = await apiPost(`${ID_API}/puter`, { puterUuid, puterUsername });
+    const data = await apiPost(`${ID_API}/puter`, {
+      puterUuid,
+      puterId: puterUuid,
+      puterUsername,
+      displayName: puterUsername,
+    });
     handleAuthSuccess(data);
     showToast('\u2601 Signed in via Puter');
+    if (!grudgeCharacters.length) {
+      showToast('No characters on this Puter-linked account � use Grudge ID if you play Warlords', true);
+    }
   } catch(e) { showAuthErr(e.message); showAuthGate(); }
 }
 
@@ -1275,7 +1489,7 @@ async function loginPhone() {
   }
   try {
     await apiPost(`${ID_API}/phone-send`, { phone });
-    showToast('\ud83d\udcec Code sent — check your messages');
+    showToast('\ud83d\udcec Code sent � check your messages');
   } catch(e) {
     return showAuthErr('Could not send code: ' + e.message);
   }
@@ -1284,7 +1498,7 @@ async function loginPhone() {
   try {
     const data = await apiPost(`${ID_API}/phone-verify`, { phone, code: code.trim() });
     handleAuthSuccess(data);
-    showToast('\u2694 Phone verified — welcome');
+    showToast('\u2694 Phone verified � welcome');
   } catch(e) { showAuthErr('Code did not verify: ' + e.message); }
 }
 
@@ -1302,8 +1516,10 @@ async function loginGuest() {
 async function logout() {
   try { await fetch(`${ID_API}/logout`, { method: 'POST', credentials: 'include' }); } catch(e) {}
   currentUser = null;
-  authToken = null;
-  sessionStorage.removeItem('grudge_token');
+  grudgeCharacters = [];
+  clearTokens();
+  renderCharactersStrip();
+  unlockGatedServices();
   showAuthGate();
   showToast('Logged out');
 }
@@ -1350,7 +1566,7 @@ function updateUserUI() {
   document.getElementById('settings-phone').value = currentUser.phone || '';
   // Stats
   const statUsers = document.getElementById('stat-users');
-  if (statUsers) statUsers.textContent = currentUser.gold || '\u2014';
+  if (statUsers) statUsers.textContent = String(grudgeCharacters.length || '\u2014');
 }
 
 // ===== AVATAR UPLOAD =====
@@ -1543,30 +1759,33 @@ function tagFilter(tag, el) {
 
 renderApps(APPS);
 
-// ===== GATED SERVICES PREVIEW =====
-// These cards represent the actual launcher services. Locked until login.
+// ===== FLEET SERVICES � live Grudge Studio tools (consolidated truth) =====
 const SERVICES = [
-  { id:'characters',    icon:'\u2694',       title:'My Characters',     desc:'Race, class, gear, stats and faction levels per character.',           path:'/characters',         badge:'CORE' },
-  { id:'wallet',        icon:'\ud83d\udcb0', title:'War Chest',         desc:'Solana wallet, gold, cNFT inventory, Crossmint server wallet.',          path:'/wallet',             badge:'WEB3' },
-  { id:'warlord-suite', icon:'\u2692\ufe0f', title:'Warlord Suite',     desc:'Crafting, weapon-skill loadouts, profession trees, infusions.',          path:'/warlord-suite',      badge:'CRAFT' },
-  { id:'arena',         icon:'\ud83c\udfdf\ufe0f', title:'Grudge Arena',      desc:'Real-time PvP and faction matchmaking on Colyseus rooms.',                 path:'/arena',              badge:'PVP' },
-  { id:'engine',        icon:'\u2699\ufe0f', title:'Grudge Web Engine', desc:'Three.js scene editor with R2-backed asset pipeline.',                   path:'/three-engine',       badge:'EDITOR' },
-  { id:'asset-gallery', icon:'\ud83d\udcc1', title:'Asset Gallery',     desc:'Browse and pull glTF/voxel assets from Grudge object storage.',          path:'/asset-gallery',      badge:'ASSETS' },
-  { id:'mmo',           icon:'\ud83c\udf10', title:'MMO World',         desc:'Persistent island server with crews, missions and PvE bosses.',          path:'/mmo',                badge:'LIVE' },
-  { id:'ai',            icon:'\u2728',       title:'AI Console',        desc:'Free, user-pays Puter AI for code, lore and design help.',               path:'/?panel=ai',          badge:'FREE' },
+  { id:'warlords',   icon:'\u2694',       title:'Grudge Warlords',   desc:'Main game client � islands, combat, professions. Railway character SSOT.', path:'https://grudgewarlords.com', badge:'LIVE' },
+  { id:'characters', icon:'\ud83c\udfa8', title:'Character Studio',  desc:'Create/edit heroes (GCS). Saves to Railway /api/characters.', path:'https://character.grudge-studio.com?era=warlords', badge:'GCS' },
+  { id:'crafting',   icon:'\u2692\ufe0f', title:'Crafting Suite',    desc:'Shared account bag + per-character XP. Puter UI ? Railway.', path:'https://grudge-crafting.puter.site/', badge:'CRAFT' },
+  { id:'forge',      icon:'\u2699\ufe0f', title:'Studio Forge',      desc:'3D scene / map editor (Three.js + ObjectStore assets).', path:'https://forge.grudge-studio.com', badge:'EDITOR' },
+  { id:'id',         icon:'\ud83d\udd11', title:'Grudge ID',         desc:'Unified auth gateway � login, SSO, Puter bridge.', path:'https://id.grudge-studio.com/login?redirect_uri=' + encodeURIComponent(CLIENT_URL + '/'), badge:'AUTH' },
+  { id:'fleet',      icon:'\ud83d\uddfa\ufe0f', title:'Fleet Map',   desc:'Live infrastructure topology of Workers, Railway, R2, Vercel.', path:'https://fleet.grudge-studio.com', badge:'OPS' },
+  { id:'objectstore',icon:'\ud83d\uddc4\ufe0f', title:'ObjectStore', desc:'Definitions JSON � recipes, items, races, biomes.', path:'https://objectstore.grudge-studio.com/api/v1/', badge:'DATA' },
+  { id:'assets',     icon:'\ud83c\udfa8', title:'Assets CDN',        desc:'R2 binaries � icons, GLB, audio at assets.grudge-studio.com.', path:'https://assets.grudge-studio.com', badge:'CDN' },
+  { id:'ai',         icon:'\u2728',       title:'AI Gateway',        desc:'ai.grudge-studio.com + Puter AI console (user-pays).', path:'https://ai.grudge-studio.com', badge:'AI' },
+  { id:'wallet',     icon:'\ud83d\udcb0', title:'War Chest',         desc:'Solana / Crossmint wallet (Railway /api/wallet).', path:'/app/wallet', badge:'WEB3' },
 ];
 
 function renderServices() {
   const grid = document.getElementById('services-grid');
   if (!grid) return;
   const authed = !!authToken;
+  // Fleet tools stay open � account-bound features still benefit from login
   grid.innerHTML = SERVICES.map(s => {
-    const lockIcon = authed ? '\u279c' : '\ud83d\udd12';
-    const lockClr  = authed ? 'var(--green)' : 'rgba(201,168,76,0.35)';
-    const cta      = authed ? 'OPEN'        : 'SIGN IN TO UNLOCK';
+    const external = s.path.startsWith('http');
+    const cta = external ? 'OPEN' : (authed ? 'OPEN' : 'SIGN IN');
+    const lockClr = 'var(--green)';
+    const pathEsc = s.path.replace(/'/g, "\\'");
     return `
-      <div class="app-card ${authed ? '' : 'locked'}" style="cursor:${authed ? 'pointer' : 'not-allowed'};opacity:${authed ? '1' : '0.55'};position:relative"
-           onclick="${authed ? `openService('${s.path}')` : 'showAuthGate()'}">
+      <div class="app-card" style="cursor:pointer;opacity:1;position:relative"
+           onclick="openService('${pathEsc}')">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           <span style="font-size:22px">${s.icon}</span>
           <div class="app-card-name" style="margin:0">${s.title}</div>
@@ -1574,18 +1793,24 @@ function renderServices() {
         </div>
         <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:rgba(201,168,76,0.55);line-height:1.5;margin:6px 0 12px">${s.desc}</div>
         <div class="app-card-meta" style="justify-content:space-between">
-          <span class="app-badge" style="color:${lockClr};border-color:${lockClr}">${lockIcon} ${cta}</span>
-          <span class="app-date" style="font-family:'Share Tech Mono',monospace">${s.path}</span>
+          <span class="app-badge" style="color:${lockClr};border-color:${lockClr}">\u279c ${cta}</span>
+          <span class="app-date" style="font-family:'Share Tech Mono',monospace;font-size:9px;max-width:40%;overflow:hidden;text-overflow:ellipsis">${external ? new URL(s.path).hostname : s.path}</span>
         </div>
       </div>`;
   }).join('');
   const status = document.getElementById('services-status');
-  if (status) status.textContent = authed ? 'UNLOCKED \u2014 ' + SERVICES.length + ' SERVICES' : 'SIGN IN TO UNLOCK';
+  if (status) {
+    status.textContent = authed
+      ? 'SIGNED IN \u2014 ' + grudgeCharacters.length + ' CHARS \u00b7 ' + SERVICES.length + ' TOOLS'
+      : SERVICES.length + ' TOOLS OPEN \u00b7 SIGN IN FOR ROSTER';
+  }
+  const statUsers = document.getElementById('stat-users');
+  if (statUsers) statUsers.textContent = authToken ? String(grudgeCharacters.length) : '\u2014';
 }
 
 function openService(path) {
-  // Send the user into the React SPA on the same origin, with auth token in localStorage.
   if (path.startsWith('http')) { window.open(path, '_blank'); return; }
+  if (path.startsWith('/app') && !authToken) { showAuthGate(); return; }
   window.location.href = path;
 }
 
@@ -1620,18 +1845,18 @@ document.getElementById('deploy-grid').innerHTML = DEPLOYS.map(d => `
     <div class="deploy-name">${d}</div>
   </a>`).join('');
 
-// ===== AI CONSOLE — Powered by Puter.js (FREE, user-pays model) =====
-const AI_CONTEXT = `You are the Grudge Studio AI assistant for Grudge Warlords, owned by Racalvin The Pirate King.
-Key facts:
-- Stack: Node.js 20, Express, MySQL 8, Redis 7, Docker, Coolify, Traefik on VPS 74.208.155.229
-- Auth: Web3Auth, Discord, Google, GitHub, Puter, Phone SMS, Guest — all via id.grudge-studio.com
-- Services: id (3001), wallet (3002), game-api (3003), ai-agent (3004), account (3005), launcher (3006), ws (3007)
-- DB: 36 tables — users, characters, crews, combat_log, inventory, crafting_recipes, islands, pvp, missions, etc.
-- Classes: Warrior, Mage, Ranger, Worge | Factions: Crusade, Undead, Fabled
-- Web3: Solana, Crossmint server-side wallets, cNFT minting
-- Frontends: Vercel (grudgewarlords.com, warlord-crafting-suite, grudge-engine-web, etc.)
-- AI: Anthropic Claude, Gemini (free), Ollama llama3.2 (free, self-hosted), Puter AI (free, client-side)
-Be concise, technical, and production-ready. Use code blocks when appropriate.`;
+// ===== AI CONSOLE � Powered by Puter.js (FREE, user-pays model) =====
+const AI_CONTEXT = `You are the Grudge Studio AI assistant for the grudgeDot launcher (launcher.grudge-studio.com).
+ONE TRUTH fleet (2026):
+- Auth: id.grudge-studio.com (Grudge ID) � /login?redirect_uri= ? Railway auth implementation
+- Player SSOT: Railway Postgres grudge-api-production-0d46.up.railway.app � characters, account bag, islands, wallet
+- NEVER MySQL or api.grudge-studio.com as character SSOT (retired split-brain)
+- Definitions: objectstore.grudge-studio.com/api/v1 (JSON recipes/items)
+- Binaries: assets.grudge-studio.com (R2 CDN)
+- AI: ai.grudge-studio.com + Puter AI (user-pays)
+- Games: grudgewarlords.com, grudge-crafting.puter.site, forge.grudge-studio.com, character.grudge-studio.com
+- Inventory is account-shared; profession XP is per character UUID
+Be concise, technical, and production-ready.`;
 
 function aiPrompt(text) {
   document.getElementById('ai-input').value = text;
@@ -1649,7 +1874,7 @@ async function sendAI() {
   const loadEl = addLine('t-info', '<span class="spinner"></span>thinking via Puter AI (free)...');
 
   try {
-    // Use Puter.js client-side AI — FREE (user-pays model, $0 cost to developer)
+    // Use Puter.js client-side AI � FREE (user-pays model, $0 cost to developer)
     if (typeof puter !== 'undefined' && puter.ai) {
       const resp = await puter.ai.chat([
         { role: 'system', content: AI_CONTEXT },
@@ -1714,7 +1939,23 @@ function showToast(msg, err) {
   setTimeout(() => t.className = '', 3500);
 }
 
-function showForgot() { showToast('Password reset coming — needs api.grudge-studio.com live'); }
+function showForgot() { showToast('Use Grudge ID login � password reset at id.grudge-studio.com'); }
+
+// Probe fleet health strip
+(async function probeFleetHealth() {
+  const el = document.getElementById('fleet-health');
+  if (!el) return;
+  try {
+    const r = await fetch(GAME_API + '/health');
+    const j = await r.json().catch(() => ({}));
+    const ok = r.ok && (j.status === 'healthy' || j.database === 'connected');
+    el.textContent = ok ? 'RAILWAY DB CONNECTED' : 'API DEGRADED';
+    el.style.color = ok ? 'var(--green)' : 'var(--ember)';
+  } catch {
+    el.textContent = 'API UNREACHABLE';
+    el.style.color = 'var(--ember)';
+  }
+})();
 </script>
 </body>
 </html>

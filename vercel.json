@@ -8,12 +8,12 @@
   "redirects": [
     {
       "source": "/warlords",
-      "destination": "https://forge.grudge-studio.com?from=launcher-warlord",
+      "destination": "https://grudgewarlords.com?from=launcher",
       "permanent": false
     },
     {
       "source": "/warlords/:path*",
-      "destination": "https://forge.grudge-studio.com?from=launcher-warlord",
+      "destination": "https://grudgewarlords.com/:path*?from=launcher",
       "permanent": false
     },
     {
@@ -29,6 +29,21 @@
     {
       "source": "/forge",
       "destination": "https://forge.grudge-studio.com?from=launcher",
+      "permanent": false
+    },
+    {
+      "source": "/crafting",
+      "destination": "https://grudge-crafting.puter.site/?from=launcher",
+      "permanent": false
+    },
+    {
+      "source": "/character",
+      "destination": "https://character.grudge-studio.com?era=warlords&from=launcher",
+      "permanent": false
+    },
+    {
+      "source": "/characters",
+      "destination": "https://character.grudge-studio.com?era=warlords&from=launcher",
       "permanent": false
     },
     {
@@ -49,6 +64,10 @@
   ],
   "rewrites": [
     {
+      "source": "/auth/callback",
+      "destination": "/portal.html"
+    },
+    {
       "source": "/api/auth/discord",
       "destination": "https://grudgewarlords.com/discord"
     },
@@ -61,8 +80,72 @@
       "destination": "https://id.grudge-studio.com/api/auth/:path*"
     },
     {
+      "source": "/auth/:path*",
+      "destination": "https://id.grudge-studio.com/auth/:path*"
+    },
+    {
+      "source": "/login",
+      "destination": "https://id.grudge-studio.com/login"
+    },
+    {
+      "source": "/api/characters",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/characters"
+    },
+    {
+      "source": "/api/characters/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/characters/:path*"
+    },
+    {
+      "source": "/api/account",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/account"
+    },
+    {
+      "source": "/api/account/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/account/:path*"
+    },
+    {
+      "source": "/api/inventory",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/inventory"
+    },
+    {
+      "source": "/api/inventory/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/inventory/:path*"
+    },
+    {
+      "source": "/api/wallet",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/wallet"
+    },
+    {
+      "source": "/api/wallet/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/wallet/:path*"
+    },
+    {
+      "source": "/api/island",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/island"
+    },
+    {
+      "source": "/api/island/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/island/:path*"
+    },
+    {
+      "source": "/api/islands/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/islands/:path*"
+    },
+    {
+      "source": "/api/professions/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/professions/:path*"
+    },
+    {
+      "source": "/api/nfts/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/nfts/:path*"
+    },
+    {
+      "source": "/api/health",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/health"
+    },
+    {
       "source": "/api/:path*",
-      "destination": "https://api.grudge-studio.com/api/:path*"
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/:path*"
     },
     {
       "source": "/admin",
@@ -104,7 +187,10 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.puter.com https://*.grudge-studio.com https://grudachain-rho.vercel.app https://*.vercel.app https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' https: wss:; frame-src 'self' https://*.puter.com https://*.puter.site https://grudge-studio.com https://grudgewarlords.com https://*.grudge-studio.com https://*.vercel.app https://vercel.live; media-src 'self' https://assets.grudge-studio.com blob:; worker-src 'self' blob:" }
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.puter.com https://*.grudge-studio.com https://assets.grudge-studio.com https://*.vercel.app https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' https: wss:; frame-src 'self' https://*.puter.com https://*.puter.site https://grudge-studio.com https://grudgewarlords.com https://*.grudge-studio.com https://*.vercel.app https://vercel.live; media-src 'self' https://assets.grudge-studio.com blob:; worker-src 'self' blob:"
+        }
       ]
     },
     {

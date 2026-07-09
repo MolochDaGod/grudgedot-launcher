@@ -1,34 +1,71 @@
 /**
- * /api/* — Cloudflare Pages Function proxy.
+ * /api/* — Cloudflare Pages Function proxy (same-origin → fleet backends).
  *
- * Replaces the external-URL `200` rewrites that previously lived in
- * `client/public/_redirects`. Cloudflare Pages silently drops external
- * 200-rewrites, so those rules fell through to the SPA `index.html` and
- * every `/api/auth/*` call returned HTML instead of JSON.
+ * ONE TRUTH routing (2026-07 fleet):
+ *   /api/auth/discord*  → grudgewarlords.com (OAuth app redirect URI)
+ *   /api/auth/*         → id.grudge-studio.com (Grudge ID hub → Railway auth)
+ *   /api/{characters,account,wallet,inventory,island,health,...} → Railway Postgres SSOT
+ *   /api/* (remainder)  → Railway game API (no more api.grudge-studio.com split-brain)
  *
- * Routing matrix (matches the rules from the old _redirects):
- *   /api/auth/discord            -> https://grudgewarlords.com/discord
- *   /api/auth/discord/<rest>     -> https://grudgewarlords.com/api/discord/<rest>
- *   /api/auth/<rest>             -> https://id.grudge-studio.com/api/auth/<rest>
- *   /api/<rest>                  -> https://api.grudge-studio.com/api/<rest>
- *
- * Why a Function instead of _redirects?
- *   1. Pages silently drops `200` rewrites whose destination is an external
- *      URL. Only redirects (301/302/307/308) work for cross-origin targets,
- *      and a redirect would require CORS on the upstream — which currently
- *      only allows `https://grudge-studio.com`, not the launcher subdomain.
- *   2. A Function runs server-side at the edge, so the browser sees a
- *      same-origin response and CORS is irrelevant.
- *
- * The function preserves method, headers, body, and search string. It does
- * NOT follow upstream redirects (so OAuth 302s back to the SPA propagate to
- * the browser unchanged) and strips hop-by-hop headers that should not be
- * forwarded.
+ * @see GrudgeBuilder/shared/fleet/manifest.ts FLEET_URLS + FLEET_GAME_DATA_API_PREFIXES
  */
 
 interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
 }
+
+const RAILWAY = "https://grudge-api-production-0d46.up.railway.app";
+const AUTH_HUB = "https://id.grudge-studio.com";
+const WARLORDS = "https://grudgewarlords.com";
+
+/** Prefixes that must hit Railway Postgres (characters / account bag / islands). */
+const GAME_DATA_PREFIXES = new Set([
+  "health",
+  "characters",
+  "party",
+  "account",
+  "island",
+  "islands",
+  "inventory",
+  "wallet",
+  "nfts",
+  "island-nfts",
+  "professions",
+  "missions",
+  "player",
+  "resource-nodes",
+  "resources",
+  "sprites",
+  "generate-dungeon",
+  "fleet",
+  "supabase",
+  "lore",
+  "combat-challenges",
+  "story-arcs",
+  "skills",
+  "sheets",
+  "aseprite",
+  "sprite-specs",
+  "sprite-generation-jobs",
+  "admin",
+  "activity",
+  "analytics",
+  "crafting",
+  "harvest",
+  "combat",
+  "rts",
+  "discord",
+  "videos",
+  "races",
+  "classes",
+  "items",
+  "spells",
+  "monsters",
+  "maps",
+  "launcher",
+  "ai-units",
+  "rewards",
+]);
 
 const HOP_BY_HOP_HEADERS = new Set([
   "connection",
@@ -39,7 +76,6 @@ const HOP_BY_HOP_HEADERS = new Set([
   "trailer",
   "transfer-encoding",
   "upgrade",
-  // Cloudflare-injected; the upstream should not see these
   "cf-connecting-ip",
   "cf-ipcountry",
   "cf-ray",
@@ -49,25 +85,31 @@ const HOP_BY_HOP_HEADERS = new Set([
 ]);
 
 function buildTarget(path: string, search: string): string {
-  // Discord OAuth lives on grudgewarlords.com — the OAuth app's redirect URI
-  // is approved against /api/discord/callback there.
   if (path === "/api/auth/discord") {
-    return `https://grudgewarlords.com/discord${search}`;
+    return `${WARLORDS}/discord${search}`;
   }
   if (path.startsWith("/api/auth/discord/")) {
     const rest = path.slice("/api/auth/discord/".length);
-    return `https://grudgewarlords.com/api/discord/${rest}${search}`;
+    return `${WARLORDS}/api/discord/${rest}${search}`;
   }
 
-  // All other auth → id.grudge-studio.com Grudge ID API (canonical /api/auth/*)
+  // Grudge ID hub — login page, puter bridge, grudge-bridge, verify, me, …
   if (path.startsWith("/api/auth/")) {
     const rest = path.slice("/api/auth/".length);
-    return `https://id.grudge-studio.com/api/auth/${rest}${search}`;
+    return `${AUTH_HUB}/api/auth/${rest}${search}`;
   }
 
-  // Everything else under /api → game backend on api.grudge-studio.com
-  // (preserves the /api/ prefix because that's how the upstream routes are mounted)
-  return `https://api.grudge-studio.com${path}${search}`;
+  // Explicit game-data prefixes + default remainder → Railway SSOT
+  if (path.startsWith("/api/")) {
+    const rest = path.slice("/api/".length);
+    const prefix = rest.split("/")[0] || "";
+    if (!prefix || GAME_DATA_PREFIXES.has(prefix) || true) {
+      // All non-auth /api goes to Railway — single player-state SSOT
+      return `${RAILWAY}${path}${search}`;
+    }
+  }
+
+  return `${RAILWAY}${path}${search}`;
 }
 
 function filterRequestHeaders(src: Headers): Headers {
@@ -87,12 +129,31 @@ function filterResponseHeaders(src: Headers): Headers {
       out.set(key, value);
     }
   });
+  // Allow launcher origin to read responses when called cross-subdomain (rare)
+  if (!out.has("Access-Control-Allow-Origin")) {
+    out.set("Access-Control-Allow-Origin", "https://launcher.grudge-studio.com");
+    out.set("Vary", "Origin");
+  }
   return out;
 }
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { request } = ctx;
   const url = new URL(request.url);
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "https://launcher.grudge-studio.com",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers":
+          "Content-Type,Authorization,X-Session-Token,If-Match,X-Progress-Revision",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
+
   const target = buildTarget(url.pathname, url.search);
 
   const init: RequestInit = {
@@ -103,8 +164,6 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
   if (request.method !== "GET" && request.method !== "HEAD") {
     init.body = request.body;
-    // ReadableStream bodies require duplex:'half' on Node-style fetches; the
-    // CF runtime accepts this transparently.
     (init as any).duplex = "half";
   }
 

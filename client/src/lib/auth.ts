@@ -12,8 +12,12 @@
  *   - forwarding the JWT on authenticated API calls + logging out
  */
 
-/** Canonical login page — never use bare /auth (legacy Rec0deD SPA). */
-const GRUDGE_AUTH_LOGIN_URL = 'https://id.grudge-studio.com/api/auth/page';
+/**
+ * Canonical login — fleet ONE TRUTH.
+ * id.grudge-studio.com/login?redirect_uri= → Railway /api/auth/page
+ * Returns ?grudge_token= (bridge) or ?sso_token= / ?token=
+ */
+const GRUDGE_AUTH_LOGIN_URL = 'https://id.grudge-studio.com/login';
 const GRUDGE_ID_BASE = 'https://id.grudge-studio.com';
 const APP_ID = 'grudgedot';
 
@@ -116,10 +120,19 @@ export function hasAuthToken(): boolean {
   return !!localStorage.getItem(KEYS.token);
 }
 
-/** Build canonical Grudge ID login URL (OAuth-style authorization redirect). */
+/** Build canonical Grudge ID login URL (fleet allowlisted redirect_uri). */
 export function getLoginHref(customReturnUrl?: string): string {
-  const returnUrl = encodeURIComponent(customReturnUrl || window.location.href);
-  return `${GRUDGE_AUTH_LOGIN_URL}?app=${APP_ID}&redirect=${returnUrl}`;
+  let ret = customReturnUrl || window.location.href.split('#')[0];
+  try {
+    const u = new URL(ret, window.location.origin);
+    ['token', 'sso_token', 'jwt', 'grudge_token', 'launch_token'].forEach((k) =>
+      u.searchParams.delete(k),
+    );
+    ret = u.origin + u.pathname + (u.search || '');
+  } catch {
+    /* keep ret */
+  }
+  return `${GRUDGE_AUTH_LOGIN_URL}?redirect_uri=${encodeURIComponent(ret)}&app=${APP_ID}`;
 }
 
 /** Hard-redirect the browser to the Grudge ID SSO. */
