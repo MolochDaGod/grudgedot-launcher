@@ -4,7 +4,7 @@ import {
   Joystick, Puzzle, Zap, Rocket, Box, Plane, Shield, Target, Crosshair, Map,
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
   Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse, Link2, Package,
-  ChevronDown, Coins, Star, LogOut, Plus, RefreshCw,
+  ChevronDown, Coins, Star, LogOut, Plus, RefreshCw, Cog, Layers, CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,6 +35,33 @@ import { GrudgeLogo } from "@/components/GrudgeLogo";
 import { PayBadge } from "@/components/PayGate";
 import { useCharacter, CLASS_COLOR } from "@/contexts/CharacterContext";
 
+const engineItems = [
+  {
+    title: "Studio Forge",
+    url: "/forge",
+    icon: Hammer,
+    badge: "Editor",
+  },
+  {
+    title: "Forge Hub",
+    url: "/babygrudge",
+    icon: Cog,
+    badge: "Hub",
+  },
+  {
+    title: "Grudge Flat Engine",
+    url: "/flat-engine",
+    icon: Layers,
+    badge: "2D",
+  },
+  {
+    title: "Card Forge",
+    url: "/card-forge",
+    icon: CreditCard,
+    badge: "TCG",
+  },
+];
+
 const mainMenuItems = [
   {
     title: "Chat Assistant",
@@ -42,7 +69,7 @@ const mainMenuItems = [
     icon: MessageSquare,
   },
   {
-    title: "RTS Builder",
+    title: "Hero RTS Hub",
     url: "/rts-builder",
     icon: Swords,
   },
@@ -132,6 +159,12 @@ const warlordSuiteItems = [
 ];
 
 const featured3DGames = [
+  {
+    title: "Armada Saga",
+    url: "/armada-saga",
+    icon: Rocket,
+    badge: "Live",
+  },
   {
     title: "Betta Warlords",
     url: "/betta-warlords",
@@ -445,6 +478,36 @@ export function AppSidebar() {
                       <span className="flex-1">{item.title}</span>
                       {item.badge && (
                         <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-yellow-500/20 text-yellow-400 border-0">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground flex items-center gap-1">
+            <Cog className="h-3 w-3 text-red-400" />
+            Engines
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {engineItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    data-active={location === item.url || (item.url !== "/" && location.startsWith(item.url))}
+                    data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span className="flex-1">{item.title}</span>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-red-500/20 text-red-400 border-0">
                           {item.badge}
                         </Badge>
                       )}
