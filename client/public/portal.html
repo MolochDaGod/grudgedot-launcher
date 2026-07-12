@@ -5,7 +5,11 @@
     <meta name="google" content="notranslate" />
     <script src="https://client.grudge-studio.com/grudge-game-bootstrap.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>grudgeDot � Grudge Studio Launcher</title>
+<title>Grudge Studio — Command Hub · Wallet · Accounts · Treaty</title>
+<meta name="description" content="Canonical Grudge Studio hub: Grudge ID accounts, Railway wallet, Treaty social, and fleet game launcher. One truth — Railway Postgres SSOT." />
+<meta property="og:title" content="Grudge Studio — Command Hub" />
+<meta property="og:description" content="Accounts · Wallet · Treaty · Fleet games. Canonical launcher for grudge.studio and launcher.grudge-studio.com." />
+<meta property="og:url" content="https://grudge.studio/" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -320,6 +324,77 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 .copy-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 14px; opacity: 0.6; }
 .copy-btn:hover { opacity: 1; }
 
+/* Wallet panel balances */
+.bal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin: 16px 0 24px; }
+.bal-card {
+  padding: 16px; background: rgba(201,168,76,0.04);
+  border: 1px solid rgba(201,168,76,0.18);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.bal-lbl { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px; color: rgba(201,168,76,0.45); margin-bottom: 6px; }
+.bal-val { font-family: 'Cinzel', serif; font-size: 22px; color: var(--gold-light); }
+.bal-sub { font-size: 11px; color: rgba(201,168,76,0.4); margin-top: 4px; }
+
+/* Treaty panel */
+.treaty-shell {
+  display: grid; grid-template-columns: 220px 1fr; gap: 0;
+  min-height: 520px; border: 1px solid rgba(201,168,76,0.2);
+  background: rgba(0,0,0,0.35); overflow: hidden;
+}
+@media (max-width: 800px) { .treaty-shell { grid-template-columns: 1fr; } }
+.treaty-side {
+  border-right: 1px solid rgba(201,168,76,0.15);
+  padding: 12px; overflow-y: auto; max-height: 560px;
+}
+.treaty-side h4 {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px;
+  color: rgba(201,168,76,0.4); margin: 12px 0 8px;
+}
+.treaty-chan {
+  display: block; width: 100%; text-align: left;
+  padding: 8px 10px; margin-bottom: 4px;
+  border: 1px solid transparent; background: transparent;
+  color: rgba(201,168,76,0.7); font-family: 'Rajdhani', sans-serif; font-size: 13px;
+  cursor: pointer; transition: all 0.15s;
+}
+.treaty-chan:hover, .treaty-chan.active {
+  border-color: rgba(201,168,76,0.35); background: rgba(201,168,76,0.08); color: var(--gold-light);
+}
+.treaty-main { display: flex; flex-direction: column; min-height: 520px; }
+.treaty-log {
+  flex: 1; overflow-y: auto; padding: 14px; min-height: 360px; max-height: 440px;
+}
+.treaty-msg {
+  padding: 8px 10px; margin-bottom: 8px;
+  background: rgba(201,168,76,0.04); border: 1px solid rgba(201,168,76,0.1); border-radius: 8px;
+}
+.treaty-msg .who { font-weight: 700; color: var(--gold); font-size: 12px; }
+.treaty-msg .when { color: rgba(201,168,76,0.35); font-size: 10px; margin-left: 8px; font-family: 'Share Tech Mono', monospace; }
+.treaty-msg .body { margin-top: 4px; font-size: 14px; color: rgba(240,220,160,0.9); word-break: break-word; }
+.treaty-composer {
+  display: flex; gap: 8px; padding: 12px; border-top: 1px solid rgba(201,168,76,0.15);
+  background: rgba(0,0,0,0.4);
+}
+.treaty-composer input {
+  flex: 1; padding: 10px 12px; background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(201,168,76,0.25); color: var(--gold-light);
+  font-family: 'Rajdhani', sans-serif; font-size: 14px; outline: none;
+}
+.treaty-composer button {
+  padding: 10px 18px; background: var(--gold-dim); border: 1px solid var(--gold);
+  color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
+  cursor: pointer;
+}
+.treaty-composer button:disabled { opacity: 0.4; cursor: not-allowed; }
+.treaty-empty { text-align: center; padding: 40px 16px; color: rgba(201,168,76,0.4); font-size: 13px; }
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.pill {
+  padding: 6px 12px; border: 1px solid rgba(201,168,76,0.2); background: transparent;
+  color: rgba(201,168,76,0.55); font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  letter-spacing: 1px; cursor: pointer;
+}
+.pill.active { border-color: var(--gold); color: var(--gold-light); background: var(--gold-dim); }
+
 /* ===== APPS PANEL ===== */
 .filter-bar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
 .filter-search {
@@ -608,15 +683,17 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 <!-- ===== MAIN APP ===== -->
 <div id="app">
   <header>
-    <a class="logo" href="#">GRUDGE STUDIO<span>// COMMAND HUB v2.0</span></a>
+    <a class="logo" href="#">GRUDGE STUDIO<span>// CANONICAL HUB · WALLET · TREATY</span></a>
     <nav>
       <button class="nav-btn active" onclick="switchPanel('overview', this)">HOME</button>
-      <button class="nav-btn" onclick="switchPanel('account', this)">MY GRUDGE ID</button>
+      <button class="nav-btn" onclick="switchPanel('account', this)">ACCOUNTS</button>
+      <button class="nav-btn" onclick="switchPanel('wallet', this)">WALLET</button>
+      <button class="nav-btn" onclick="switchPanel('treaty', this)">TREATY</button>
       <button class="nav-btn" onclick="switchPanel('apps', this)">APPS</button>
       <button class="nav-btn" onclick="switchPanel('deployments', this)">SITES</button>
-      <button class="nav-btn" onclick="switchPanel('dns', this)">DNS / SERVER</button>
-      <button class="nav-btn" onclick="switchPanel('stack', this)">TECH STACK</button>
-      <button class="nav-btn" onclick="switchPanel('ai', this)">AI CONSOLE</button>
+      <button class="nav-btn" onclick="switchPanel('dns', this)">FLEET</button>
+      <button class="nav-btn" onclick="switchPanel('stack', this)">STACK</button>
+      <button class="nav-btn" onclick="switchPanel('ai', this)">AI</button>
     </nav>
     <div id="user-area">
       <div id="user-pill" onclick="switchPanel('account', document.querySelector('.nav-btn:nth-child(2)'))">
@@ -642,14 +719,18 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 
       <div class="hero-banner">
         <div class="hero-text">
-          <h2>grudgeDot Command Hub</h2>
-          <p>Launch games and studio tools against the <strong>one fleet truth</strong>:
-          Grudge ID auth � Railway Postgres characters/account � ObjectStore definitions � R2 assets.</p>
+          <h2>Grudge Studio Command Hub</h2>
+          <p>Canonical entry for <strong>grudge.studio</strong> &amp; <strong>launcher.grudge-studio.com</strong> —
+          Grudge ID accounts · Railway wallet · Treaty social · fleet games.
+          One truth: Railway Postgres characters/account · ObjectStore definitions · R2 assets.</p>
           <div class="hero-actions">
-            <a class="hero-cta" href="https://grudgewarlords.com" target="_blank">?? WARLORDS LIVE</a>
-            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/" target="_blank">?? CRAFTING</a>
-            <a class="hero-cta secondary" href="https://forge.grudge-studio.com" target="_blank">? FORGE</a>
-            <a class="hero-cta secondary" href="https://character.grudge-studio.com?era=warlords" target="_blank">? CHARACTERS</a>
+            <a class="hero-cta" href="https://grudgewarlords.com" target="_blank">⚔ WARLORDS LIVE</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="switchPanel('wallet', document.querySelectorAll('.nav-btn')[2])">💰 WALLET</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="switchPanel('account', document.querySelectorAll('.nav-btn')[1])">👤 ACCOUNT</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="switchPanel('treaty', document.querySelectorAll('.nav-btn')[3])">💬 TREATY</a>
+            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/" target="_blank">⚒ CRAFTING</a>
+            <a class="hero-cta secondary" href="https://forge.grudge-studio.com" target="_blank">⚙ FORGE</a>
+            <a class="hero-cta secondary" href="https://character.grudge-studio.com?era=warlords" target="_blank">🎭 CHARACTERS</a>
           </div>
         </div>
       </div>
@@ -676,24 +757,29 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 
       <div class="sh"><div class="sh-title">QUICK ACCESS</div><div class="sh-line"></div></div>
       <div class="qlinks">
-        <a class="qlink" href="https://grudgewarlords.com" target="_blank"><span class="qlink-icon">??</span>WARLORDS</a>
-        <a class="qlink" href="https://grudge-crafting.puter.site/" target="_blank"><span class="qlink-icon">??</span>CRAFTING</a>
-        <a class="qlink" href="https://character.grudge-studio.com?era=warlords" target="_blank"><span class="qlink-icon">??</span>GCS</a>
-        <a class="qlink" href="https://forge.grudge-studio.com" target="_blank"><span class="qlink-icon">??</span>FORGE</a>
-        <a class="qlink" href="https://id.grudge-studio.com/login" target="_blank"><span class="qlink-icon">??</span>GRUDGE ID</a>
-        <a class="qlink" href="https://fleet.grudge-studio.com" target="_blank"><span class="qlink-icon">???</span>FLEET MAP</a>
-        <a class="qlink" href="https://objectstore.grudge-studio.com/api/v1/" target="_blank"><span class="qlink-icon">??</span>OBJECTSTORE</a>
-        <a class="qlink" href="https://assets.grudge-studio.com" target="_blank"><span class="qlink-icon">???</span>ASSETS CDN</a>
-        <a class="qlink" href="https://github.com" target="_blank"><span class="qlink-icon">??</span>GITHUB</a>
-        <a class="qlink" href="https://puter.com" target="_blank"><span class="qlink-icon">??</span>PUTER</a>
-        <a class="qlink" href="https://grudgestudio.com" target="_blank"><span class="qlink-icon">??</span>GRUDGE STUDIO</a>
-        <a class="qlink" href="https://puter.com/app/grudge-angler" target="_blank"><span class="qlink-icon">??</span>ANGLER GAME</a>
+        <a class="qlink" href="https://grudgewarlords.com" target="_blank"><span class="qlink-icon">⚔</span>WARLORDS</a>
+        <a class="qlink" href="javascript:void(0)" onclick="switchPanel('wallet', document.querySelectorAll('.nav-btn')[2])"><span class="qlink-icon">💰</span>WALLET</a>
+        <a class="qlink" href="javascript:void(0)" onclick="switchPanel('account', document.querySelectorAll('.nav-btn')[1])"><span class="qlink-icon">👤</span>ACCOUNT</a>
+        <a class="qlink" href="javascript:void(0)" onclick="switchPanel('treaty', document.querySelectorAll('.nav-btn')[3])"><span class="qlink-icon">💬</span>TREATY</a>
+        <a class="qlink" href="https://grudge-crafting.puter.site/" target="_blank"><span class="qlink-icon">⚒</span>CRAFTING</a>
+        <a class="qlink" href="https://character.grudge-studio.com?era=warlords" target="_blank"><span class="qlink-icon">🎭</span>GCS</a>
+        <a class="qlink" href="https://forge.grudge-studio.com" target="_blank"><span class="qlink-icon">⚙</span>FORGE</a>
+        <a class="qlink" href="https://id.grudge-studio.com/login" target="_blank"><span class="qlink-icon">🔑</span>GRUDGE ID</a>
+        <a class="qlink" href="https://launcher.grudge-studio.com" target="_blank"><span class="qlink-icon">🚀</span>LAUNCHER</a>
+        <a class="qlink" href="https://fleet.grudge-studio.com" target="_blank"><span class="qlink-icon">🗺</span>FLEET MAP</a>
+        <a class="qlink" href="https://objectstore.grudge-studio.com/api/v1/" target="_blank"><span class="qlink-icon">📦</span>OBJECTSTORE</a>
+        <a class="qlink" href="https://assets.grudge-studio.com" target="_blank"><span class="qlink-icon">🖼</span>ASSETS CDN</a>
+        <a class="qlink" href="https://grudge-engine-psi.vercel.app" target="_blank"><span class="qlink-icon">🕹</span>ENGINE GALLERY</a>
       </div>
     </div>
 
     <!-- ACCOUNT / GRUDGE ID -->
     <div class="panel" id="panel-account">
-      <div class="sh"><div class="sh-title">MY GRUDGE ID</div><div class="sh-line"></div><div class="sh-badge">IDENTITY HUB</div></div>
+      <div class="sh"><div class="sh-title">ACCOUNTS · GRUDGE ID</div><div class="sh-line"></div><div class="sh-badge">IDENTITY HUB · RAILWAY SSOT</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 18px;line-height:1.5">
+        One Grudge ID per human · many characters · account bag shared across games.
+        Auth via <code style="color:var(--gold)">id.grudge-studio.com</code> · player state on Railway Postgres.
+      </p>
 
       <div class="account-grid">
         <div>
@@ -763,6 +849,94 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
               <input class="field-input" id="settings-phone" type="tel" placeholder="+1 555 000 0000">
             </div>
             <button class="submit-btn" onclick="saveSettings()" style="margin-top:12px">SAVE SETTINGS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WALLET PANEL -->
+    <div class="panel" id="panel-wallet">
+      <div class="sh"><div class="sh-title">WALLET · WAR CHEST</div><div class="sh-line"></div><div class="sh-badge">RAILWAY /api/wallet · ACCOUNT SCOPE</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 18px;line-height:1.5">
+        Solana wallet + GBUX live on Railway account scope (not character). Phantom external or Crossmint custodial.
+      </p>
+      <div class="bal-grid">
+        <div class="bal-card">
+          <div class="bal-lbl">GBUX</div>
+          <div class="bal-val" id="wallet-gbux">—</div>
+          <div class="bal-sub">Fleet currency</div>
+        </div>
+        <div class="bal-card">
+          <div class="bal-lbl">GOLD / RESOURCES</div>
+          <div class="bal-val" id="wallet-gold">—</div>
+          <div class="bal-sub">Account bag</div>
+        </div>
+        <div class="bal-card">
+          <div class="bal-lbl">WALLET TYPE</div>
+          <div class="bal-val" id="wallet-type" style="font-size:16px">—</div>
+          <div class="bal-sub" id="wallet-has">status</div>
+        </div>
+        <div class="bal-card">
+          <div class="bal-lbl">SOLANA ADDRESS</div>
+          <div class="bal-val" id="wallet-panel-addr" style="font-size:12px;word-break:break-all;font-family:'Share Tech Mono',monospace">—</div>
+          <div class="bal-sub"><span class="copy-btn" style="position:static;transform:none" onclick="copyWallet()">📋 Copy</span></div>
+        </div>
+      </div>
+      <div class="account-grid">
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">CONNECT / CREATE</div><div class="sh-line"></div></div>
+          <button class="social-btn solana" style="width:100%;justify-content:center;margin-bottom:8px" onclick="loginPhantom()">
+            <span class="social-icon">◎</span> Connect Phantom
+          </button>
+          <button class="submit-btn" style="margin-bottom:8px" onclick="ensureServerWallet()">CREATE SERVER WALLET (Crossmint)</button>
+          <button class="social-btn" style="width:100%;justify-content:center" onclick="refreshWalletPanel()">
+            <span class="social-icon">↻</span> Refresh balances
+          </button>
+          <p id="wallet-panel-msg" style="margin-top:12px;font-size:12px;color:rgba(201,168,76,0.45);line-height:1.5">Sign in to load Railway wallet status.</p>
+        </div>
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">ACCOUNT INVENTORY PREVIEW</div><div class="sh-line"></div></div>
+          <div id="wallet-inv-preview" style="font-size:13px;color:rgba(201,168,76,0.55);line-height:1.6">—</div>
+          <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/" target="_blank" style="text-decoration:none">Crafting bag</a>
+            <a class="hero-cta secondary" href="/app/wallet" style="text-decoration:none">Full War Chest app</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREATY PANEL -->
+    <div class="panel" id="panel-treaty">
+      <div class="sh"><div class="sh-title">TREATY · FLEET SOCIAL</div><div class="sh-line"></div><div class="sh-badge">ACCOUNT-SCOPED · RAILWAY /api/treaty</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 14px;line-height:1.5">
+        Friends, DMs, groups, and fleet server chat keyed to <strong>Grudge ID account</strong> (not character).
+        Same social graph in every game. History stays on Railway Postgres.
+      </p>
+      <div class="pill-row">
+        <button type="button" class="pill active" data-treaty-tab="servers" onclick="setTreatyTab('servers', this)">SERVER CHAT</button>
+        <button type="button" class="pill" data-treaty-tab="dms" onclick="setTreatyTab('dms', this)">DMs</button>
+        <button type="button" class="pill" data-treaty-tab="friends" onclick="setTreatyTab('friends', this)">FRIENDS</button>
+        <button type="button" class="pill" data-treaty-tab="groups" onclick="setTreatyTab('groups', this)">GROUPS</button>
+        <a class="pill" href="https://grudgewarlords.com/treaty" target="_blank" rel="noopener" style="text-decoration:none">OPEN FULL APP →</a>
+        <a class="pill" href="/treaty-embed.html?game=fleet" target="_blank" rel="noopener" style="text-decoration:none">EMBED</a>
+      </div>
+      <div class="treaty-shell">
+        <aside class="treaty-side">
+          <h4 id="treaty-side-title">CHANNELS</h4>
+          <div id="treaty-channels"><div class="treaty-empty">Sign in to load Treaty…</div></div>
+          <div style="margin-top:16px">
+            <div class="field-group" id="treaty-friend-box" style="display:none">
+              <label class="field-label">ADD FRIEND</label>
+              <input class="field-input" id="treaty-friend-query" type="text" placeholder="username or grudge id">
+              <button class="submit-btn" style="margin-top:8px" onclick="treatyAddFriend()">SEND REQUEST</button>
+            </div>
+          </div>
+        </aside>
+        <div class="treaty-main">
+          <div class="treaty-log" id="treaty-log"><div class="treaty-empty">Select a channel or sign in.</div></div>
+          <div class="treaty-composer">
+            <input id="treaty-input" type="text" maxlength="2000" placeholder="Message…" disabled />
+            <button id="treaty-send" type="button" disabled onclick="treatySend()">SEND</button>
           </div>
         </div>
       </div>
@@ -1260,6 +1434,7 @@ async function initFromToken(token, seed) {
     loadSavedAvatar();
     await loadCharactersFromRailway();
     unlockGatedServices();
+    refreshWalletPanel();
     showToast('\u2694 Welcome, ' + (currentUser.displayName || currentUser.username || 'Warlord'));
   } catch (e) {
     console.warn('initFromToken', e);
@@ -1683,9 +1858,19 @@ async function saveSettings() {
 function switchPanel(name, btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
   if (btn) btn.classList.add('active');
-  else { document.querySelectorAll('.nav-btn').forEach(b => { if (b.textContent.toLowerCase().includes(name.toLowerCase().slice(0,4))) b.classList.add('active'); }); }
+  else {
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      const t = (b.textContent || '').toLowerCase();
+      if (t.includes(name.toLowerCase().slice(0, 4)) || (name === 'account' && t.includes('account')) || (name === 'wallet' && t.includes('wallet')) || (name === 'treaty' && t.includes('treaty'))) {
+        b.classList.add('active');
+      }
+    });
+  }
+  if (name === 'wallet') refreshWalletPanel();
+  if (name === 'treaty') initTreatyPanel();
 }
 
 // ===== APPS DATA =====
@@ -1761,16 +1946,19 @@ renderApps(APPS);
 
 // ===== FLEET SERVICES � live Grudge Studio tools (consolidated truth) =====
 const SERVICES = [
-  { id:'warlords',   icon:'\u2694',       title:'Grudge Warlords',   desc:'Main game client � islands, combat, professions. Railway character SSOT.', path:'https://grudgewarlords.com', badge:'LIVE' },
+  { id:'warlords',   icon:'\u2694',       title:'Grudge Warlords',   desc:'Main game client — islands, combat, professions. Railway character SSOT.', path:'https://grudgewarlords.com', badge:'LIVE' },
   { id:'characters', icon:'\ud83c\udfa8', title:'Character Studio',  desc:'Create/edit heroes (GCS). Saves to Railway /api/characters.', path:'https://character.grudge-studio.com?era=warlords', badge:'GCS' },
-  { id:'crafting',   icon:'\u2692\ufe0f', title:'Crafting Suite',    desc:'Shared account bag + per-character XP. Puter UI ? Railway.', path:'https://grudge-crafting.puter.site/', badge:'CRAFT' },
+  { id:'crafting',   icon:'\u2692\ufe0f', title:'Crafting Suite',    desc:'Shared account bag + per-character XP. Puter UI → Railway.', path:'https://grudge-crafting.puter.site/', badge:'CRAFT' },
   { id:'forge',      icon:'\u2699\ufe0f', title:'Studio Forge',      desc:'3D scene / map editor (Three.js + ObjectStore assets).', path:'https://forge.grudge-studio.com', badge:'EDITOR' },
-  { id:'id',         icon:'\ud83d\udd11', title:'Grudge ID',         desc:'Unified auth gateway � login, SSO, Puter bridge.', path:'https://id.grudge-studio.com/login?redirect_uri=' + encodeURIComponent(CLIENT_URL + '/'), badge:'AUTH' },
+  { id:'id',         icon:'\ud83d\udd11', title:'Grudge ID',         desc:'Unified auth gateway — login, SSO, Puter bridge.', path:'https://id.grudge-studio.com/login?redirect_uri=' + encodeURIComponent(CLIENT_URL + '/'), badge:'AUTH' },
+  { id:'account',    icon:'\ud83d\udc64', title:'Accounts',          desc:'Grudge ID profile, linked providers, display settings.', path:'#panel:account', badge:'ID' },
+  { id:'wallet',     icon:'\ud83d\udcb0', title:'Wallet / War Chest', desc:'Solana · Crossmint · GBUX (Railway /api/wallet).', path:'#panel:wallet', badge:'WEB3' },
+  { id:'treaty',     icon:'\ud83d\udcac', title:'Treaty',            desc:'Account-level friends, DMs, groups, fleet server chat.', path:'#panel:treaty', badge:'SOCIAL' },
   { id:'fleet',      icon:'\ud83d\uddfa\ufe0f', title:'Fleet Map',   desc:'Live infrastructure topology of Workers, Railway, R2, Vercel.', path:'https://fleet.grudge-studio.com', badge:'OPS' },
-  { id:'objectstore',icon:'\ud83d\uddc4\ufe0f', title:'ObjectStore', desc:'Definitions JSON � recipes, items, races, biomes.', path:'https://objectstore.grudge-studio.com/api/v1/', badge:'DATA' },
-  { id:'assets',     icon:'\ud83c\udfa8', title:'Assets CDN',        desc:'R2 binaries � icons, GLB, audio at assets.grudge-studio.com.', path:'https://assets.grudge-studio.com', badge:'CDN' },
+  { id:'objectstore',icon:'\ud83d\uddc4\ufe0f', title:'ObjectStore', desc:'Definitions JSON — recipes, items, races, biomes.', path:'https://objectstore.grudge-studio.com/api/v1/', badge:'DATA' },
+  { id:'assets',     icon:'\ud83c\udfa8', title:'Assets CDN',        desc:'R2 binaries — icons, GLB, audio at assets.grudge-studio.com.', path:'https://assets.grudge-studio.com', badge:'CDN' },
   { id:'ai',         icon:'\u2728',       title:'AI Gateway',        desc:'ai.grudge-studio.com + Puter AI console (user-pays).', path:'https://ai.grudge-studio.com', badge:'AI' },
-  { id:'wallet',     icon:'\ud83d\udcb0', title:'War Chest',         desc:'Solana / Crossmint wallet (Railway /api/wallet).', path:'/app/wallet', badge:'WEB3' },
+  { id:'engine',     icon:'\ud83c\udfae', title:'Engine Gallery',    desc:'Babylon component demos (moved off grudge.studio root).', path:'https://grudge-engine-psi.vercel.app', badge:'DEV' },
 ];
 
 function renderServices() {
@@ -1809,6 +1997,11 @@ function renderServices() {
 }
 
 function openService(path) {
+  if (path.startsWith('#panel:')) {
+    const name = path.slice(7);
+    switchPanel(name, null);
+    return;
+  }
   if (path.startsWith('http')) { window.open(path, '_blank'); return; }
   if (path.startsWith('/app') && !authToken) { showAuthGate(); return; }
   window.location.href = path;
@@ -1955,6 +2148,352 @@ function showForgot() { showToast('Use Grudge ID login � password reset at id.
     el.textContent = 'API UNREACHABLE';
     el.style.color = 'var(--ember)';
   }
+})();
+
+// ===== WALLET PANEL (Railway /api/wallet + /api/account) =====
+async function refreshWalletPanel() {
+  const msg = document.getElementById('wallet-panel-msg');
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  if (!authToken) {
+    set('wallet-gbux', '—'); set('wallet-gold', '—'); set('wallet-type', '—');
+    set('wallet-panel-addr', '—'); set('wallet-has', 'sign in required');
+    if (msg) msg.textContent = 'Sign in with Grudge ID to load Railway wallet + account bag.';
+    return;
+  }
+  if (msg) msg.textContent = 'Loading wallet from Railway…';
+  try {
+    const headers = { Authorization: 'Bearer ' + authToken, Accept: 'application/json' };
+    const [statusRes, acctRes, invRes] = await Promise.all([
+      fetch(GAME_API + '/wallet/status', { headers }),
+      fetch(GAME_API + '/account', { headers }),
+      fetch(GAME_API + '/account/resources', { headers }).catch(() => null),
+    ]);
+    let status = {};
+    if (statusRes.ok) status = await statusRes.json();
+    let acct = {};
+    if (acctRes.ok) acct = await acctRes.json();
+    let resources = {};
+    if (invRes && invRes.ok) resources = await invRes.json();
+
+    const addr = status.walletAddress || acct.walletAddress || acct.serverWalletAddress || currentUser?.walletAddress || currentUser?.serverWalletAddress || null;
+    const wtype = status.walletType || acct.walletType || (addr ? 'linked' : 'none');
+    const gbux = resources.gbux ?? resources.GBUX ?? acct.gbux ?? acct.resources?.gbux ?? overviewSafe(resources, 'gbux');
+    const gold = resources.gold ?? resources.GOLD ?? acct.gold ?? acct.resources?.gold ?? overviewSafe(resources, 'gold');
+
+    set('wallet-gbux', gbux != null ? Number(gbux).toLocaleString() : '—');
+    set('wallet-gold', gold != null ? Number(gold).toLocaleString() : '—');
+    set('wallet-type', String(wtype).toUpperCase());
+    set('wallet-has', status.hasWallet || addr ? 'connected' : 'no wallet yet');
+    set('wallet-panel-addr', addr || '—');
+    if (addr) {
+      currentUser = currentUser || {};
+      currentUser.walletAddress = addr;
+      updateWalletUI(addr);
+    }
+
+    const invEl = document.getElementById('wallet-inv-preview');
+    if (invEl) {
+      const bag = resources.resources || resources.items || resources.inventory || resources;
+      if (bag && typeof bag === 'object' && !Array.isArray(bag)) {
+        const entries = Object.entries(bag).filter(([, v]) => v != null && typeof v !== 'object').slice(0, 12);
+        invEl.innerHTML = entries.length
+          ? entries.map(([k, v]) => `<div><span style="color:var(--gold)">${escapeHtml(k)}</span>: ${escapeHtml(String(v))}</div>`).join('')
+          : 'No resource summary — open Crafting for full bag.';
+      } else if (Array.isArray(bag)) {
+        invEl.innerHTML = bag.slice(0, 8).map((it) => `<div>${escapeHtml(it.name || it.itemId || JSON.stringify(it).slice(0, 40))}</div>`).join('') || 'Empty bag';
+      } else {
+        invEl.textContent = 'Account resources load after craft/play activity.';
+      }
+    }
+    if (msg) msg.textContent = 'Synced from Railway · ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    if (msg) msg.textContent = 'Wallet load failed: ' + (e.message || e);
+  }
+}
+
+function overviewSafe(obj, key) {
+  try {
+    if (obj && obj.balances && obj.balances[key] != null) return obj.balances[key];
+  } catch {}
+  return null;
+}
+
+async function ensureServerWallet() {
+  if (!authToken) { showAuthGate(); return; }
+  const email = currentUser?.email || document.getElementById('settings-email')?.value;
+  if (!email) {
+    showToast('Set email in Accounts first (required for Crossmint)', true);
+    switchPanel('account', null);
+    return;
+  }
+  try {
+    const res = await fetch(GAME_API + '/wallet/create', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + authToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+    showToast('Server wallet ready');
+    if (data.walletAddress) {
+      currentUser.walletAddress = data.walletAddress;
+      currentUser.serverWalletAddress = data.walletAddress;
+      updateWalletUI(data.walletAddress);
+    }
+    await refreshWalletPanel();
+  } catch (e) {
+    showToast('Wallet create failed: ' + e.message, true);
+  }
+}
+
+// ===== TREATY PANEL (Railway /api/treaty — account social SSOT) =====
+const treatyState = { tab: 'servers', channels: [], channelSlug: '', threadId: null, groupId: null, poll: null };
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function treatyApi(path, init) {
+  const headers = Object.assign({ Accept: 'application/json' }, (init && init.headers) || {});
+  if (authToken) headers.Authorization = 'Bearer ' + authToken;
+  if (init && init.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  const res = await fetch(GAME_API + '/treaty' + path, Object.assign({}, init, { headers }));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+  return data;
+}
+
+function setTreatyComposer(on) {
+  const input = document.getElementById('treaty-input');
+  const send = document.getElementById('treaty-send');
+  if (input) input.disabled = !on;
+  if (send) send.disabled = !on;
+}
+
+function setTreatyTab(tab, btn) {
+  treatyState.tab = tab;
+  document.querySelectorAll('[data-treaty-tab]').forEach((b) => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const friendBox = document.getElementById('treaty-friend-box');
+  if (friendBox) friendBox.style.display = tab === 'friends' ? 'block' : 'none';
+  const title = document.getElementById('treaty-side-title');
+  if (title) {
+    title.textContent = tab === 'servers' ? 'CHANNELS' : tab === 'dms' ? 'THREADS' : tab === 'groups' ? 'GROUPS' : 'FRIENDS';
+  }
+  loadTreatyTab();
+}
+
+function initTreatyPanel() {
+  if (!authToken) {
+    document.getElementById('treaty-channels').innerHTML = '<div class="treaty-empty">Sign in with Grudge ID to use Treaty.</div>';
+    document.getElementById('treaty-log').innerHTML = '<div class="treaty-empty">Account-scoped social · friends · DMs · fleet chat.</div>';
+    setTreatyComposer(false);
+    return;
+  }
+  loadTreatyTab();
+  if (treatyState.poll) clearInterval(treatyState.poll);
+  treatyState.poll = setInterval(() => {
+    if (document.getElementById('panel-treaty')?.classList.contains('active')) loadTreatyMessagesOnly();
+  }, 6000);
+}
+
+async function loadTreatyTab() {
+  if (!authToken) return;
+  const side = document.getElementById('treaty-channels');
+  const log = document.getElementById('treaty-log');
+  try {
+    if (treatyState.tab === 'servers') {
+      const data = await treatyApi('/servers?game=fleet');
+      treatyState.channels = data.channels || data.servers || [];
+      if (!treatyState.channelSlug && treatyState.channels.length) {
+        treatyState.channelSlug = treatyState.channels[0].slug || treatyState.channels[0].id;
+      }
+      side.innerHTML = treatyState.channels.length
+        ? treatyState.channels.map((c) => {
+            const slug = c.slug || c.id;
+            const active = slug === treatyState.channelSlug ? ' active' : '';
+            return `<button type="button" class="treaty-chan${active}" onclick="selectTreatyChannel('${escapeHtml(slug)}')">${escapeHtml(c.name || slug)}</button>`;
+          }).join('')
+        : '<div class="treaty-empty">No fleet channels yet.</div>';
+      await loadTreatyMessagesOnly();
+    } else if (treatyState.tab === 'dms') {
+      const data = await treatyApi('/dm/threads');
+      const threads = data.threads || [];
+      side.innerHTML = threads.length
+        ? threads.map((t) => {
+            const id = t.id || t.threadId;
+            const active = id === treatyState.threadId ? ' active' : '';
+            return `<button type="button" class="treaty-chan${active}" onclick="selectTreatyDm('${escapeHtml(id)}')">${escapeHtml(t.displayName || t.grudgeId || 'DM')}</button>`;
+          }).join('')
+        : '<div class="treaty-empty">No DMs — add friends first.</div>';
+      if (threads.length && !treatyState.threadId) treatyState.threadId = threads[0].id || threads[0].threadId;
+      await loadTreatyMessagesOnly();
+    } else if (treatyState.tab === 'groups') {
+      const data = await treatyApi('/groups');
+      const groups = data.groups || [];
+      side.innerHTML = groups.length
+        ? groups.map((g) => {
+            const id = g.id;
+            const active = id === treatyState.groupId ? ' active' : '';
+            return `<button type="button" class="treaty-chan${active}" onclick="selectTreatyGroup('${escapeHtml(id)}')">${escapeHtml(g.name || id)}</button>`;
+          }).join('')
+        : '<div class="treaty-empty">No groups yet. Create one in the full Treaty app.</div>';
+      if (groups.length && !treatyState.groupId) treatyState.groupId = groups[0].id;
+      await loadTreatyMessagesOnly();
+    } else {
+      const data = await treatyApi('/social');
+      const friends = (data.friends || []).filter((f) => f.status === 'accepted' || !f.status);
+      const pending = data.pendingIncoming || data.incoming || [];
+      side.innerHTML = '';
+      log.innerHTML = [
+        '<div class="treaty-msg"><span class="who">Friends</span><div class="body">' +
+          (friends.length ? friends.map((f) => escapeHtml(f.displayName || f.grudgeId || f.username)).join(', ') : 'None yet') +
+          '</div></div>',
+        '<div class="treaty-msg"><span class="who">Incoming requests</span><div class="body">' +
+          (pending.length
+            ? pending.map((f) => {
+                const id = f.id || f.requestId;
+                return `${escapeHtml(f.displayName || f.grudgeId)} ` +
+                  `<button class="pill" onclick="treatyRespond('${escapeHtml(id)}', true)">Accept</button> ` +
+                  `<button class="pill" onclick="treatyRespond('${escapeHtml(id)}', false)">Decline</button>`;
+              }).join('<br>')
+            : 'None') +
+          '</div></div>',
+      ].join('');
+      setTreatyComposer(false);
+    }
+  } catch (e) {
+    side.innerHTML = '';
+    log.innerHTML = `<div class="treaty-empty err" style="color:#f87171">Treaty: ${escapeHtml(e.message)}</div>`;
+    setTreatyComposer(false);
+  }
+}
+
+function selectTreatyChannel(slug) {
+  treatyState.channelSlug = slug;
+  loadTreatyTab();
+}
+function selectTreatyDm(id) {
+  treatyState.threadId = id;
+  loadTreatyTab();
+}
+function selectTreatyGroup(id) {
+  treatyState.groupId = id;
+  loadTreatyTab();
+}
+
+async function loadTreatyMessagesOnly() {
+  const log = document.getElementById('treaty-log');
+  if (!log || !authToken) return;
+  try {
+    let messages = [];
+    if (treatyState.tab === 'servers' && treatyState.channelSlug) {
+      const data = await treatyApi('/servers/' + encodeURIComponent(treatyState.channelSlug) + '/messages?limit=80');
+      messages = data.messages || [];
+      setTreatyComposer(true);
+    } else if (treatyState.tab === 'dms' && treatyState.threadId) {
+      const data = await treatyApi('/dm/threads/' + encodeURIComponent(treatyState.threadId) + '/messages?limit=80');
+      messages = data.messages || [];
+      setTreatyComposer(true);
+    } else if (treatyState.tab === 'groups' && treatyState.groupId) {
+      const data = await treatyApi('/groups/' + encodeURIComponent(treatyState.groupId) + '/messages?limit=80');
+      messages = data.messages || [];
+      setTreatyComposer(true);
+    } else if (treatyState.tab !== 'friends') {
+      log.innerHTML = '<div class="treaty-empty">Nothing selected.</div>';
+      setTreatyComposer(false);
+      return;
+    } else return;
+
+    if (!messages.length) {
+      log.innerHTML = '<div class="treaty-empty">No messages yet — say hello.</div>';
+      return;
+    }
+    log.innerHTML = messages.map((m) => {
+      const who = m.senderDisplayName || m.senderGrudgeId || m.displayName || 'Player';
+      const when = m.createdAt ? new Date(m.createdAt).toLocaleTimeString() : '';
+      return `<div class="treaty-msg"><span class="who">${escapeHtml(who)}</span><span class="when">${escapeHtml(when)}</span><div class="body">${escapeHtml(m.content || m.body || '')}</div></div>`;
+    }).join('');
+    log.scrollTop = log.scrollHeight;
+  } catch (e) {
+    log.innerHTML = `<div class="treaty-empty" style="color:#f87171">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function treatySend() {
+  const input = document.getElementById('treaty-input');
+  const text = (input?.value || '').trim();
+  if (!text || !authToken) return;
+  try {
+    if (treatyState.tab === 'servers' && treatyState.channelSlug) {
+      await treatyApi('/servers/' + encodeURIComponent(treatyState.channelSlug) + '/messages', {
+        method: 'POST', body: JSON.stringify({ content: text }),
+      });
+    } else if (treatyState.tab === 'dms' && treatyState.threadId) {
+      await treatyApi('/dm/threads/' + encodeURIComponent(treatyState.threadId) + '/messages', {
+        method: 'POST', body: JSON.stringify({ content: text }),
+      });
+    } else if (treatyState.tab === 'groups' && treatyState.groupId) {
+      await treatyApi('/groups/' + encodeURIComponent(treatyState.groupId) + '/messages', {
+        method: 'POST', body: JSON.stringify({ content: text }),
+      });
+    }
+    input.value = '';
+    await loadTreatyMessagesOnly();
+  } catch (e) {
+    showToast('Send failed: ' + e.message, true);
+  }
+}
+
+async function treatyAddFriend() {
+  const q = document.getElementById('treaty-friend-query')?.value?.trim();
+  if (!q) return;
+  try {
+    await treatyApi('/friends/request', { method: 'POST', body: JSON.stringify({ query: q }) });
+    showToast('Friend request sent');
+    document.getElementById('treaty-friend-query').value = '';
+    loadTreatyTab();
+  } catch (e) {
+    showToast(e.message, true);
+  }
+}
+
+async function treatyRespond(id, accept) {
+  try {
+    await treatyApi('/friends/' + encodeURIComponent(id) + '/respond', {
+      method: 'POST', body: JSON.stringify({ accept: !!accept }),
+    });
+    showToast(accept ? 'Friend accepted' : 'Request declined');
+    loadTreatyTab();
+  } catch (e) {
+    showToast(e.message, true);
+  }
+}
+
+// Enter key for treaty composer
+document.getElementById('treaty-input')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') treatySend();
+});
+
+// Deep-link ?panel=wallet|account|treaty or /wallet|/account|/treaty paths
+(function deepLinkPanel() {
+  try {
+    const fromQuery = new URLSearchParams(location.search).get('panel');
+    const path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+    const fromPath = path === '/wallet' ? 'wallet'
+      : path === '/account' || path === '/accounts' ? 'account'
+      : path === '/treaty' ? 'treaty'
+      : path === '/apps' ? 'apps'
+      : null;
+    const p = fromQuery || fromPath;
+    if (p && ['wallet', 'account', 'treaty', 'apps', 'overview'].includes(p)) {
+      setTimeout(() => switchPanel(p, null), 400);
+    }
+  } catch {}
 })();
 </script>
 </body>
