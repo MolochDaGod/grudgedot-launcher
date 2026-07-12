@@ -687,7 +687,6 @@ export interface EconomyTransaction {
 // ════════════════════════════════════════════════════════════════
 
 const ECONOMY = '/api/economy';
-const ACCOUNT_LOCAL = '/api/account';
 
 export const grudgeEconomyApi = {
   /** Full economy snapshot: GBUX price, supply, agent wallet, links */
