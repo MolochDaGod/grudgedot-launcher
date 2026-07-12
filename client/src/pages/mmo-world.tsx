@@ -32,7 +32,63 @@ const WORLD_HEIGHT = 3600;
 const TILE_SIZE = 32;
 
 type Biome = "forest" | "desert" | "snow" | "swamp" | "plains";
-type DifficultyZone = "safe" | "easy" | "medium" | "hard";
+
+/**
+ * 9 zones matching Dungeon-Crawler-Quest world layout (3×3 grid):
+ *   [NW Wilds]     [Crusade Coast] [NE Wilds]
+ *   [Fabled Shore] [Travelers Town][Sloarscorth]
+ *   [SW Wilds]     [Pirate Bay]    [SE Wilds]
+ */
+type DifficultyZone =
+  | "travelers_town"   // 0 — Center safe hub
+  | "crusade_coast"    // 1 — N, Human/Barbarian, easy
+  | "fabled_shore"     // 2 — W, Elf/Dwarf, easy-med
+  | "sloarscorth"      // 3 — E, Frozen crystal highlands, medium
+  | "pirate_bay"       // 4 — S, PvP waters, hard
+  | "nw_wilds"         // 5 — NW, Jungle PvP, medium
+  | "ne_wilds"         // 6 — NE, Mountain crags, hard
+  | "sw_wilds"         // 7 — SW, Volcanic badlands, hard+
+  | "se_wilds";        // 8 — SE, Graveyard/boss arena, endgame
+
+/** 3×3 grid — ZONE_GRID[row][col] */
+const ZONE_GRID: DifficultyZone[][] = [
+  ["nw_wilds",       "crusade_coast",  "ne_wilds"   ],  // row 0 (north)
+  ["fabled_shore",   "travelers_town", "sloarscorth"],  // row 1 (center)
+  ["sw_wilds",       "pirate_bay",     "se_wilds"   ],  // row 2 (south)
+];
+
+/** Biome for each grid cell */
+const BIOME_GRID: Biome[][] = [
+  ["forest",  "plains", "snow"   ],
+  ["forest",  "plains", "snow"   ],
+  ["desert",  "swamp",  "plains" ],
+];
+
+/** Enemy power multiplier per zone */
+const ZONE_MULT: Record<DifficultyZone, number> = {
+  travelers_town: 0,
+  crusade_coast:  1,
+  fabled_shore:   1.2,
+  sloarscorth:    1.8,
+  pirate_bay:     2.5,
+  nw_wilds:       1.5,
+  ne_wilds:       2.5,
+  sw_wilds:       3.5,
+  se_wilds:       5,
+};
+
+/** Chance of spawning a boss in this zone (0–1) */
+const ZONE_BOSS_CHANCE: Record<DifficultyZone, number> = {
+  travelers_town: 0,
+  crusade_coast:  0,
+  fabled_shore:   0,
+  sloarscorth:    0.1,
+  pirate_bay:     0.6,
+  nw_wilds:       0.3,
+  ne_wilds:       0.7,
+  sw_wilds:       0.8,
+  se_wilds:       0.9,
+};
 
 /** Spell type now uses MMOSpell from mmo-systems (mapped from hero abilities) */
 interface Spell {
@@ -105,8 +161,6 @@ class MMOScene extends Phaser.Scene {
   private loot!: Phaser.Physics.Arcade.Group;
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private enemyProjectiles!: Phaser.Physics.Arcade.Group;
-  private biomeMap: Biome[][] = [];
-  private zoneMap: DifficultyZone[][] = [];
   private stats: PlayerStats = {
     health: 100,
     maxHealth: 100,
@@ -133,7 +187,7 @@ class MMOScene extends Phaser.Scene {
   private inStartBuilding = true;
   private buildingGroup!: Phaser.Physics.Arcade.StaticGroup;
   private buildingExitZone!: Phaser.GameObjects.Zone;
-  private currentZone: DifficultyZone = "safe";
+  private currentZone: DifficultyZone = "travelers_town";
   private mousePointer!: Phaser.Input.Pointer;
   private crosshair!: Phaser.GameObjects.Graphics;
   private telegraphManager!: TelegraphManager;
@@ -174,8 +228,6 @@ class MMOScene extends Phaser.Scene {
 
   create() {
     this.telegraphManager = new TelegraphManager(this);
-    this.generateBiomeMap();
-    this.generateZoneMap();
     this.createWorld();
     this.createPlayer();         // Must exist before createStartBuilding (it references this.player)
     this.createStartBuilding();
@@ -227,7 +279,7 @@ class MMOScene extends Phaser.Scene {
       loop: true,
     });
 
-    this.onGameStateChange?.(true, "safe");
+    this.onGameStateChange?.(true, "travelers_town");
     this.notifyStats();
   }
 
@@ -254,67 +306,18 @@ class MMOScene extends Phaser.Scene {
     }
   }
 
-  generateBiomeMap() {
-    const cols = Math.ceil(WORLD_WIDTH / (TILE_SIZE * 8));
-    const rows = Math.ceil(WORLD_HEIGHT / (TILE_SIZE * 8));
-    
-    for (let x = 0; x < cols; x++) {
-      this.biomeMap[x] = [];
-      for (let y = 0; y < rows; y++) {
-        const nx = x / cols;
-        const ny = y / rows;
-        
-        if (nx < 0.35 && ny < 0.4) {
-          this.biomeMap[x][y] = "snow";
-        } else if (nx > 0.65 && ny < 0.4) {
-          this.biomeMap[x][y] = "desert";
-        } else if (nx < 0.35 && ny > 0.6) {
-          this.biomeMap[x][y] = "swamp";
-        } else if (nx > 0.65 && ny > 0.6) {
-          this.biomeMap[x][y] = "forest";
-        } else {
-          this.biomeMap[x][y] = "plains";
-        }
-      }
-    }
-  }
-
-  generateZoneMap() {
-    const cols = Math.ceil(WORLD_WIDTH / (TILE_SIZE * 8));
-    const rows = Math.ceil(WORLD_HEIGHT / (TILE_SIZE * 8));
-    
-    for (let x = 0; x < cols; x++) {
-      this.zoneMap[x] = [];
-      for (let y = 0; y < rows; y++) {
-        const centerX = cols / 2;
-        const centerY = rows / 2;
-        const dist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-        const maxDist = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
-        const normalizedDist = dist / maxDist;
-        
-        if (normalizedDist < 0.15) {
-          this.zoneMap[x][y] = "safe";
-        } else if (normalizedDist < 0.4) {
-          this.zoneMap[x][y] = "easy";
-        } else if (normalizedDist < 0.7) {
-          this.zoneMap[x][y] = "medium";
-        } else {
-          this.zoneMap[x][y] = "hard";
-        }
-      }
-    }
-  }
-
+  /** Compute biome directly from 3×3 world grid */
   getBiomeAt(x: number, y: number): Biome {
-    const col = Math.floor(x / (TILE_SIZE * 8));
-    const row = Math.floor(y / (TILE_SIZE * 8));
-    return this.biomeMap[col]?.[row] || "plains";
+    const col = Math.min(2, Math.floor(x / (WORLD_WIDTH / 3)));
+    const row = Math.min(2, Math.floor(y / (WORLD_HEIGHT / 3)));
+    return BIOME_GRID[row]?.[col] ?? "plains";
   }
 
+  /** Compute zone directly from 3×3 world grid */
   getZoneAt(x: number, y: number): DifficultyZone {
-    const col = Math.floor(x / (TILE_SIZE * 8));
-    const row = Math.floor(y / (TILE_SIZE * 8));
-    return this.zoneMap[col]?.[row] || "easy";
+    const col = Math.min(2, Math.floor(x / (WORLD_WIDTH / 3)));
+    const row = Math.min(2, Math.floor(y / (WORLD_HEIGHT / 3)));
+    return ZONE_GRID[row]?.[col] ?? "crusade_coast";
   }
 
   getBiomeColors(biome: Biome): { ground: number; accent: number; tree: number } {
@@ -335,11 +338,16 @@ class MMOScene extends Phaser.Scene {
 
   getZoneColor(zone: DifficultyZone): number {
     switch (zone) {
-      case "safe": return 0x88ff88;
-      case "easy": return 0x88cc88;
-      case "medium": return 0xccaa44;
-      case "hard": return 0xcc4444;
-      default: return 0x888888;
+      case "travelers_town": return 0x88ff88;  // safe green
+      case "crusade_coast":  return 0xdaa520;  // gold
+      case "fabled_shore":   return 0x2aaa6a;  // teal
+      case "sloarscorth":    return 0x88aaff;  // ice blue
+      case "pirate_bay":     return 0x2266bb;  // ocean
+      case "nw_wilds":       return 0x226622;  // dark jungle
+      case "ne_wilds":       return 0x7a7a9a;  // grey mountain
+      case "sw_wilds":       return 0xcc4422;  // volcanic
+      case "se_wilds":       return 0x550055;  // dark graveyard
+      default:               return 0x888888;
     }
   }
 
@@ -371,8 +379,9 @@ class MMOScene extends Phaser.Scene {
           this.worldGraphics.fillStyle(waterColor, 1);
         } else {
           let variation = 0.85 + Math.random() * 0.3;
-          if (zone === "hard") variation *= 0.85;
-          else if (zone === "medium") variation *= 0.92;
+          const zm = ZONE_MULT[zone];
+          if (zm >= 3.5) variation *= 0.85;       // volcanic / endgame — darker
+          else if (zm >= 1.8) variation *= 0.92;  // medium zones — slightly darker
           
           const r = ((colors.ground >> 16) & 0xff) * variation;
           const g = ((colors.ground >> 8) & 0xff) * variation;
@@ -396,7 +405,38 @@ class MMOScene extends Phaser.Scene {
     this.worldGraphics.lineStyle(8, 0x2a1a0a, 1);
     this.worldGraphics.strokeRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
-    this.createTown(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 + 200, "Central Haven", "plains");
+    // ── Zone grid border lines ──────────────────────────────────────
+    const ZW = WORLD_WIDTH  / 3;
+    const ZH = WORLD_HEIGHT / 3;
+    this.worldGraphics.lineStyle(4, 0x000000, 0.6);
+    this.worldGraphics.moveTo(ZW,     0);          this.worldGraphics.lineTo(ZW,     WORLD_HEIGHT);
+    this.worldGraphics.moveTo(ZW * 2, 0);          this.worldGraphics.lineTo(ZW * 2, WORLD_HEIGHT);
+    this.worldGraphics.moveTo(0,      ZH);         this.worldGraphics.lineTo(WORLD_WIDTH, ZH);
+    this.worldGraphics.moveTo(0,      ZH * 2);     this.worldGraphics.lineTo(WORLD_WIDTH, ZH * 2);
+    this.worldGraphics.strokePath();
+
+    // ── One town per zone ──────────────────────────────────────────
+    const cx = (col: number) => ZW * col + ZW / 2;
+    const cy = (row: number) => ZH * row + ZH / 2;
+    this.createTown(cx(1), cy(0), "Crusade Coast",  "plains");
+    this.createTown(cx(0), cy(1), "Fabled Shore",   "forest");
+    this.createTown(cx(1), cy(1), "Travelers Town", "plains");
+    this.createTown(cx(2), cy(1), "Sloarscorth",    "snow");
+    this.createTown(cx(1), cy(2), "Pirate Bay",     "swamp");
+    // Wild zones — smaller markers
+    const wildLabel = (x: number, y: number, name: string) => {
+      const g = this.add.graphics();
+      g.setDepth(2);
+      g.fillStyle(0x1a1a2a, 0.7);
+      g.fillRoundedRect(x - 55, y - 18, 110, 36, 4);
+      const t = this.add.text(x, y, name, { fontSize: "11px", color: "#cc8844", fontStyle: "bold", stroke: "#000", strokeThickness: 2 });
+      t.setOrigin(0.5);
+      t.setDepth(100);
+    };
+    wildLabel(cx(0), cy(0), "NW Wilds");
+    wildLabel(cx(2), cy(0), "NE Wilds");
+    wildLabel(cx(0), cy(2), "SW Wilds");
+    wildLabel(cx(2), cy(2), "SE Wilds");
   }
 
   createStartBuilding() {
@@ -489,7 +529,7 @@ class MMOScene extends Phaser.Scene {
     this.inStartBuilding = false;
     this.player.setPosition(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 + 200);
     this.cameras.main.flash(300, 255, 255, 255);
-    this.onGameStateChange?.(false, "safe");
+    this.onGameStateChange?.(false, "travelers_town");
   }
 
   createTown(x: number, y: number, name: string, biome: Biome) {
@@ -764,10 +804,10 @@ class MMOScene extends Phaser.Scene {
   spawnEnemy() {
     if (this.enemies.countActive(true) >= 60) return;
 
-    let x, y;
+    let x = 0, y = 0;
     let zone: DifficultyZone;
     let attempts = 0;
-    
+
     do {
       x = 300 + Math.random() * (WORLD_WIDTH - 600);
       y = 300 + Math.random() * (WORLD_HEIGHT - 600);
@@ -775,12 +815,12 @@ class MMOScene extends Phaser.Scene {
       attempts++;
     } while (
       attempts < 30 && (
-        zone === "safe" ||
+        ZONE_MULT[zone] === 0 ||
         Phaser.Math.Distance.Between(x, y, this.player?.x || WORLD_WIDTH / 2, this.player?.y || WORLD_HEIGHT / 2) < 250
       )
     );
 
-    if (zone === "safe") return;
+    if (ZONE_MULT[zone] === 0) return;
 
     const biome = this.getBiomeAt(x, y);
     let enemyType: string;
@@ -790,9 +830,10 @@ class MMOScene extends Phaser.Scene {
     let isRanged = false;
     let hasAoE = false;
 
-    const zoneMultiplier = zone === "easy" ? 1 : zone === "medium" ? 1.8 : 3;
+    const zoneMultiplier = ZONE_MULT[zone];
+    const bossChance = ZONE_BOSS_CHANCE[zone];
 
-    if (zone === "hard" && Math.random() > 0.85) {
+    if (Math.random() < bossChance) {
       enemyType = "boss";
       baseHealth = 200;
       baseAttack = 20;
@@ -981,17 +1022,25 @@ class MMOScene extends Phaser.Scene {
     const playerMapY = mapY + (this.player.y * scaleY);
     this.minimapGraphics.fillCircle(playerMapX, playerMapY, 4);
     
+    // Zone grid on minimap
+    const mmW = mapSize;
+    const mmH = mapSize * (WORLD_HEIGHT / WORLD_WIDTH);
+    this.minimapGraphics.lineStyle(1, 0x444444, 0.8);
+    this.minimapGraphics.moveTo(mapX + mmW / 3,     mapY);           this.minimapGraphics.lineTo(mapX + mmW / 3,     mapY + mmH);
+    this.minimapGraphics.moveTo(mapX + mmW * 2 / 3, mapY);           this.minimapGraphics.lineTo(mapX + mmW * 2 / 3, mapY + mmH);
+    this.minimapGraphics.moveTo(mapX,               mapY + mmH / 3); this.minimapGraphics.lineTo(mapX + mmW,         mapY + mmH / 3);
+    this.minimapGraphics.moveTo(mapX,               mapY + mmH * 2 / 3); this.minimapGraphics.lineTo(mapX + mmW, mapY + mmH * 2 / 3);
+    this.minimapGraphics.strokePath();
+
     this.enemies.getChildren().forEach((enemy) => {
       const e = enemy as Phaser.Physics.Arcade.Sprite;
       const zone = e.getData("zone") as DifficultyZone;
-      const color = zone === "easy" ? 0x88cc88 : zone === "medium" ? 0xccaa44 : 0xcc4444;
+      const color = this.getZoneColor(zone);
       this.minimapGraphics.fillStyle(color, 0.9);
       const ex = mapX + (e.x * scaleX);
       const ey = mapY + (e.y * scaleY);
       this.minimapGraphics.fillCircle(ex, ey, 2);
     });
-
-    const zoneLabelY = mapY + mapSize * (WORLD_HEIGHT / WORLD_WIDTH) + 12;
   }
 
   handleEnemyProjectileHit(projectile: Phaser.Physics.Arcade.Sprite) {
@@ -1505,7 +1554,7 @@ class MMOScene extends Phaser.Scene {
     
     this.inStartBuilding = true;
     this.player.setPosition(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
-    this.onGameStateChange?.(true, "safe");
+    this.onGameStateChange?.(true, "travelers_town");
     
     this.cameras.main.fade(400, 0, 0, 0, false, (_camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
       if (progress === 1) {
@@ -1609,7 +1658,7 @@ export default function MMOWorld() {
 
   const [spellCooldowns, setSpellCooldowns] = useState<SpellCooldown>({});
   const [inBuilding, setInBuilding] = useState(true);
-  const [currentZone, setCurrentZone] = useState<DifficultyZone>("safe");
+  const [currentZone, setCurrentZone] = useState<DifficultyZone>("travelers_town");
   const [spritesLoading, setSpritesLoading] = useState(true);
   const [spriteError, setSpriteError] = useState<string | null>(null);
 
@@ -1696,13 +1745,18 @@ export default function MMOWorld() {
   };
 
   const getZoneDisplay = () => {
-    switch (currentZone) {
-      case "safe": return { text: "Safe Zone", color: "text-green-400", bg: "bg-green-900/30" };
-      case "easy": return { text: "Easy Zone", color: "text-green-300", bg: "bg-green-800/30" };
-      case "medium": return { text: "Medium Zone", color: "text-yellow-400", bg: "bg-yellow-900/30" };
-      case "hard": return { text: "Hard Zone", color: "text-red-400", bg: "bg-red-900/30" };
-      default: return { text: "Unknown", color: "text-gray-400", bg: "bg-gray-900/30" };
-    }
+    const MAP: Record<DifficultyZone, { text: string; color: string; bg: string }> = {
+      travelers_town: { text: "Travelers Town ✦ Safe",    color: "text-green-400",    bg: "bg-green-900/30" },
+      crusade_coast:  { text: "Zone 1 — Crusade Coast",   color: "text-yellow-400",   bg: "bg-yellow-900/30" },
+      fabled_shore:   { text: "Zone 2 — Fabled Shore",    color: "text-emerald-400",  bg: "bg-emerald-900/30" },
+      sloarscorth:    { text: "Zone 3 — Sloarscorth",     color: "text-blue-300",     bg: "bg-blue-900/30" },
+      pirate_bay:     { text: "Zone 4 — Pirate Bay ⚔ PvP",color: "text-blue-400",    bg: "bg-blue-950/30" },
+      nw_wilds:       { text: "Zone 5 — NW Wilds ⚔ PvP",  color: "text-lime-400",    bg: "bg-lime-900/30" },
+      ne_wilds:       { text: "Zone 6 — NE Wilds ⚔ PvP",  color: "text-slate-300",   bg: "bg-slate-900/30" },
+      sw_wilds:       { text: "Zone 7 — SW Wilds ⚔ PvP",  color: "text-orange-400",  bg: "bg-orange-950/30" },
+      se_wilds:       { text: "Zone 8 — SE Wilds ⚔ Boss", color: "text-red-500",     bg: "bg-red-950/30" },
+    };
+    return MAP[currentZone] ?? { text: "Unknown", color: "text-gray-400", bg: "bg-gray-900/30" };
   };
 
   const zoneInfo = getZoneDisplay();
@@ -1935,24 +1989,24 @@ export default function MMOWorld() {
               </div>
 
               <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3">Difficulty Zones</h3>
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-400" />
-                    <span>Safe - No enemies spawn</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-300" />
-                    <span>Easy - Basic enemies</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                    <span>Medium - Ranged + melee</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <span>Hard - Bosses + AoE attacks</span>
-                  </div>
+                <h3 className="font-semibold mb-2">9 World Zones</h3>
+                <div className="space-y-1 text-xs">
+                  {([
+                    { color: "bg-green-400",   label: "0 · Travelers Town — Safe hub" },
+                    { color: "bg-yellow-500",  label: "1 · Crusade Coast — Easy" },
+                    { color: "bg-emerald-400", label: "2 · Fabled Shore — Easy+" },
+                    { color: "bg-blue-300",    label: "3 · Sloarscorth — Medium" },
+                    { color: "bg-blue-500",    label: "4 · Pirate Bay — Hard PvP" },
+                    { color: "bg-lime-600",    label: "5 · NW Wilds — Medium PvP" },
+                    { color: "bg-slate-400",   label: "6 · NE Wilds — Hard PvP" },
+                    { color: "bg-orange-500",  label: "7 · SW Wilds — Volcanic PvP" },
+                    { color: "bg-red-700",     label: "8 · SE Wilds — Endgame Boss" },
+                  ] as const).map(({ color, label }) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${color}`} />
+                      <span>{label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardContent>

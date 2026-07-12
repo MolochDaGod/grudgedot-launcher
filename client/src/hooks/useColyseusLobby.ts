@@ -102,8 +102,8 @@ export function useColyseusLobby(): UseColyseusLobbyReturn {
     // Poll available rooms
     const pollRooms = async () => {
       try {
-        const available = await client.getAvailableRooms("lobby");
-        const mapped: GameRoom[] = available.map((r: any) => ({
+        const available = await (client as any).getAvailableRooms("lobby");
+        const mapped: GameRoom[] = (available as any[]).map((r: any) => ({
           id: r.roomId,
           name: r.metadata?.roomName || "Unknown",
           gameType: r.metadata?.gameType || "custom",
@@ -148,7 +148,7 @@ export function useColyseusLobby(): UseColyseusLobbyReturn {
     });
 
     const gr: GameRoom = {
-      id: room.id,
+      id: (room as any).id || (room as any).roomId || "",
       name: state.roomName || "Game Room",
       gameType: state.gameType || "custom",
       hostId: players.find((p) => p.isHost)?.sessionId || "",
@@ -275,8 +275,8 @@ export function useColyseusLobby(): UseColyseusLobbyReturn {
   const refreshRooms = useCallback(async () => {
     if (!clientRef.current) return;
     try {
-      const available = await clientRef.current.getAvailableRooms("lobby");
-      const mapped: GameRoom[] = available.map((r: any) => ({
+      const available = await (clientRef.current as any).getAvailableRooms("lobby");
+      const mapped: GameRoom[] = (available as any[]).map((r: any) => ({
         id: r.roomId,
         name: r.metadata?.roomName || "Unknown",
         gameType: r.metadata?.gameType || "custom",

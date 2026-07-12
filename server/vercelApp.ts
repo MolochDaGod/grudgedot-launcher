@@ -22,21 +22,14 @@ import { setupGrudgeProxy } from "./routes/grudgeProxy";
 import { registerGrudaLegionRoutes } from "./services/grudaLegion";
 import { registerGrudaWarsRoutes } from "./routes/grudaWars";
 import { registerUserRoutes } from "./routes/user";
-import { registerAccountRoutes } from "./routes/accountRoutes";
 import { registerOpenRTSRoutes } from "./routes/openrts";
 import { registerCoolifyRoutes } from "./routes/coolifyProxy";
 import { registerEconomyRoutes } from "./routes/economyRoutes";
-import { registerNftRoutes } from "./routes/nftRoutes";
+import { registerLeaderboardRoutes } from "./routes/leaderboard";
 import { overdriveEngine } from "./services/overdriveEngine";
 import OpenAI from "openai";
 
 const BACKEND = process.env.GRUDGE_BACKEND_URL || "https://api.grudge-studio.com";
-
-// Upstream path prefix on the shared Grudge VPS. Legacy installs still expose
-// `/api/gdevelop/*`; flip `GRUDGEDOT_BACKEND_PREFIX` once the VPS has been
-// renamed to `/api/grudgedot`.
-const BACKEND_API_PREFIX = process.env.GRUDGEDOT_BACKEND_PREFIX || "/api/gdevelop";
-const be = (subPath: string) => `${BACKEND_API_PREFIX}${subPath}`;
 
 /** Check if the Grudge backend URL is configured */
 function isBackendConfigured(): boolean {
@@ -101,7 +94,7 @@ const xai = process.env.XAI_API_KEY
   ? new OpenAI({ baseURL: "https://api.x.ai/v1", apiKey: process.env.XAI_API_KEY })
   : null;
 
-const GRUDGEDOT_SYSTEM_PROMPT = `You are the grudgeDot assistant, powered by xAI's Grok. You help Grudge Studio creators with game design, mechanics, event systems, asset recommendations, and integration with tools like Three.js, Babylon.js, and LUME. Be practical, actionable, and encouraging.`;
+const GDEVELOP_SYSTEM_PROMPT = `You are an expert GDevelop game development assistant powered by xAI's Grok. You help with game design, mechanics, GDevelop event systems, asset recommendations, and integration with tools like Three.js, Babylon.js, and LUME. Be practical, actionable, and encouraging.`;
 
 // ════════════════════════════════════════════
 // Auth routes (proxy to Grudge backend)
@@ -129,7 +122,7 @@ app.get("/api/health", async (_req: Request, res: Response) => {
 
   res.json({
     status: "healthy",
-    service: "grudgeDot",
+    service: "GDevelop Assistant",
     timestamp: new Date().toISOString(),
     runtime: process.version,
     env: {
@@ -150,36 +143,35 @@ app.get("/api/health", async (_req: Request, res: Response) => {
 // ════════════════════════════════════════════
 registerGrudaLegionRoutes(app);
 registerGrudaWarsRoutes(app);
-registerAccountRoutes(app);
 registerOpenRTSRoutes(app);
 registerCoolifyRoutes(app);
 registerEconomyRoutes(app);
-registerNftRoutes(app);
+registerLeaderboardRoutes(app);
 
 // ════════════════════════════════════════════
 // DB-backed routes → proxy to Grudge backend
 // ════════════════════════════════════════════
 
 // ── Projects ──
-app.get("/api/projects", (req, res) => proxyGet(be("/projects"), req, res));
-app.get("/api/projects/:id", (req, res) => proxyGet(be(`/projects/${req.params.id}`), req, res));
-app.post("/api/projects", (req, res) => proxyMutate("POST", be("/projects"), req, res));
-app.patch("/api/projects/:id", (req, res) => proxyMutate("PATCH", be(`/projects/${req.params.id}`), req, res));
-app.delete("/api/projects/:id", (req, res) => proxyMutate("DELETE", be(`/projects/${req.params.id}`), req, res));
+app.get("/api/projects", (req, res) => proxyGet("/projects", req, res));
+app.get("/api/projects/:id", (req, res) => proxyGet(`/projects/${req.params.id}`, req, res));
+app.post("/api/projects", (req, res) => proxyMutate("POST", "/projects", req, res));
+app.patch("/api/projects/:id", (req, res) => proxyMutate("PATCH", `/projects/${req.params.id}`, req, res));
+app.delete("/api/projects/:id", (req, res) => proxyMutate("DELETE", `/projects/${req.params.id}`, req, res));
 
 // ── Conversations ──
-app.get("/api/conversations", (req, res) => proxyGet(be("/conversations"), req, res));
-app.get("/api/conversations/:id", (req, res) => proxyGet(be(`/conversations/${req.params.id}`), req, res));
-app.post("/api/conversations", (req, res) => proxyMutate("POST", be("/conversations"), req, res));
-app.delete("/api/conversations/:id", (req, res) => proxyMutate("DELETE", be(`/conversations/${req.params.id}`), req, res));
+app.get("/api/conversations", (req, res) => proxyGet("/conversations", req, res));
+app.get("/api/conversations/:id", (req, res) => proxyGet(`/conversations/${req.params.id}`, req, res));
+app.post("/api/conversations", (req, res) => proxyMutate("POST", "/conversations", req, res));
+app.delete("/api/conversations/:id", (req, res) => proxyMutate("DELETE", `/conversations/${req.params.id}`, req, res));
 
 // ── Messages + AI Chat ──
-app.get("/api/conversations/:id/messages", (req, res) => proxyGet(be(`/conversations/${req.params.id}/messages`), req, res));
+app.get("/api/conversations/:id/messages", (req, res) => proxyGet(`/conversations/${req.params.id}/messages`, req, res));
 
 app.post("/api/messages", async (req: Request, res: Response) => {
   try {
     // Save user message via backend
-    const msgRes = await fetch(`${BACKEND}${be("/messages")}`, {
+    const msgRes = await fetch(`${BACKEND}/messages`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
     });
@@ -190,13 +182,13 @@ app.post("/api/messages", async (req: Request, res: Response) => {
       if (!xai) throw new Error("XAI_API_KEY not configured");
 
       // Fetch conversation history from backend
-      const histRes = await fetch(`${BACKEND}${be(`/conversations/${req.body.conversationId}/messages`)}`);
+      const histRes = await fetch(`${BACKEND}/conversations/${req.body.conversationId}/messages`);
       const history = await histRes.json();
 
       const response = await xai.chat.completions.create({
         model: "grok-2-1212",
         messages: [
-          { role: "system", content: GRUDGEDOT_SYSTEM_PROMPT },
+          { role: "system", content: GDEVELOP_SYSTEM_PROMPT },
           ...history.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
         ],
         max_tokens: 4096,
@@ -206,7 +198,7 @@ app.post("/api/messages", async (req: Request, res: Response) => {
       const aiContent = response.choices[0]?.message?.content
         || "I couldn't generate a response. Please try again.";
 
-      const aiRes = await fetch(`${BACKEND}${be("/messages")}`, {
+      const aiRes = await fetch(`${BACKEND}/messages`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId: req.body.conversationId, role: "assistant", content: aiContent }),
       });
@@ -214,7 +206,7 @@ app.post("/api/messages", async (req: Request, res: Response) => {
       res.status(201).json({ userMessage, aiMessage });
     } catch (aiErr: any) {
       console.error("AI Error:", aiErr.message);
-      const fbRes = await fetch(`${BACKEND}${be("/messages")}`, {
+      const fbRes = await fetch(`${BACKEND}/messages`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId: req.body.conversationId, role: "assistant",
@@ -235,25 +227,27 @@ app.post("/api/messages", async (req: Request, res: Response) => {
 // ── Assets ──
 app.get("/api/assets", (req, res) => {
   const qs = new URLSearchParams(req.query as Record<string, string>).toString();
-  proxyGet(be(`/assets${qs ? "?" + qs : ""}`), req, res);
+  proxyGet(`/assets${qs ? "?" + qs : ""}`, req, res);
 });
-app.post("/api/assets", (req, res) => proxyMutate("POST", be("/assets"), req, res));
+app.post("/api/assets", (req, res) => proxyMutate("POST", "/assets", req, res));
 
-// ── Simple proxy routes ──
-app.get("/api/characters", (req, res) => proxyGet(be("/characters"), req, res));
-app.get("/api/currencies", (req, res) => proxyGet(be("/currencies"), req, res));
-app.get("/api/achievements", (req, res) => proxyGet(be("/achievements"), req, res));
-app.get("/api/store", (req, res) => proxyGet(be("/store"), req, res));
-app.get("/api/lobbies", (req, res) => proxyGet(be("/lobbies"), req, res));
-app.get("/api/ai-behaviors", (req, res) => proxyGet(be("/ai-behaviors"), req, res));
-app.get("/api/levels", (req, res) => proxyGet(be("/levels"), req, res));
-app.get("/api/settings", (req, res) => proxyGet(be("/settings"), req, res));
-app.get("/api/skill-trees", (req, res) => proxyGet(be("/skill-trees"), req, res));
-app.post("/api/skill-trees", (req, res) => proxyMutate("POST", be("/skill-trees"), req, res));
-app.get("/api/rts/projects", (req, res) => proxyGet(be("/rts/projects"), req, res));
+// ── Simple proxy routes (backend serves at root, not /api/gdevelop/) ──
+app.get("/api/characters", (req, res) => proxyGet("/characters", req, res));
+app.get("/api/currencies", (req, res) => proxyGet("/currencies", req, res));
+app.get("/api/achievements", (req, res) => proxyGet("/achievements", req, res));
+app.get("/api/store", (req, res) => proxyGet("/store", req, res));
+app.get("/api/lobbies", (req, res) => proxyGet("/lobbies", req, res));
+app.get("/api/ai-behaviors", (req, res) => proxyGet("/ai-behaviors", req, res));
+app.get("/api/levels", (req, res) => proxyGet("/levels", req, res));
+app.get("/api/settings", (req, res) => proxyGet("/settings", req, res));
+app.get("/api/skill-trees", (req, res) => proxyGet("/skill-trees", req, res));
+app.post("/api/skill-trees", (req, res) => proxyMutate("POST", "/skill-trees", req, res));
+app.get("/api/professions", (req, res) => proxyGet("/professions", req, res));
+app.get("/api/inventory", (req, res) => proxyGet("/inventory", req, res));
+app.get("/api/rts/projects", (req, res) => proxyGet("/rts/projects", req, res));
 app.get("/api/rts/assets", (req, res) => {
   const qs = new URLSearchParams(req.query as Record<string, string>).toString();
-  proxyGet(be(`/rts/assets${qs ? "?" + qs : ""}`), req, res);
+  proxyGet(`/rts/assets${qs ? "?" + qs : ""}`, req, res);
 });
 
 // ── Meshy 3D API (texture generation) ──

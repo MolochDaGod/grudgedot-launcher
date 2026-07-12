@@ -8,11 +8,17 @@
  * If the backend is unreachable, methods return null / empty arrays gracefully.
  */
 
-// ── Base URL — proxy routes defined in server/routes/grudgeProxy.ts ──
-const GAME    = '/api/grudge/game';    // → api.grudgestudio.com
-const ACCOUNT = '/api/grudge/account'; // → account.grudgestudio.com
-const ID      = '/api/grudge/id';      // → id.grudgestudio.com
-const LAUNCHER = '/api/grudge/launcher'; // → launcher.grudgestudio.com
+// ── Base URLs ──
+// Nginx at api.grudge-studio.com forwards ALL paths directly to game-api:3003.
+// game-api registers routes at root level: app.use('/characters', ...) — NO /api prefix.
+// NEVER add /api here — requests would 404.
+const UNIFIED = 'https://api.grudge-studio.com'; // root-level routing, no /api prefix
+
+// Other routes proxy through local Express server to avoid CORS
+const GAME    = '/api/grudge/game';    // → api.grudge-studio.com via Express proxy
+const ACCOUNT = '/api/grudge/account'; // → account.grudge-studio.com
+const ID      = '/api/grudge/id';      // → id.grudge-studio.com
+const LAUNCHER = '/api/grudge/launcher'; // → launcher.grudge-studio.com
 
 // ── Auth helper ──
 export function getToken(): string | null {
@@ -266,163 +272,48 @@ export interface AIGeneratedMission {
 }
 
 // ════════════════════════════════════════════════════════════════
-// ECONOMY TYPES
-// ════════════════════════════════════════════════════════════════
-
-export interface GbuxPriceData {
-  priceUsd: number;
-  priceNative: number;
-  priceChange24h: number;
-  volume24h: number;
-  marketCap: number;
-  liquidity: number;
-  fdv: number;
-  source: string;
-  lastUpdated: string;
-  dexId?: string;
-  pairAddress?: string;
-  baseToken?: any;
-  quoteToken?: any;
-  url?: string;
-}
-
-export interface EconomyOverview {
-  gbux: GbuxPriceData & { mint: string };
-  supply: { onChainTotal: number; decimals: number; fetchedAt: string };
-  agentWallet: { address: string; solBalance: number; gbuxBalance: number; fetchedAt: string };
-  links: { raydiumSwap: string; dexscreener: string; solscan: string };
-}
-
-export interface AccountWalletData {
-  wallet: {
-    walletAddress: string | null;
-    walletType: string | null;
-    crossmintWalletId: string | null;
-  };
-  balances: {
-    gold: number;
-    gbux: number;
-  };
-}
-
-export interface SwapQuote {
-  direction: 'buy' | 'sell';
-  inputAmount: number;
-  inputCurrency: string;
-  gbuxPriceUsd: number;
-  gbuxPriceSol: number;
-  gbuxAmount?: number;
-  solAmount?: number;
-  usdValue?: number;
-  solValue?: number;
-  raydiumSwapUrl: string;
-  note: string;
-}
-
-export interface PriceHistoryEntry {
-  priceUsd: number;
-  priceNative: number;
-  timestamp: string;
-}
-
-export interface EconomyTransaction {
-  id: number;
-  type: string;
-  amount: number;
-  currency: string;
-  description?: string;
-  created_at: string;
-}
-
-// ════════════════════════════════════════════════════════════════
-// ECONOMY API CLIENT — local /api/economy/* routes
-// ════════════════════════════════════════════════════════════════
-
-const ECONOMY = '/api/economy';
-const ACCOUNT_LOCAL = '/api/account';
-
-export const grudgeEconomyApi = {
-  /** Full economy snapshot: GBUX price, supply, agent wallet, links */
-  async getOverview(): Promise<EconomyOverview | null> {
-    return apiFetch(`${ECONOMY}/overview`);
-  },
-
-  /** Current GBUX price data */
-  async getGbuxPrice(): Promise<GbuxPriceData | null> {
-    return apiFetch(`${ECONOMY}/gbux/price`);
-  },
-
-  /** GBUX price history (up to 24h, 1-min intervals) */
-  async getPriceHistory(): Promise<{ count: number; history: PriceHistoryEntry[] } | null> {
-    return apiFetch(`${ECONOMY}/gbux/price-history`);
-  },
-
-  /** On-chain GBUX total supply */
-  async getSupply(): Promise<any> {
-    return apiFetch(`${ECONOMY}/gbux/supply`);
-  },
-
-  /** Raydium pool stats */
-  async getPoolInfo(): Promise<any> {
-    return apiFetch(`${ECONOMY}/raydium/pool`);
-  },
-
-  /** Get a swap quote for buying/selling GBUX */
-  async getSwapQuote(direction: 'buy' | 'sell', amount: number, currency: 'usd' | 'sol' | 'gbux' = 'usd'): Promise<SwapQuote | null> {
-    return apiFetch(`${ECONOMY}/swap/quote`, {
-      method: 'POST',
-      body: JSON.stringify({ direction, amount, currency }),
-    });
-  },
-
-  /** On-chain balance for any wallet address */
-  async getWalletBalance(address: string): Promise<any> {
-    return apiFetch(`${ECONOMY}/wallet/${address}`);
-  },
-
-  /** AI agent wallet balances */
-  async getAgentWallet(): Promise<any> {
-    return apiFetch(`${ECONOMY}/agent-wallet`);
-  },
-
-  /** All server-side wallet accounts */
-  async getAllWallets(): Promise<any> {
-    return apiFetch(`${ECONOMY}/wallets`);
-  },
-
-  /** Recent transactions */
-  async getTransactions(limit = 50): Promise<{ transactions: EconomyTransaction[] } | null> {
-    return apiFetch(`${ECONOMY}/transactions?limit=${limit}`);
-  },
-
-  /** Current user's account wallet (gold + GBUX + wallet address) */
-  async getMyWallet(): Promise<AccountWalletData | null> {
-    return apiFetch(`${ACCOUNT_LOCAL}/wallet`);
-  },
-
-  /** Ensure user has a Crossmint custodial wallet */
-  async ensureWallet(): Promise<any> {
-    return apiFetch(`${ACCOUNT_LOCAL}/wallet/ensure`, { method: 'POST' });
-  },
-};
-
-// ════════════════════════════════════════════════════════════════
-// GAME API CLIENT — api.grudgestudio.com
+// GAME API CLIENT — api.grudge-studio.com
 // ════════════════════════════════════════════════════════════════
 
 export const grudgeGameApi = {
-  // ── Characters ──
+  // ── Characters (routed to canonical unified backend) ──
   async listCharacters(): Promise<GrudgeCharacter[]> {
-    return apiFetchList(`${GAME}/characters`);
+    const data = await apiFetch<any>(`${UNIFIED}/characters`);
+    const list = data?.characters || data;
+    return Array.isArray(list) ? list : [];
   },
-  async getCharacter(id: number): Promise<GrudgeCharacter | null> {
-    return apiFetch(`${GAME}/characters/${id}`);
+  async getCharacter(id: number | string): Promise<GrudgeCharacter | null> {
+    const data = await apiFetch<any>(`${UNIFIED}/characters/${id}`);
+    return data?.character || data;
   },
-  async createCharacter(data: { name: string; race: string; class: string }): Promise<GrudgeCharacter | null> {
-    return apiFetch(`${GAME}/characters`, { method: 'POST', body: JSON.stringify(data) });
+  /**
+   * Create character via unified backend.
+   * Backend validates race/class, computes attributes, generates avatar, mints cNFT.
+   */
+  async createCharacter(data: {
+    name: string;
+    raceId: string;
+    classId: string;
+    manualAttributes?: Record<string, number>;
+    gameOrigin?: string;
+  }): Promise<GrudgeCharacter | null> {
+    // Backend expects: name, race (lowercase), class (lowercase)
+    // NOT raceId/classId — map here to keep callers clean
+    return apiFetch(`${UNIFIED}/characters`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: data.name,
+        race: data.raceId.toLowerCase(),
+        class: data.classId.toLowerCase(),
+        gameOrigin: data.gameOrigin || 'gdevelop-assistant',
+      }),
+    });
   },
-  async deleteCharacter(id: number): Promise<boolean> {
-    return (await apiFetch(`${GAME}/characters/${id}`, { method: 'DELETE' })) !== null;
+  async mintCharacter(id: number | string): Promise<any> {
+    return apiFetch(`${UNIFIED}/characters/${id}/mint`, { method: 'POST' });
+  },
+  async deleteCharacter(id: number | string): Promise<boolean> {
+    return (await apiFetch(`${UNIFIED}/characters/${id}`, { method: 'DELETE' })) !== null;
   },
 
   // ── Factions ──
@@ -597,7 +488,7 @@ export const grudgeGameApi = {
 };
 
 // ════════════════════════════════════════════════════════════════
-// ACCOUNT API CLIENT — account.grudgestudio.com
+// ACCOUNT API CLIENT — account.grudge-studio.com
 // ════════════════════════════════════════════════════════════════
 
 export const grudgeAccountApi = {
@@ -664,7 +555,7 @@ export const grudgeAccountApi = {
 };
 
 // ════════════════════════════════════════════════════════════════
-// IDENTITY API CLIENT — id.grudgestudio.com
+// IDENTITY API CLIENT — id.grudge-studio.com
 // ════════════════════════════════════════════════════════════════
 
 export const grudgeIdApi = {
@@ -677,7 +568,7 @@ export const grudgeIdApi = {
 };
 
 // ════════════════════════════════════════════════════════════════
-// LAUNCHER API CLIENT — launcher.grudgestudio.com
+// LAUNCHER API CLIENT — launcher.grudge-studio.com
 // ════════════════════════════════════════════════════════════════
 
 export const grudgeLauncherApi = {
@@ -693,15 +584,175 @@ export const grudgeLauncherApi = {
 };
 
 // ════════════════════════════════════════════════════════════════
+// GAME DATA API — canonical race/class/attribute definitions
+// ════════════════════════════════════════════════════════════════
+
+// game-data/* is served from ObjectStore (GitHub Pages CDN), not the VPS backend
+// The VPS game-api has no /game-data route — use the canonical ObjectStore API instead
+export const grudgeGameDataApi = {
+  async all(): Promise<any> {
+    return apiFetch('https://molochdagod.github.io/ObjectStore/api/v1/equipment.json');
+  },
+  async races(): Promise<any> {
+    return apiFetch('https://molochdagod.github.io/ObjectStore/api/v1/attributes.json');
+  },
+  async classes(): Promise<any> {
+    return apiFetch('https://molochdagod.github.io/ObjectStore/api/v1/professions.json');
+  },
+};
+
+// ════════════════════════════════════════════════════════════════
 // COMBINED EXPORT
 // ════════════════════════════════════════════════════════════════
 
 const grudgeApi = {
   game: grudgeGameApi,
+  gameData: grudgeGameDataApi,
   account: grudgeAccountApi,
   id: grudgeIdApi,
   launcher: grudgeLauncherApi,
-  economy: grudgeEconomyApi,
 };
+
+const ACCOUNT_LOCAL = '/api/account';
+// ECONOMY TYPES
+// ════════════════════════════════════════════════════════════════
+
+export interface GbuxPriceData {
+  priceUsd: number;
+  priceNative: number;
+  priceChange24h: number;
+  volume24h: number;
+  marketCap: number;
+  liquidity: number;
+  fdv: number;
+  source: string;
+  lastUpdated: string;
+  dexId?: string;
+  pairAddress?: string;
+  baseToken?: any;
+  quoteToken?: any;
+  url?: string;
+}
+
+export interface EconomyOverview {
+  gbux: GbuxPriceData & { mint: string };
+  supply: { onChainTotal: number; decimals: number; fetchedAt: string };
+  agentWallet: { address: string; solBalance: number; gbuxBalance: number; fetchedAt: string };
+  links: { raydiumSwap: string; dexscreener: string; solscan: string };
+}
+
+export interface AccountWalletData {
+  wallet: {
+    walletAddress: string | null;
+    walletType: string | null;
+    crossmintWalletId: string | null;
+  };
+  balances: {
+    gold: number;
+    gbux: number;
+  };
+}
+
+export interface SwapQuote {
+  direction: 'buy' | 'sell';
+  inputAmount: number;
+  inputCurrency: string;
+  gbuxPriceUsd: number;
+  gbuxPriceSol: number;
+  gbuxAmount?: number;
+  solAmount?: number;
+  usdValue?: number;
+  solValue?: number;
+  raydiumSwapUrl: string;
+  note: string;
+}
+
+export interface PriceHistoryEntry {
+  priceUsd: number;
+  priceNative: number;
+  timestamp: string;
+}
+
+export interface EconomyTransaction {
+  id: number;
+  type: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  created_at: string;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ECONOMY API CLIENT — local /api/economy/* routes
+// ════════════════════════════════════════════════════════════════
+
+const ECONOMY = '/api/economy';
+
+export const grudgeEconomyApi = {
+  /** Full economy snapshot: GBUX price, supply, agent wallet, links */
+  async getOverview(): Promise<EconomyOverview | null> {
+    return apiFetch(`${ECONOMY}/overview`);
+  },
+
+  /** Current GBUX price data */
+  async getGbuxPrice(): Promise<GbuxPriceData | null> {
+    return apiFetch(`${ECONOMY}/gbux/price`);
+  },
+
+  /** GBUX price history (up to 24h, 1-min intervals) */
+  async getPriceHistory(): Promise<{ count: number; history: PriceHistoryEntry[] } | null> {
+    return apiFetch(`${ECONOMY}/gbux/price-history`);
+  },
+
+  /** On-chain GBUX total supply */
+  async getSupply(): Promise<any> {
+    return apiFetch(`${ECONOMY}/gbux/supply`);
+  },
+
+  /** Raydium pool stats */
+  async getPoolInfo(): Promise<any> {
+    return apiFetch(`${ECONOMY}/raydium/pool`);
+  },
+
+  /** Get a swap quote for buying/selling GBUX */
+  async getSwapQuote(direction: 'buy' | 'sell', amount: number, currency: 'usd' | 'sol' | 'gbux' = 'usd'): Promise<SwapQuote | null> {
+    return apiFetch(`${ECONOMY}/swap/quote`, {
+      method: 'POST',
+      body: JSON.stringify({ direction, amount, currency }),
+    });
+  },
+
+  /** On-chain balance for any wallet address */
+  async getWalletBalance(address: string): Promise<any> {
+    return apiFetch(`${ECONOMY}/wallet/${address}`);
+  },
+
+  /** AI agent wallet balances */
+  async getAgentWallet(): Promise<any> {
+    return apiFetch(`${ECONOMY}/agent-wallet`);
+  },
+
+  /** All server-side wallet accounts */
+  async getAllWallets(): Promise<any> {
+    return apiFetch(`${ECONOMY}/wallets`);
+  },
+
+  /** Recent transactions */
+  async getTransactions(limit = 50): Promise<{ transactions: EconomyTransaction[] } | null> {
+    return apiFetch(`${ECONOMY}/transactions?limit=${limit}`);
+  },
+
+  /** Current user's account wallet (gold + GBUX + wallet address) */
+  async getMyWallet(): Promise<AccountWalletData | null> {
+    return apiFetch(`${ACCOUNT_LOCAL}/wallet`);
+  },
+
+  /** Ensure user has a Crossmint custodial wallet */
+  async ensureWallet(): Promise<any> {
+    return apiFetch(`${ACCOUNT_LOCAL}/wallet/ensure`, { method: 'POST' });
+  },
+};
+
+// ════════════════════════════════════════════════════════════════
 
 export default grudgeApi;

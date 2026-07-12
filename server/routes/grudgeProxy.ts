@@ -5,10 +5,10 @@
  * Grudge backend service so the React client avoids CORS issues.
  *
  * Service map:
- *   /api/grudge/game/*      → GRUDGE_GAME_API      (api.grudgestudio.com)
- *   /api/grudge/account/*   → GRUDGE_ACCOUNT_API    (account.grudgestudio.com)
- *   /api/grudge/id/*        → GRUDGE_ID_API         (id.grudgestudio.com)
- *   /api/grudge/launcher/*  → GRUDGE_LAUNCHER_API   (launcher.grudgestudio.com)
+ *   /api/grudge/game/*      → GRUDGE_GAME_API      (api.grudge-studio.com)
+ *   /api/grudge/account/*   → GRUDGE_ACCOUNT_API   (account.grudge-studio.com)
+ *   /api/grudge/id/*        → GRUDGE_ID_API        (id.grudge-studio.com)
+ *   /api/grudge/launcher/*  → GRUDGE_LAUNCHER_API  (launcher.grudge-studio.com)
  */
 
 import type { Express, Request, Response } from "express";

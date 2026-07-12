@@ -31,8 +31,14 @@ const GBUX_MINT = "55TpSoMNxbfsNJ9U1dQoo9H3dRtDmjBZVMcKqvU2nray";
 const RAYDIUM_SWAP_URL = `https://raydium.io/swap/?inputMint=sol&outputMint=${GBUX_MINT}`;
 const DEXSCREENER_URL = `https://dexscreener.com/solana/${GBUX_MINT}`;
 
-// Start price feed on module load (safe for serverless — first request triggers initial fetch)
-startPriceFeed();
+// Lazy init — start price feed on first economy request, not at module load
+let priceFeedStarted = false;
+function ensurePriceFeed() {
+  if (!priceFeedStarted) {
+    priceFeedStarted = true;
+    startPriceFeed();
+  }
+}
 
 export function registerEconomyRoutes(app: Express) {
   // ═══════════════════════════════════════════
@@ -40,6 +46,7 @@ export function registerEconomyRoutes(app: Express) {
   // Full economy snapshot: price, supply, agent wallet, links
   // ═══════════════════════════════════════════
   app.get("/api/economy/overview", async (_req: Request, res: Response) => {
+    ensurePriceFeed();
     try {
       const [price, supply, agentWallet] = await Promise.all([
         getGbuxPrice(),
@@ -87,6 +94,7 @@ export function registerEconomyRoutes(app: Express) {
   // Current GBUX price data
   // ═══════════════════════════════════════════
   app.get("/api/economy/gbux/price", async (_req: Request, res: Response) => {
+    ensurePriceFeed();
     try {
       const price = await getGbuxPrice();
       res.json(price);

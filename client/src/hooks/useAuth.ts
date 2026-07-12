@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
+import { useEffect, useCallback } from "react";
 import { getAuthData } from "@/lib/auth";
 
 export interface AuthUser {
@@ -8,6 +9,7 @@ export interface AuthUser {
   username: string;
   role?: string;
   isPremium?: boolean;
+  // Profile fields (may come from Grudge ID backend)
   email?: string;
   firstName?: string;
   lastName?: string;
@@ -16,31 +18,64 @@ export interface AuthUser {
 }
 
 /**
+ * Read user info directly from localStorage (instant, no API call).
+ * This is the primary source — set by auth.ts storeAuth() during any login flow.
+ */
+function getLocalUser(): AuthUser | null {
+  const auth = getAuthData();
+  if (!auth?.token) return null;
+  return {
+    id: auth.userId || auth.grudgeId || "",
+    grudgeId: auth.grudgeId || "",
+    username: auth.username || "Player",
+  };
+}
+
+/**
  * useAuth — returns the current JWT-authenticated user.
- * Uses returnNull on 401 so unauthenticated state is handled gracefully
- * instead of throwing and breaking the UI.
  *
- * - Uses getAuthData() which automatically rejects expired tokens
- * - Re-fetches on window focus so returning to the tab picks up session changes
- * - 5 min staleTime to avoid excessive server calls
+ * Reads from localStorage first (instant) so every page/tab has user data
+ * immediately. Then optionally enriches from /api/auth/user for role/premium.
+ * Syncs across tabs via the `storage` event.
  */
 export function useAuth() {
-  // getAuthData() rejects expired tokens (clears localStorage)
-  const authData = typeof localStorage !== "undefined" ? getAuthData() : null;
-  const hasToken = !!authData;
+  const qc = useQueryClient();
+  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("grudge_auth_token");
 
-  const { data: user, isLoading, error } = useQuery<AuthUser | null>({
+  // Primary: instant local user data (always available if token exists)
+  const localUser = hasToken ? getLocalUser() : null;
+
+  // Secondary: enrich with server data (role, premium status)
+  const { data: serverUser, isLoading, error } = useQuery<AuthUser | null>({
     queryKey: ["/api/auth/user"],
     queryFn: getQueryFn<AuthUser | null>({ on401: "returnNull" }),
-    retry: false,
+    retry: 1,
     enabled: hasToken,
-    staleTime: 5 * 60 * 1000,         // 5 minutes
-    refetchOnWindowFocus: true,        // re-validate when tab regains focus
+    staleTime: 5 * 60 * 1000, // re-verify every 5 min, not Infinity
   });
 
+  // Merge: server data wins for enriched fields, local data as fallback
+  const user = hasToken
+    ? (serverUser
+        ? { ...localUser, ...serverUser }
+        : localUser)
+    : null;
+
+  // Sync across tabs: when another tab logs in/out, update this tab
+  const handleStorageChange = useCallback((e: StorageEvent) => {
+    if (e.key === "grudge_auth_token" || e.key === "grudge_username") {
+      qc.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    }
+  }, [qc]);
+
+  useEffect(() => {
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [handleStorageChange]);
+
   return {
-    user: hasToken ? user : null,
-    isLoading: hasToken ? isLoading : false,
+    user,
+    isLoading: hasToken ? (isLoading && !localUser) : false,
     isAuthenticated: !!user,
     error,
   };

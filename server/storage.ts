@@ -7,8 +7,8 @@ import {
   type InsertChatConversation,
   type ChatMessage,
   type InsertChatMessage,
-  type GrudgedotAsset,
-  type InsertGrudgedotAsset,
+  type GDevelopAsset,
+  type InsertGdevelopAsset,
   type RtsProject,
   type InsertRtsProject,
   type RtsAsset,
@@ -57,7 +57,7 @@ import {
   gameProjects,
   chatConversations,
   chatMessages,
-  grudgedotAssets,
+  gdevelopAssets,
   rtsProjects,
   rtsAssets,
   rtsUnitTemplates,
@@ -182,10 +182,10 @@ export interface IStorage {
   createMessage(message: InsertChatMessage): Promise<ChatMessage>;
 
   // Asset methods
-  getAllAssets(): Promise<GrudgedotAsset[]>;
-  getAssetsByType(type: string): Promise<GrudgedotAsset[]>;
-  searchAssets(query: string): Promise<GrudgedotAsset[]>;
-  createAsset(asset: InsertGrudgedotAsset): Promise<GrudgedotAsset>;
+  getAllAssets(): Promise<GDevelopAsset[]>;
+  getAssetsByType(type: string): Promise<GDevelopAsset[]>;
+  searchAssets(query: string): Promise<GDevelopAsset[]>;
+  createAsset(asset: InsertGdevelopAsset): Promise<GDevelopAsset>;
   seedAssets(): Promise<void>;
 
   // RTS Project methods
@@ -256,11 +256,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    await db
-      .insert(users)
-      .values(userData)
+    await (db
+      .insert(users as any)
+      .values(userData) as any)
       .onConflictDoUpdate({
-        target: users.id,
+        target: (users as any).id,
         set: {
           ...userData,
           updatedAt: new Date(),
@@ -464,7 +464,7 @@ export class DatabaseStorage implements IStorage {
       .insert(userSettings)
       .values(settings)
       .onConflictDoUpdate({
-        target: userSettings.userId,
+        target: (userSettings as any).userId,
         set: {
           ...settings,
           updatedAt: new Date(),
@@ -541,26 +541,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Asset methods
-  async getAllAssets(): Promise<GrudgedotAsset[]> {
-    return db.select().from(grudgedotAssets);
+  async getAllAssets(): Promise<GDevelopAsset[]> {
+    return db.select().from(gdevelopAssets);
   }
 
-  async getAssetsByType(type: string): Promise<GrudgedotAsset[]> {
-    return db.select().from(grudgedotAssets).where(eq(grudgedotAssets.type, type));
+  async getAssetsByType(type: string): Promise<GDevelopAsset[]> {
+    return db.select().from(gdevelopAssets).where(eq(gdevelopAssets.type, type));
   }
 
-  async searchAssets(query: string): Promise<GrudgedotAsset[]> {
+  async searchAssets(query: string): Promise<GDevelopAsset[]> {
     const searchPattern = `%${query.toLowerCase()}%`;
-    return db.select().from(grudgedotAssets).where(
+    return db.select().from(gdevelopAssets).where(
       or(
-        like(sql`LOWER(${grudgedotAssets.name})`, searchPattern),
-        like(sql`LOWER(${grudgedotAssets.description})`, searchPattern)
+        like(sql`LOWER(${gdevelopAssets.name})`, searchPattern),
+        like(sql`LOWER(${gdevelopAssets.description})`, searchPattern)
       )
     );
   }
 
-  async createAsset(insertAsset: InsertGrudgedotAsset): Promise<GrudgedotAsset> {
-    return insertAndGet(grudgedotAssets, grudgedotAssets.id, insertAsset);
+  async createAsset(insertAsset: InsertGdevelopAsset): Promise<GDevelopAsset> {
+    return insertAndGet(gdevelopAssets, gdevelopAssets.id, insertAsset);
   }
 
   async seedAssets(): Promise<void> {
@@ -574,7 +574,7 @@ export class DatabaseStorage implements IStorage {
       return;
     }
 
-    const sampleAssets: InsertGrudgedotAsset[] = [
+    const sampleAssets: InsertGdevelopAsset[] = [
       {
         name: "Knight Character",
         type: "sprite",
@@ -601,8 +601,8 @@ export class DatabaseStorage implements IStorage {
   async seedKayKit3DModels(): Promise<void> {
     const existingAssets = await db
       .select()
-      .from(grudgedotAssets)
-      .where(eq(grudgedotAssets.source, "kaykit-skeletons"))
+      .from(gdevelopAssets)
+      .where(eq(gdevelopAssets.source, "kaykit-skeletons"))
       .limit(1);
     
     if (existingAssets.length > 0) {
@@ -612,7 +612,7 @@ export class DatabaseStorage implements IStorage {
 
     console.log("Seeding KayKit Skeleton 3D models...");
 
-    const kayKitModels: InsertGrudgedotAsset[] = [
+    const kayKitModels: InsertGdevelopAsset[] = [
       {
         name: "Skeleton Staff",
         type: "3d-model",
@@ -715,8 +715,8 @@ export class DatabaseStorage implements IStorage {
   async seedCrownClashAssets(): Promise<void> {
     const existingAssets = await db
       .select()
-      .from(grudgedotAssets)
-      .where(eq(grudgedotAssets.source, "crown-clash"))
+      .from(gdevelopAssets)
+      .where(eq(gdevelopAssets.source, "crown-clash"))
       .limit(1);
     
     if (existingAssets.length > 0) {
@@ -726,7 +726,7 @@ export class DatabaseStorage implements IStorage {
 
     console.log("Seeding Crown Clash game assets...");
 
-    const crownClashAssets: InsertGrudgedotAsset[] = [
+    const crownClashAssets: InsertGdevelopAsset[] = [
       {
         name: "Skeleton Warrior",
         type: "sprite",
@@ -848,8 +848,8 @@ export class DatabaseStorage implements IStorage {
   async seedGrudgeGangsAssets(): Promise<void> {
     const existingAssets = await db
       .select()
-      .from(grudgedotAssets)
-      .where(eq(grudgedotAssets.source, "grudge-gangs"))
+      .from(gdevelopAssets)
+      .where(eq(gdevelopAssets.source, "grudge-gangs"))
       .limit(1);
     
     if (existingAssets.length > 0) {
@@ -859,7 +859,7 @@ export class DatabaseStorage implements IStorage {
 
     console.log("Seeding Grudge Gangs MOBA assets...");
 
-    const grudgeAssets: InsertGrudgedotAsset[] = [
+    const grudgeAssets: InsertGdevelopAsset[] = [
       {
         name: "Necros Champion Icon",
         type: "sprite",
@@ -911,8 +911,8 @@ export class DatabaseStorage implements IStorage {
   async seedThreeJsExamples(): Promise<void> {
     const existingAssets = await db
       .select()
-      .from(grudgedotAssets)
-      .where(eq(grudgedotAssets.type, ASSET_TYPES.THREEJS_EXAMPLE))
+      .from(gdevelopAssets)
+      .where(eq(gdevelopAssets.type, ASSET_TYPES.THREEJS_EXAMPLE))
       .limit(1);
     
     if (existingAssets.length > 0) {
@@ -922,7 +922,7 @@ export class DatabaseStorage implements IStorage {
 
     console.log(`Seeding ${THREEJS_EXAMPLES.length} Three.js examples...`);
 
-    const threejsAssets: InsertGrudgedotAsset[] = THREEJS_EXAMPLES.map(example => ({
+    const threejsAssets: InsertGdevelopAsset[] = THREEJS_EXAMPLES.map(example => ({
       name: example.name,
       type: ASSET_TYPES.THREEJS_EXAMPLE,
       category: example.category,
@@ -936,7 +936,7 @@ export class DatabaseStorage implements IStorage {
     const batchSize = 20;
     for (let i = 0; i < threejsAssets.length; i += batchSize) {
       const batch = threejsAssets.slice(i, i + batchSize);
-      await db.insert(grudgedotAssets).values(batch);
+      await db.insert(gdevelopAssets).values(batch);
       console.log(`Seeded ${Math.min(i + batchSize, threejsAssets.length)}/${threejsAssets.length} Three.js examples`);
     }
 

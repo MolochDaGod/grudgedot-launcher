@@ -13,11 +13,18 @@ import { Home, Gamepad2, Loader2 } from "lucide-react";
 import { LoadingProvider } from "@/hooks/useLoading";
 import { PuterProvider } from "@/contexts/puter-context";
 import { AuthGuard } from "@/components/AuthGuard";
+import { CharacterProvider } from "@/contexts/CharacterContext";
+import { initGrudgeSSO } from "@/lib/grudge-sso";
+import { RouteHealthBadge } from "@/components/RouteHealthBadge";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
+// Enable cross-app SSO token relay for all outbound Grudge links
+initGrudgeSSO();
 
 import ChatPage from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 
+const AuthPage = lazy(() => import("@/pages/auth"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const TermsPage = lazy(() => import("@/pages/tos"));
 
@@ -46,7 +53,6 @@ const GrudgeWarlords = lazy(() => import("@/pages/grudge-warlords"));
 const MapEditor = lazy(() => import("@/pages/map-editor"));
 const CharacterEditor = lazy(() => import("@/pages/character-editor"));
 const GrudgeDrift = lazy(() => import("@/pages/grudge-drift"));
-const GrudgeDriveRedirect = lazy(() => import("@/pages/grudge-drive-redirect"));
 const Decay = lazy(() => import("@/pages/decay"));
 const AdminStorage = lazy(() => import("@/pages/admin-storage"));
 const SkillTreeEditor = lazy(() => import("@/pages/skill-tree-editor"));
@@ -64,6 +70,10 @@ const CryptCrawlers = lazy(() => import("@/pages/crypt-crawlers"));
 const WarlordSuite = lazy(() => import("@/pages/warlord-suite"));
 const ConnectionsPage = lazy(() => import("@/pages/connections"));
 const NexusNemesis = lazy(() => import("@/pages/nexus-nemesis"));
+const AssetLibrary = lazy(() => import("@/pages/asset-library"));
+const DungeonCrawler = lazy(() => import("@/pages/dungeon-crawler"));
+const SpriteCharEditor = lazy(() => import("@/pages/sprite-char-editor"));
+
 const CardForge = lazy(() => import("@/pages/card-forge"));
 const ForgeEditor = lazy(() => import("@/pages/forge-editor"));
 const GrudgeEngine = lazy(() => import("@/pages/grudge-engine"));
@@ -72,10 +82,12 @@ const GrudgeFlatEngine = lazy(() => import("@/pages/grudge-flat-engine"));
 const Shooter3D = lazy(() => import("@/pages/shooter-3d"));
 const BabyGrudge = lazy(() => import("@/pages/babygrudge"));
 const ArmadaSaga = lazy(() => import("@/tabs/armada-saga"));
-const ReefHunt = lazy(() => import("@/tabs/reef-hunt"));
-const GrudgeFactory = lazy(() => import("@/tabs/grudge-factory"));
 const GrudgeCrafting = lazy(() => import("@/tabs/grudge-crafting"));
 const GrudgeWarlordsRts = lazy(() => import("@/tabs/grudge-warlords-rts"));
+const GrudgeDriveRedirect = lazy(() => import("@/pages/grudge-drive-redirect"));
+
+const ReefHunt = lazy(() => import("@/tabs/reef-hunt"));
+const GrudgeFactory = lazy(() => import("@/tabs/grudge-factory"));
 
 function PageLoader() {
   return (
@@ -113,13 +125,7 @@ function Router() {
         <Route path="/realm" component={RealmProtector} />
         <Route path="/moba" component={GrudgeGangs} />
         <Route path="/arena" component={GrudgeArena} />
-        <Route path="/grudge-arena" component={GrudgeArena} />
         <Route path="/arena/v1" component={GrudgeArenaV1} />
-        <Route path="/armada-saga" component={ArmadaSaga} />
-        <Route path="/reef-hunt" component={ReefHunt} />
-        <Route path="/grudge-factory" component={GrudgeFactory} />
-        <Route path="/grudge-crafting" component={GrudgeCrafting} />
-        <Route path="/grudge-warlords-rts" component={GrudgeWarlordsRts} />
         <Route path="/asset-gallery" component={AssetGallery} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/warlords" component={GrudgeWarlords} />
@@ -131,7 +137,6 @@ function Router() {
         <Route path="/admin-storage" component={AdminStorage} />
         <Route path="/skill-tree" component={SkillTreeEditor} />
         <Route path="/swarm-rts" component={SwarmRTS} />
-        <Route path="/swarm-rts-enhanced" component={GrudgeSwarm} />
         <Route path="/swarm-galactic" component={SwarmGalactic} />
         <Route path="/mmo" component={MMOWorld} />
         <Route path="/mmo/v1" component={MMOWorldV1} />
@@ -144,6 +149,16 @@ function Router() {
         <Route path="/crypt-crawlers" component={CryptCrawlers} />
         <Route path="/warlord-suite/:page?" component={WarlordSuite} />
         <Route path="/nexus-nemesis" component={NexusNemesis} />
+        <Route path="/asset-library" component={AssetLibrary} />
+        <Route path="/dungeon-crawler" component={DungeonCrawler} />
+        <Route path="/sprite-editor" component={SpriteCharEditor} />
+        <Route path="/reef-hunt" component={ReefHunt} />
+        <Route path="/grudge-factory" component={GrudgeFactory} />
+        <Route path="/grudge-arena" component={GrudgeArena} />
+        <Route path="/armada-saga" component={ArmadaSaga} />
+        <Route path="/grudge-crafting" component={GrudgeCrafting} />
+        <Route path="/grudge-warlords-rts" component={GrudgeWarlordsRts} />
+        <Route path="/swarm-rts-enhanced" component={GrudgeSwarm} />
         <Route path="/card-forge" component={CardForge} />
         <Route path="/forge" component={ForgeEditor} />
         <Route path="/engine" component={GrudgeEngine} />
@@ -163,8 +178,8 @@ function Header() {
   const getPageTitle = () => {
     if (location === "/") return "Battle Station";
     if (location === "/projects") return "War Room";
-    if (location.startsWith("/rts-builder")) return "Hero Commander RTS";
-
+    if (location.startsWith("/rts-builder")) return "RTS Forge";
+    if (location === "/effects") return "Power Core";
     if (location === "/asset-gallery") return "Asset Gallery";
     if (location === "/docs") return "Strategy Guide";
     if (location === "/crown-clash") return "Crown Clash";
@@ -175,12 +190,7 @@ function Header() {
     if (location === "/flight") return "Sky Command";
     if (location === "/realm") return "Realm Protector";
     if (location === "/moba") return "Grudge Gangs";
-    if (location === "/arena" || location === "/grudge-arena") return "Grudge Arena";
-    if (location === "/armada-saga") return "Gruda Armada RTS Star";
-    if (location === "/reef-hunt") return "Reef Hunt";
-    if (location === "/grudge-factory") return "Grudge Factory";
-    if (location === "/grudge-crafting") return "Grudge Crafting";
-    if (location === "/grudge-warlords-rts") return "Grudge Warlords RTS";
+    if (location === "/arena") return "Grudge Arena";
     if (location === "/lobby") return "Battle Lobby";
     if (location === "/characters") return "Fighters";
     if (location === "/wallet") return "War Chest";
@@ -188,13 +198,14 @@ function Header() {
     if (location === "/achievements") return "Glory Hall";
     if (location === "/profile") return "Commander";
     if (location === "/settings") return "Settings";
-
+    if (location === "/map-editor") return "Map Editor";
     if (location === "/character-editor") return "Character Editor";
-    if (location === "/grudge-drive" || location === "/drift") return "Grudge Velocity";
+    if (location === "/grudge-drive") return "Overdrive";
+    if (location === "/drift") return "Grudge Drift";
     if (location === "/decay") return "Decay";
     if (location === "/admin-storage") return "Storage Admin";
     if (location === "/skill-tree") return "Skill Tree Editor";
-    if (location === "/swarm-rts") return "Grudge Warlords RTS";
+    if (location === "/swarm-rts") return "Swarm RTS";
     if (location === "/swarm-galactic") return "Galactic Conquest";
     if (location === "/warlords") return "Grudge Warlords";
     if (location === "/grudge-swarm") return "Grudge Swarm";
@@ -207,19 +218,24 @@ function Header() {
     if (location === "/crypt-crawlers") return "Crypt Crawlers";
     if (location.startsWith("/warlord-suite")) return "Warlord Suite";
     if (location === "/nexus-nemesis") return "Nexus Nemesis";
+    if (location === "/asset-library") return "ObjectStore Library";
+    if (location === "/dungeon-crawler") return "Dungeon Crawler";
+    if (location === "/sprite-editor") return "2D Sprite Editor";
+    if (location === "/reef-hunt") return "Reef Hunt";
+    if (location === "/grudge-factory") return "Grudge Factory";
     if (location === "/card-forge") return "Card Forge";
-    if (location === "/forge") return "Studio Forge";
-    if (location === "/engine") return "Studio Forge";
-    if (location === "/three-engine") return "Studio Forge";
+    if (location === "/forge" || location === "/engine" || location === "/three-engine") return "Studio Forge";
     if (location === "/flat-engine") return "Grudge Flat Engine";
     if (location === "/shooter-3d") return "Grudge Assault";
     if (location === "/babygrudge") return "Studio Forge Hub";
-    if (location === "/map-editor") return "Studio Forge — Maps";
-    if (location === "/effects") return "Studio Forge — Effects";
+    if (location === "/armada-saga") return "Armada Saga";
+    if (location === "/grudge-crafting") return "Grudge Crafting";
+    if (location === "/grudge-warlords-rts") return "Grudge Warlords RTS";
+    if (location === "/grudge-arena") return "Grudge Arena";
     return "Grudge Brawl";
   };
 
-  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-rts-enhanced", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/flat-engine", "/shooter-3d", "/armada-saga", "/reef-hunt", "/grudge-factory", "/grudge-crafting", "/grudge-warlords-rts"].some(
+  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-rts-enhanced", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/flat-engine", "/shooter-3d", "/armada-saga", "/reef-hunt", "/grudge-factory", "/grudge-crafting", "/grudge-warlords-rts", "/dungeon-crawler"].some(
     path => location === path || location.startsWith(`${path}/`)
   );
 
@@ -267,10 +283,13 @@ function AppLayout() {
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <Header />
           <main className="flex-1 overflow-auto scroll-touch no-pull-refresh">
-            <Router />
+            <ErrorBoundary>
+              <Router />
+            </ErrorBoundary>
           </main>
         </div>
       </div>
+      <RouteHealthBadge />
     </SidebarProvider>
   );
 }
@@ -281,9 +300,11 @@ export default function App() {
       <TooltipProvider>
         <LoadingProvider>
           <PuterProvider>
-            <Suspense fallback={<PageLoader />}>
-              <AuthRouter />
-            </Suspense>
+            <CharacterProvider>
+              <Suspense fallback={<PageLoader />}>
+                <AuthRouter />
+              </Suspense>
+            </CharacterProvider>
           </PuterProvider>
         </LoadingProvider>
       </TooltipProvider>
@@ -292,13 +313,16 @@ export default function App() {
 }
 
 /**
- * Top-level router: /privacy and /tos are public. The AuthGuard captures any
- * token from the URL and validates it silently — no redirect-to-login, so
- * every route is publicly accessible. Auth state is optional/progressive.
+ * Top-level router: /auth is rendered outside AuthGuard so it's always accessible.
+ * Everything else goes through AuthGuard → AppLayout.
  */
 function AuthRouter() {
   return (
     <Switch>
+      <Route path="/auth">
+        <AuthPage />
+        <Toaster />
+      </Route>
       <Route path="/privacy">
         <PrivacyPage />
       </Route>

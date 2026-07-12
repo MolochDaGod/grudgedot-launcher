@@ -1,11 +1,10 @@
 import {
-  MessageSquare, BookOpen, Settings, 
+  MessageSquare, BookOpen, Settings,
   Swords, Wand2, Users, User, Wallet, Trophy, Sword, Crown,
   Joystick, Puzzle, Zap, Rocket, Box, Plane, Shield, Target, Crosshair, Map,
   Sparkles, Grid3X3, UserCog, Bug, TreeDeciduous, Car, Hexagon, Gamepad2,
-  Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse, Link2,
-  CreditCard, Download, Brain, MapPin,
-  Cog, Layers,
+  Compass, Fish, Hammer, FolderOpen, HardDrive, Globe, Warehouse, Link2, Package,
+  ChevronDown, Coins, Star, LogOut, Plus, RefreshCw, Cog, Layers, CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -19,12 +18,22 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { getAuthData, logout } from "@/lib/auth";
+import { logout } from "@/lib/auth";
+import { GrudgeLogo } from "@/components/GrudgeLogo";
+import { PayBadge } from "@/components/PayGate";
+import { useCharacter, CLASS_COLOR } from "@/contexts/CharacterContext";
 
 const engineItems = [
   {
@@ -44,6 +53,12 @@ const engineItems = [
     url: "/flat-engine",
     icon: Layers,
     badge: "2D",
+  },
+  {
+    title: "Card Forge",
+    url: "/card-forge",
+    icon: CreditCard,
+    badge: "TCG",
   },
 ];
 
@@ -77,20 +92,26 @@ const mainMenuItems = [
     badge: "AI",
   },
   {
+    title: "2D Sprite Editor",
+    url: "/sprite-editor",
+    icon: Sparkles,
+    badge: "2D",
+  },
+  {
     title: "Effects Playground",
     url: "/effects",
     icon: Wand2,
   },
   {
+    title: "ObjectStore Library",
+    url: "/asset-library",
+    icon: Package,
+    badge: "8K+",
+  },
+  {
     title: "Asset Gallery",
     url: "/asset-gallery",
     icon: Box,
-  },
-  {
-    title: "Card Forge",
-    url: "/card-forge",
-    icon: CreditCard,
-    badge: "TCG+NFT",
   },
   {
     title: "Skill Tree Editor",
@@ -139,7 +160,7 @@ const warlordSuiteItems = [
 
 const featured3DGames = [
   {
-    title: "Gruda Armada RTS Star",
+    title: "Armada Saga",
     url: "/armada-saga",
     icon: Rocket,
     badge: "Live",
@@ -163,10 +184,16 @@ const featured3DGames = [
     badge: "Crawl",
   },
   {
-    title: "Grudge Velocity",
+    title: "Overdrive",
+    url: "/grudge-drive",
+    icon: Car,
+    badge: "2D",
+  },
+  {
+    title: "Grudge Drift",
     url: "/drift",
     icon: Car,
-    badge: "Race",
+    badge: "3D",
   },
   {
     title: "Crown Clash",
@@ -199,7 +226,7 @@ const featured3DGames = [
     badge: "FPS",
   },
   {
-    title: "Warlords RTS",
+    title: "Swarm RTS",
     url: "/swarm-rts",
     icon: Hexagon,
     badge: "RTS",
@@ -233,6 +260,24 @@ const featured3DGames = [
     url: "/swarm-galactic",
     icon: Globe,
     badge: "RTS",
+  },
+  {
+    title: "Dungeon Crawler",
+    url: "/dungeon-crawler",
+    icon: Swords,
+    badge: "Dungeon",
+  },
+  {
+    title: "Reef Hunt",
+    url: "/reef-hunt",
+    icon: Fish,
+    badge: "3D",
+  },
+  {
+    title: "Grudge Factory",
+    url: "/grudge-factory",
+    icon: Hammer,
+    badge: "Sim",
   },
   {
     title: "All Games",
@@ -269,64 +314,6 @@ const arcadeGames = [
   },
 ];
 
-const fleetHubItems = [
-  {
-    title: "Nexus Hub",
-    url: "https://grudachain.grudge-studio.com",
-    icon: Link2,
-    badge: "Hub",
-  },
-  {
-    title: "Studio Forge",
-    url: "https://github.com/MolochDaGod/grudge-dev-tool/releases/latest",
-    icon: Download,
-    badge: "Desktop",
-  },
-  {
-    title: "My Characters",
-    url: "https://client.grudge-studio.com/character",
-    icon: Sword,
-    badge: "Warlords",
-  },
-  {
-    title: "Home Island",
-    url: "https://warlord-crafting-suite.vercel.app/island-hub",
-    icon: MapPin,
-    badge: "WCS",
-  },
-  {
-    title: "Play Warlords",
-    url: "https://client.grudge-studio.com",
-    icon: Globe,
-    badge: "MMO",
-  },
-  {
-    title: "Legion AI",
-    url: "https://ai.grudge-studio.com",
-    icon: Brain,
-    badge: "AI",
-  },
-];
-
-const accountEconomyItems = [
-  {
-    title: "War Chest",
-    url: "/wallet",
-    icon: Wallet,
-    badge: "GBUX",
-  },
-  {
-    title: "Achievements",
-    url: "/achievements",
-    icon: Trophy,
-  },
-  {
-    title: "Connections",
-    url: "/connections",
-    icon: Link2,
-  },
-];
-
 const gameSystemItems = [
   {
     title: "Game Lobbies",
@@ -339,6 +326,16 @@ const gameSystemItems = [
     icon: Sword,
   },
   {
+    title: "Wallet",
+    url: "/wallet",
+    icon: Wallet,
+  },
+  {
+    title: "Achievements",
+    url: "/achievements",
+    icon: Trophy,
+  },
+  {
     title: "Projects",
     url: "/projects",
     icon: FolderOpen,
@@ -348,27 +345,122 @@ const gameSystemItems = [
     url: "/admin-storage",
     icon: HardDrive,
   },
+  {
+    title: "Connections",
+    url: "/connections",
+    icon: Link2,
+  },
 ];
+
+function CharacterPanel() {
+  const { activeCharacter, characters, setActiveCharacter, isLoading, refetch } = useCharacter();
+  const { user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="mx-2 mb-2 rounded-lg border border-border/30 bg-muted/20 p-3 animate-pulse">
+        <div className="h-3 w-24 bg-muted rounded mb-2" />
+        <div className="h-2 w-16 bg-muted rounded" />
+      </div>
+    );
+  }
+
+  if (!activeCharacter) {
+    return (
+      <div className="mx-2 mb-2">
+        <Link href="/characters">
+          <div className="flex items-center gap-2 rounded-lg border border-dashed border-amber-800/40 bg-amber-950/10 px-3 py-2.5 text-xs text-amber-500/70 hover:border-amber-600/60 hover:text-amber-400 transition-colors cursor-pointer">
+            <Plus className="w-3.5 h-3.5" />
+            <span style={{ fontFamily: 'Cinzel, serif' }}>Create Character</span>
+          </div>
+        </Link>
+      </div>
+    );
+  }
+
+  const classColor = CLASS_COLOR[activeCharacter.class?.toLowerCase()] || '#d97706';
+  const initial = activeCharacter.name?.[0]?.toUpperCase() || '?';
+
+  return (
+    <div className="mx-2 mb-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="w-full rounded-lg border bg-gradient-to-br from-muted/40 to-background/60 p-2.5 hover:border-amber-700/40 transition-colors group"
+            style={{ borderColor: classColor + '33' }}>
+            <div className="flex items-center gap-2.5">
+              {/* Avatar with class color */}
+              <div className="w-8 h-8 rounded-md flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                style={{ background: `linear-gradient(135deg, ${classColor}99, ${classColor}44)`, border: `1px solid ${classColor}55` }}>
+                {initial}
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <div className="text-xs font-semibold truncate text-foreground/90" style={{ fontFamily: 'Cinzel, serif' }}>
+                  {activeCharacter.name}
+                </div>
+                <div className="text-[10px] text-muted-foreground capitalize">
+                  {activeCharacter.race} {activeCharacter.class} · Lv{activeCharacter.level}
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                <div className="flex items-center gap-0.5 text-[10px] text-amber-400/80">
+                  <Coins className="w-2.5 h-2.5" />
+                  {(activeCharacter.gold ?? 0).toLocaleString()}
+                </div>
+                <ChevronDown className="w-3 h-3 text-muted-foreground/50 group-hover:text-muted-foreground" />
+              </div>
+            </div>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider">Switch Character</div>
+          <DropdownMenuSeparator />
+          {characters.map(c => (
+            <DropdownMenuItem key={c.id} onClick={() => setActiveCharacter(c)}
+              className={`flex items-center gap-2 ${c.id === activeCharacter.id ? 'bg-muted/50' : ''}`}>
+              <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                style={{ background: CLASS_COLOR[c.class?.toLowerCase()] || '#d97706' }}>
+                {c.name[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium truncate">{c.name}</div>
+                <div className="text-[10px] text-muted-foreground capitalize">{c.race} {c.class} · Lv{c.level}</div>
+              </div>
+              {c.id === activeCharacter.id && <Star className="w-3 h-3 text-amber-400 flex-shrink-0" />}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/characters" className="flex items-center gap-2 cursor-pointer">
+              <Plus className="w-3.5 h-3.5" />
+              <span className="text-xs">New Character</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={refetch} className="flex items-center gap-2">
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span className="text-xs">Refresh</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
 
 export function AppSidebar() {
   const [location] = useLocation();
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const authData = getAuthData();
+  const { user } = useAuth();
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-2">
-        <Link href="/" className="block hover-elevate rounded-md overflow-hidden">
-          <div className="relative w-full rounded-md overflow-hidden bg-black border border-orange-600/30 p-3 flex items-center justify-center">
-            <img
-              src="/assets/branding/grudge-logo.svg"
-              alt="GRUDGE"
-              className="h-10 w-auto"
-              data-testid="img-logo"
-            />
-          </div>
+      <SidebarHeader className="p-2 pb-0">
+        <Link href="/" className="block">
+          <GrudgeLogo />
         </Link>
       </SidebarHeader>
+
+      {/* Live character panel */}
+      <div className="mt-2">
+        <CharacterPanel />
+      </div>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground">Command Center</SidebarGroupLabel>
@@ -408,15 +500,17 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    data-active={location === item.url}
+                    data-active={location === item.url || (item.url !== "/" && location.startsWith(item.url))}
                     data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
-                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-red-500/20 text-red-400 border-0">
-                        {item.badge}
-                      </Badge>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-red-500/20 text-red-400 border-0">
+                          {item.badge}
+                        </Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -511,65 +605,6 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground flex items-center gap-1">
-            <Link2 className="h-3 w-3 text-emerald-500" />
-            Fleet Connect
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {fleetHubItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    data-testid={`link-fleet-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      <item.icon className="h-4 w-4" />
-                      <span className="flex-1">{item.title}</span>
-                      {item.badge && (
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/20 text-emerald-400 border-0">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground flex items-center gap-1">
-            <Wallet className="h-3 w-3 text-amber-500" />
-            Account & Economy
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {accountEconomyItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    data-active={location === item.url}
-                    data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span className="flex-1">{item.title}</span>
-                      {item.badge && (
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-400 border-0">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
           <SidebarGroupLabel className="uppercase text-xs tracking-wider text-muted-foreground">Warrior Hub</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -591,61 +626,33 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 space-y-2">
-        {authData ? (
-          <div className="space-y-2">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  data-active={location === "/profile"}
-                  data-testid="link-profile"
-                >
-                  <Link href="/profile">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback>
-                        <User className="h-3 w-3" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate">{authData.username}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full" 
-              onClick={logout}
-              data-testid="button-logout"
-            >
-              Logout
-            </Button>
-          </div>
-        ) : null}
+      <SidebarFooter className="p-2 space-y-1 border-t border-border/30">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              asChild 
-              data-active={location === "/onboarding"}
-              data-testid="link-get-started"
-            >
-              <Link href="/onboarding">
-                <Compass className="h-4 w-4" />
-                <span>Get Started</span>
+            <SidebarMenuButton asChild data-active={location === "/profile"} data-testid="link-profile">
+              <Link href="/profile">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-500 to-red-700 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                  {user?.username?.[0]?.toUpperCase() || '?'}
+                </div>
+                <span className="truncate text-xs">{user?.username || 'Profile'}</span>
+                {user?.role && user.role !== 'pleb' && user.role !== 'guest' && (
+                  <Badge className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/20 text-amber-400 border-0 capitalize">{user.role}</Badge>
+                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              asChild 
-              data-active={location === "/settings"}
-              data-testid="link-settings"
-            >
+            <SidebarMenuButton asChild data-active={location === "/settings"} data-testid="link-settings">
               <Link href="/settings">
                 <Settings className="h-4 w-4" />
                 <span>Settings</span>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={logout} data-testid="button-logout" className="text-muted-foreground/70 hover:text-red-400">
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

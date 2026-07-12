@@ -44,18 +44,14 @@ import {
   insertGameProjectSchema, 
   insertChatConversationSchema, 
   insertChatMessageSchema, 
-  insertGrudgedotAssetSchema,
+  insertGdevelopAssetSchema,
   insertRtsProjectSchema,
   insertRtsAssetSchema,
   insertRtsUnitTemplateSchema,
   insertRtsBuildingTemplateSchema,
-  insertGameLobbySchema,
-  insertLobbyPlayerSchema,
-  insertPlayerProfileSchema,
   insertUnifiedAssetSchema,
-  grudgedotAssets,
-  grudgedotToolsSchema,
-  users,
+  gdevelopAssets,
+  gdevelopToolsSchema,
   openrtsUnits,
   openrtsWeapons,
   openrtsEffects,
@@ -77,6 +73,7 @@ import {
 import OpenAI from "openai";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import { users } from "../shared/schema";
 
 // This is using xAI's Grok API for game development assistance - reference: javascript_xai blueprint
 const xai = process.env.XAI_API_KEY
@@ -86,31 +83,35 @@ const xai = process.env.XAI_API_KEY
     })
   : null;
 
-const GRUDGEDOT_SYSTEM_PROMPT = `You are the grudgeDot assistant, powered by xAI's Grok. grudgeDot is the Grudge Studio launcher and game-dev workbench for 2D and 3D games built on React, Babylon.js, Three.js, Phaser, and Colyseus.
+const GDEVELOP_SYSTEM_PROMPT = `You are an expert GDevelop game development assistant powered by xAI's Grok. GDevelop is an open-source, cross-platform game creator that allows users to create 2D and 3D games without programming using visual events.
 
 Key capabilities you should help with:
-- Game design and mechanics guidance for the Grudge Studio universe (Gruda Wars, Warlord Crafting Suite, MOBA, MMO, RTS, roguelikes)
-- WCS attributes, tier gear (T0–T5), professions, crafting, and skill-tree design
-- 2D platformers, top-down games, side-scrollers, and RTS strategy games built with Phaser / Babylon
-- 3D game development with Babylon.js, Three.js, Needle Engine, and Rapier/Havok physics
-- Asset recommendations from free libraries (Kenney, OpenGameArt, KayKit, itch.io) and the Grudge ObjectStore
-- Game logic, state machines, and ECS design (bitecs / miniplex)
-- Physics, collisions, and movement (Havok, Rapier, Matter)
-- UI/UX design for games (Radix + Tailwind in the launcher; in-game HUDs)
-- Performance optimization and render pipelines
-- Integration with companion tools:
-  * Babylon.js + Needle Engine for 3D scenes
-  * Three.js for lightweight 3D and shader demos
-  * Phaser 3 for 2D MMO / dungeon-crawler pages
-  * Colyseus rooms (lobby, gruda-wars, rts-battle) for multiplayer
-  * Puter KV/FS for per-user cloud saves (see the grudge-puter-js skill)
-  * GRUDACHAIN Solana cNFTs via Crossmint for character/home-island ownership
+- Game design and mechanics guidance
+- GDevelop event system and behaviors
+- 2D platformers, top-down games, side-scrollers, and RTS strategy games
+- 3D game development with models and cameras
+- Asset recommendations from the free library (Kenney, OpenGameArt, itch.io, etc.)
+- Game logic and event creation
+- Physics, collisions, and movement
+- UI/UX design for games
+- Performance optimization
+- Integration with game development tools:
+  * LUME (lume.io) - GPU-powered 3D HTML library using custom elements (<lume-box>, <lume-gltf-model>, <lume-fbx-model>) built on Three.js, ideal for RTS games with element-behaviors for entity-component patterns
+  * Yuka (mugen87.github.io/yuka) - Game AI library for NavMesh pathfinding with A* algorithm, steering behaviors, and entity management for RTS unit AI
+  * Stemkoski Three.js Examples (stemkoski.github.io/Three.js) - 83 heavily commented examples teaching Three.js fundamentals including chase camera, particle systems, collision detection, mouse interaction, sprite labels, and shader effects
+  * Babylon.js viewer for 3D model visualization
+  * Terrain generators like wgen for procedural world building
+  * GDevelop's web editor for rapid prototyping
 
-For RTS (Real-Time Strategy) features, prefer these patterns:
-- Pathfinding with A* over simplex-noise terrain
-- Selection via drag-box + click, control groups (1-9)
-- Fog of war with per-team visibility buffers
-- Population and resource economy (gold / wood / food) balanced to Warcraft 3 ratios
+For RTS (Real-Time Strategy) games specifically, recommend these GDevelop built-in behaviors and extensions:
+- Top-down Movement behavior (built-in, always available): Allows units to move in 4 or 8 directions with keyboard, gamepad, or virtual stick controls. Configure acceleration (400-600 px/s²), max speed (200-400 px/s), and rotation settings. Documentation: wiki.gdevelop.io/gdevelop5/behaviors/topdown/
+- Pathfinding behavior (built-in): Smart navigation around obstacles for units. Essential for RTS games to avoid collision. Documentation: wiki.gdevelop.io/gdevelop5/behaviors/pathfinding/
+- RTS-like Unit Selection extension (by VictrisGames & Slash): Draws selection areas using Shape Painter for click-select or drag-box selection. Supports control groups and unique ID assignment. Installation: Search "RTS" in GDevelop extension library. Documentation: wiki.gdevelop.io/gdevelop5/extensions/rtsunit-selection/
+- Top-down Movement Animator extension: Changes animation based on movement direction. Perfect for directional unit sprites. Documentation: wiki.gdevelop.io/gdevelop5/extensions/top-down-movement-animator/
+- Reference the premium RTS Template by VegeTato (~$4 USD) for production-quality examples: gdevelop.io/en-gb/game-example/premium/real-time-strategy-84a6fcf9-ecb6-4613-9a36-191df54d8fbc
+- Free community example for learning basics: forum.gdevelop.io/t/example-rts-game-units-management/50652
+
+When users ask about building RTS games, always mention these GDevelop-native tools before suggesting external libraries.
 
 Best practices for game development:
 - Start with simple mechanics and iterate
@@ -118,15 +119,17 @@ Best practices for game development:
 - Test frequently on target platforms
 - Optimize only after establishing fun gameplay
 - Leverage free asset libraries to accelerate development
-- Break complex behaviors into smaller, reusable systems / components
+- Break complex behaviors into smaller, reusable events
 
-THREE.JS / BABYLON MATERIALS REFERENCE (for 3D game development):
+THREE.JS MATERIALS REFERENCE (for 3D game development):
+When users ask about 3D materials, textures, or rendering, use this reference:
+
 Material Types (ordered by performance, fastest to slowest):
-1. MeshBasicMaterial — Unlit, no shadows. Use for: backgrounds, wireframes, performance-critical scenes
-2. MeshLambertMaterial — Simple per-vertex lighting. Use for: matte surfaces (wood, stone, fabric)
-3. MeshPhongMaterial — Specular highlights. Use for: shiny surfaces (plastic, polished metal)
-4. MeshStandardMaterial — PBR (Physically Based Rendering). Recommended default.
-5. MeshPhysicalMaterial — Advanced PBR with clearcoat, transmission. Use for: glass, car paint, gems, water
+1. MeshBasicMaterial - Unlit, no shadows. Use for: backgrounds, wireframes, performance-critical scenes
+2. MeshLambertMaterial - Simple per-vertex lighting. Use for: matte surfaces (wood, stone, fabric)
+3. MeshPhongMaterial - Specular highlights. Use for: shiny surfaces (plastic, polished metal)
+4. MeshStandardMaterial - PBR (Physically Based Rendering). Use for: realistic materials (recommended default)
+5. MeshPhysicalMaterial - Advanced PBR with clearcoat, transmission. Use for: glass, car paint, gems, water
 
 Key Properties:
 - color: Base color of material
@@ -150,9 +153,9 @@ Standard PBR: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, 
 Glass: new THREE.MeshPhysicalMaterial({ transmission: 1.0, ior: 1.5, roughness: 0 })
 Car Paint: new THREE.MeshPhysicalMaterial({ metalness: 0.9, clearcoat: 1.0 })
 
-Documentation: threejs.org/manual/#en/material-table and doc.babylonjs.com
+Documentation: threejs.org/manual/#en/material-table
 
-Always provide practical, actionable advice specific to grudgeDot and the Grudge Studio stack. Be encouraging and supportive to game creators of all skill levels. Reference available tools and assets when relevant.`;
+Always provide practical, actionable advice specific to GDevelop's visual event system. Be encouraging and supportive to game creators of all skill levels. Reference available tools and assets when relevant.`;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const isProduction = process.env.NODE_ENV === "production";
@@ -327,11 +330,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (fileSize) updateData.fileSize = fileSize;
       if (objectKey) updateData.uploadedAt = new Date();
 
-      await db.update(grudgedotAssets)
+      await db.update(gdevelopAssets)
         .set(updateData)
-        .where(eq(grudgedotAssets.id, id));
+        .where(eq(gdevelopAssets.id, id));
 
-      const [updatedAsset] = await db.select().from(grudgedotAssets).where(eq(grudgedotAssets.id, id)).limit(1);
+      const [updatedAsset] = await db.select().from(gdevelopAssets).where(eq(gdevelopAssets.id, id)).limit(1);
       if (!updatedAsset) {
         return res.status(404).json({ error: "Asset not found" });
       }
@@ -465,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const response = await xai!.chat.completions.create({
           model: "grok-2-1212", // Using xAI's Grok 2 model with 131K token context window - reference: javascript_xai blueprint
           messages: [
-            { role: "system", content: GRUDGEDOT_SYSTEM_PROMPT },
+            { role: "system", content: GDEVELOP_SYSTEM_PROMPT },
             ...messages.map(msg => ({
               role: msg.role as "user" | "assistant",
               content: msg.content
@@ -575,7 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/assets", async (req, res) => {
     try {
-      const validatedData = insertGrudgedotAssetSchema.parse(req.body);
+      const validatedData = insertGdevelopAssetSchema.parse(req.body);
       const asset = await storage.createAsset(validatedData);
       res.status(201).json(asset);
     } catch (error) {
@@ -704,7 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getAllViewportAssets()
       ]);
 
-      // Migrate legacy grudgeDot-asset-table rows
+      // Migrate GDevelop assets
       for (const asset of gdAssets) {
         try {
           const existing = await storage.searchUnifiedAssets(asset.name);
@@ -723,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             previewUrl: asset.previewUrl,
             tags: asset.tags || [],
             description: asset.description,
-            source: asset.source || "grudgedot",
+            source: asset.source || "gdevelop",
             sourceUrl: asset.sourceUrl,
             license: "unknown",
             scope: "public",
@@ -1095,7 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/rts/templates/:templateName", async (req, res) => {
     try {
       const { gameModeTemplates } = await import("./rtsGameModeTemplates");
-const { grudgedotToolsSchema } = await import("../shared/schema");
+const { gdevelopToolsSchema } = await import("../shared/schema");
       const templateName = req.params.templateName as "medievalWarfarePVP" | "grudgeWarsCampaign";
       const template = gameModeTemplates[templateName];
       
@@ -1103,8 +1106,8 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
         return res.status(404).json({ error: "Template not found" });
       }
 
-      // Validate grudgedotTools from template
-      const validatedTools = grudgedotToolsSchema.parse(template.grudgedotTools);
+      // Validate gdevelopTools from template
+      const validatedTools = gdevelopToolsSchema.parse(template.gdevelopTools);
 
       // Create project from template
       const projectData = {
@@ -1114,7 +1117,7 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
         mapData: template.mapData,
         gameSettings: template.gameSettings,
         campaignData: template.campaignData || null,
-        grudgedotTools: validatedTools,
+        gdevelopTools: validatedTools,
       };
 
       const project = await storage.createRtsProject(projectData);
@@ -1176,11 +1179,11 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
     try {
       const validatedData = insertRtsProjectSchema.parse(req.body);
       
-      // Validate grudgedotTools if provided, otherwise use default
-      if (validatedData.grudgedotTools) {
-        validatedData.grudgedotTools = grudgedotToolsSchema.parse(validatedData.grudgedotTools);
+      // Validate gdevelopTools if provided, otherwise use default
+      if (validatedData.gdevelopTools) {
+        validatedData.gdevelopTools = gdevelopToolsSchema.parse(validatedData.gdevelopTools);
       } else {
-        validatedData.grudgedotTools = { behaviors: [], extensions: [], templates: [] };
+        validatedData.gdevelopTools = { behaviors: [], extensions: [], templates: [] };
       }
       
       const project = await storage.createRtsProject(validatedData);
@@ -1496,414 +1499,11 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
   });
 
   // ============================================
-  // Authentication Routes (now in grudgeAuth.ts)
+  // Game data routes (players, characters, wallet, achievements,
+  // lobbies, store, settings, levels) are served by the Grudge
+  // backend game-api. Clients call /api/grudge/game/* via
+  // grudgeProxy.ts — no duplicate routes here.
   // ============================================
-
-  // ============================================
-  // Player Profile Routes
-  // ============================================
-
-  app.get("/api/players/me", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found. Create one first." });
-      }
-
-      res.json(profile);
-    } catch (error) {
-      console.error("Error fetching player profile:", error);
-      res.status(500).json({ message: "Failed to fetch profile" });
-    }
-  });
-
-  app.post("/api/players/profile", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      
-      const existing = await storage.getPlayerProfile(claims.sub);
-      if (existing) {
-        return res.status(400).json({ message: "Profile already exists" });
-      }
-
-      const validatedData = insertPlayerProfileSchema.parse({
-        userId: claims.sub,
-        displayName: req.body.displayName || claims.first_name || "Player",
-      });
-
-      const profile = await storage.createPlayerProfile(validatedData);
-
-      // Initialize wallets for new player
-      const currencies = await storage.getAllCurrencies();
-      for (const currency of currencies) {
-        await storage.createPlayerWallet({
-          playerId: profile.id,
-          currencyId: currency.id,
-          balance: currency.code === "GOLD" ? 1000 : 0, // Starter gold
-        });
-      }
-
-      res.status(201).json(profile);
-    } catch (error) {
-      console.error("Error creating player profile:", error);
-      res.status(400).json({ message: "Failed to create profile" });
-    }
-  });
-
-  app.patch("/api/players/me", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      const updated = await storage.updatePlayerProfile(profile.id, req.body);
-      res.json(updated);
-    } catch (error) {
-      console.error("Error updating player profile:", error);
-      res.status(500).json({ message: "Failed to update profile" });
-    }
-  });
-
-  // ============================================
-  // Character Routes
-  // ============================================
-
-  app.get("/api/characters", async (req, res) => {
-    try {
-      const characters = await storage.getAllCharacters();
-      res.json(characters);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch characters" });
-    }
-  });
-
-  app.get("/api/players/me/characters", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      const characters = await storage.getPlayerCharacters(profile.id);
-      res.json(characters);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch player characters" });
-    }
-  });
-
-  app.post("/api/players/me/characters/:characterId", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      const character = await storage.getCharacter(req.params.characterId);
-      if (!character) {
-        return res.status(404).json({ message: "Character not found" });
-      }
-
-      const playerCharacter = await storage.addCharacterToPlayer({
-        playerId: profile.id,
-        characterId: req.params.characterId,
-      });
-
-      res.status(201).json(playerCharacter);
-    } catch (error) {
-      console.error("Error adding character:", error);
-      res.status(500).json({ error: "Failed to add character" });
-    }
-  });
-
-  // ============================================
-  // Wallet Routes
-  // ============================================
-
-  app.get("/api/currencies", async (req, res) => {
-    try {
-      const currencies = await storage.getAllCurrencies();
-      res.json(currencies);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch currencies" });
-    }
-  });
-
-  app.get("/api/players/me/wallet", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      const wallets = await storage.getPlayerWallets(profile.id);
-      res.json(wallets);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch wallet" });
-    }
-  });
-
-  // ============================================
-  // Store Routes
-  // ============================================
-
-  app.get("/api/store", async (req, res) => {
-    try {
-      const items = await storage.getAllStoreItems();
-      res.json(items);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch store items" });
-    }
-  });
-
-  // ============================================
-  // Achievement Routes
-  // ============================================
-
-  app.get("/api/achievements", async (req, res) => {
-    try {
-      const achievements = await storage.getAllAchievements();
-      res.json(achievements);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch achievements" });
-    }
-  });
-
-  app.get("/api/players/me/achievements", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      const achievements = await storage.getPlayerAchievements(profile.id);
-      res.json(achievements);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch player achievements" });
-    }
-  });
-
-  // ============================================
-  // Lobby Routes
-  // ============================================
-
-  app.get("/api/lobbies", async (req, res) => {
-    try {
-      const lobbies = await storage.getAllLobbies();
-      res.json(lobbies);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch lobbies" });
-    }
-  });
-
-  app.get("/api/lobbies/:id", async (req, res) => {
-    try {
-      const lobby = await storage.getLobby(req.params.id);
-      if (!lobby) {
-        return res.status(404).json({ error: "Lobby not found" });
-      }
-
-      const players = await storage.getLobbyPlayers(req.params.id);
-      res.json({ ...lobby, players });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch lobby" });
-    }
-  });
-
-  app.post("/api/lobbies", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Create a player profile first" });
-      }
-
-      const validatedData = insertGameLobbySchema.parse({
-        name: req.body.name,
-        hostId: profile.id,
-        gameMode: req.body.gameMode || "pvp",
-        maxPlayers: req.body.maxPlayers || 4,
-        isPrivate: req.body.isPrivate || false,
-        password: req.body.password,
-        settings: req.body.settings || {},
-        rtsProjectId: req.body.rtsProjectId,
-      });
-
-      const lobby = await storage.createLobby(validatedData);
-
-      // Auto-join the host
-      await storage.joinLobby({
-        lobbyId: lobby.id,
-        playerId: profile.id,
-        team: 1,
-      });
-
-      res.status(201).json(lobby);
-    } catch (error) {
-      console.error("Error creating lobby:", error);
-      res.status(400).json({ error: "Failed to create lobby" });
-    }
-  });
-
-  app.post("/api/lobbies/:id/join", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Create a player profile first" });
-      }
-
-      const lobby = await storage.getLobby(req.params.id);
-      if (!lobby) {
-        return res.status(404).json({ error: "Lobby not found" });
-      }
-
-      if (lobby.status !== "waiting") {
-        return res.status(400).json({ error: "Lobby is not accepting players" });
-      }
-
-      const players = await storage.getLobbyPlayers(req.params.id);
-      if (players.length >= lobby.maxPlayers) {
-        return res.status(400).json({ error: "Lobby is full" });
-      }
-
-      const lobbyPlayer = await storage.joinLobby({
-        lobbyId: req.params.id,
-        playerId: profile.id,
-        team: req.body.team || 1,
-      });
-
-      res.status(201).json(lobbyPlayer);
-    } catch (error) {
-      console.error("Error joining lobby:", error);
-      res.status(500).json({ error: "Failed to join lobby" });
-    }
-  });
-
-  app.post("/api/lobbies/:id/leave", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      await storage.leaveLobby(req.params.id, profile.id);
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to leave lobby" });
-    }
-  });
-
-  app.patch("/api/lobbies/:id/player", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      const updated = await storage.updateLobbyPlayer(req.params.id, profile.id, req.body);
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update player" });
-    }
-  });
-
-  app.delete("/api/lobbies/:id", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const profile = await storage.getPlayerProfile(claims.sub);
-      
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      const lobby = await storage.getLobby(req.params.id);
-      if (!lobby) {
-        return res.status(404).json({ error: "Lobby not found" });
-      }
-
-      if (lobby.hostId !== profile.id) {
-        return res.status(403).json({ error: "Only the host can delete the lobby" });
-      }
-
-      await storage.deleteLobby(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete lobby" });
-    }
-  });
-
-  // ============================================
-  // AI Behavior Routes
-  // ============================================
-
-  app.get("/api/ai-behaviors", async (req, res) => {
-    try {
-      const behaviors = await storage.getAllAiBehaviors();
-      res.json(behaviors);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch AI behaviors" });
-    }
-  });
-
-  // ============================================
-  // User Settings Routes
-  // ============================================
-
-  app.get("/api/settings", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const settings = await storage.getUserSettings(claims.sub);
-      res.json(settings || {});
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch settings" });
-    }
-  });
-
-  app.put("/api/settings", async (req, res) => {
-    try {
-      const claims = (req as any).user?.claims;
-      const settings = await storage.upsertUserSettings({
-        userId: claims.sub,
-        ...req.body,
-      });
-      res.json(settings);
-    } catch (error) {
-      console.error("Error updating settings:", error);
-      res.status(500).json({ error: "Failed to update settings" });
-    }
-  });
-
-  // ============================================
-  // Level Requirements Routes
-  // ============================================
-
-  app.get("/api/levels", async (req, res) => {
-    try {
-      const levels = await storage.getAllLevelRequirements();
-      res.json(levels);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch level requirements" });
-    }
-  });
 
   // ============================================
   // Asset Storage Sync Routes
@@ -2399,12 +1999,13 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
       }
       
       const result = await objectStorageService.getAssetById(req.params.id);
-      
+
       if (!result) {
         return res.status(404).json({ error: "Asset not found" });
       }
-      
-      await objectStorageService.downloadObject((result as any).file, res);
+
+      // result = { streamUrl, metadata } — pass a file-descriptor object to downloadObject
+      await objectStorageService.downloadObject({ name: req.params.id, streamUrl: result.streamUrl }, res);
     } catch (error: any) {
       console.error("Error fetching asset:", error);
       res.status(500).json({ error: "Failed to fetch asset", details: error.message });
@@ -2706,7 +2307,7 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
       const { source, type, search } = req.query;
       
       // Fetch from all sources in parallel
-      const [grudgedotAssets, rtsAssets, viewportAssets] = await Promise.all([
+      const [gdevelopAssets, rtsAssets, viewportAssets] = await Promise.all([
         storage.getAllAssets(),
         storage.getAllRtsAssets(),
         storage.getAllViewportAssets(),
@@ -2723,12 +2324,12 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
 
       // Normalize all assets to unified format
       const catalog = [
-        ...grudgedotAssets.map(a => ({
+        ...gdevelopAssets.map(a => ({
           id: a.id,
           name: a.name,
           type: a.type,
           category: a.category,
-          source: 'grudgedot',
+          source: 'gdevelop',
           previewUrl: a.previewUrl || a.modelUrl,
           downloadUrl: a.modelUrl || a.sourceUrl,
           tags: a.tags || [],
@@ -2798,9 +2399,7 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
         total: catalog.length,
         filtered: filtered.length,
         sources: {
-          grudgedot: grudgedotAssets.length,
-          // Keep 'gdevelop' alias for back-compat with existing dashboard clients.
-          gdevelop: grudgedotAssets.length,
+          gdevelop: gdevelopAssets.length,
           rts: rtsAssets.length,
           viewport: viewportAssets.length,
           objectStorage: storageAssets.length,
@@ -3008,286 +2607,75 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
   
   // ============================================
   // Admin Storage Management API Routes
+  // Backed by the Grudge backend asset-service
   // ============================================
-  
+
   // List storage contents
   app.get("/api/admin/storage", async (req, res) => {
     try {
+      const prefix = (req.query.path as string) || undefined;
       const objectStorageService = new ObjectStorageService();
-      const publicSearchPaths = objectStorageService.getPublicObjectSearchPaths();
-      
-      if (publicSearchPaths.length === 0) {
-        return res.json({ items: [], folders: [], currentPath: "", breadcrumbs: [] });
-      }
-      
-      const basePath = publicSearchPaths[0];
-      const requestedPath = (req.query.path as string) || "";
-      const { bucketName, objectName } = parseObjectPath(basePath);
-      
-      const bucket = (objectStorageClient as any).bucket(bucketName);
-      const prefix = requestedPath ? `${objectName}/${requestedPath}/` : `${objectName}/`;
-      
-      const [files] = await bucket.getFiles({ 
-        prefix: prefix,
-        delimiter: "/"
-      });
-      
-      const [, , apiResponse] = await bucket.getFiles({ 
-        prefix: prefix,
-        delimiter: "/",
-        autoPaginate: false
-      });
-      
-      const prefixes = (apiResponse as any)?.prefixes || [];
-      
-      const items: any[] = [];
-      const foldersSet = new Set<string>();
-      
-      // Add folders from prefixes
-      for (const folderPrefix of prefixes) {
-        const folderName = folderPrefix.replace(prefix, "").replace(/\/$/, "");
-        if (folderName) {
-          foldersSet.add(folderName);
-          items.push({
-            name: folderName,
-            path: requestedPath ? `${requestedPath}/${folderName}` : folderName,
-            fullPath: `/${bucketName}/${folderPrefix}`,
-            type: "folder"
-          });
-        }
-      }
-      
-      // Add files
-      for (const file of files) {
-        const fileName = file.name.replace(prefix, "");
-        if (fileName && !fileName.includes("/")) {
-          const [metadata] = await file.getMetadata();
-          const ext = fileName.split(".").pop() || "";
-          items.push({
-            name: fileName,
-            path: requestedPath ? `${requestedPath}/${fileName}` : fileName,
-            fullPath: `/${bucketName}/${file.name}`,
-            type: "file",
-            size: metadata.size ? parseInt(String(metadata.size)) : undefined,
-            contentType: metadata.contentType,
-            createdAt: metadata.timeCreated,
-            extension: ext
-          });
-        }
-      }
-      
-      // Build breadcrumbs
-      const breadcrumbs: { name: string; path: string }[] = [];
-      if (requestedPath) {
-        const parts = requestedPath.split("/");
-        let currentBreadcrumbPath = "";
-        for (const part of parts) {
-          currentBreadcrumbPath = currentBreadcrumbPath ? `${currentBreadcrumbPath}/${part}` : part;
-          breadcrumbs.push({ name: part, path: currentBreadcrumbPath });
-        }
-      }
-      
+      const assets = await objectStorageService.listAllPublicAssets(prefix);
+
+      const items = assets.map(a => ({
+        name: a.name,
+        path: a.path,
+        fullPath: a.fullPath,
+        type: "file" as const,
+        extension: a.name.split(".").pop() || "",
+      }));
+
+      const parts = (prefix || "").split("/").filter(Boolean);
+      const breadcrumbs = parts.map((p, i) => ({
+        name: p,
+        path: parts.slice(0, i + 1).join("/"),
+      }));
+
       res.json({
-        items: items.sort((a, b) => {
-          if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
-          return a.name.localeCompare(b.name);
-        }),
-        folders: Array.from(foldersSet),
-        currentPath: requestedPath,
-        breadcrumbs
+        items: items.sort((a, b) => a.name.localeCompare(b.name)),
+        folders: [],
+        currentPath: prefix || "",
+        breadcrumbs,
       });
     } catch (error) {
       console.error("Storage list error:", error);
-      res.status(500).json({ error: "Failed to list storage" });
+      res.status(503).json({ error: "Storage list failed — backend may be unavailable" });
     }
   });
+
+  // Rename / move / delete — proxied to backend (not yet implemented; return 501)
+  app.post("/api/admin/storage/rename", (_req, res) => res.status(501).json({ error: "Use the Grudge backend asset-service to rename files" }));
+  app.post("/api/admin/storage/move",   (_req, res) => res.status(501).json({ error: "Use the Grudge backend asset-service to move files" }));
+  app.post("/api/admin/storage/delete", (_req, res) => res.status(501).json({ error: "Use the Grudge backend asset-service to delete files" }));
   
-  // Rename file/folder
-  app.post("/api/admin/storage/rename", async (req, res) => {
-    try {
-      const { oldPath, newName } = req.body;
-      if (!oldPath || !newName) {
-        return res.status(400).json({ error: "oldPath and newName are required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(oldPath);
-      const bucket = (objectStorageClient as any).bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const pathParts = objectName.split("/");
-      pathParts[pathParts.length - 1] = newName;
-      const newObjectName = pathParts.join("/");
-      
-      await file.copy(bucket.file(newObjectName));
-      await file.delete();
-      
-      res.json({ success: true, newPath: `/${bucketName}/${newObjectName}` });
-    } catch (error) {
-      console.error("Rename error:", error);
-      res.status(500).json({ error: "Failed to rename" });
-    }
-  });
+  // Create folder
+  app.post("/api/admin/storage/create-folder", (_req, res) =>
+    res.status(501).json({ error: "Use the Grudge backend asset-service to create folders" })
+  );
   
-  // Move file/folder
-  app.post("/api/admin/storage/move", async (req, res) => {
-    try {
-      const { sourcePath, targetFolder } = req.body;
-      if (!sourcePath) {
-        return res.status(400).json({ error: "sourcePath is required" });
-      }
-      
-      const objectStorageService = new ObjectStorageService();
-      const publicSearchPaths = objectStorageService.getPublicObjectSearchPaths();
-      const basePath = publicSearchPaths[0];
-      const { bucketName: baseBucketName, objectName: baseObjectName } = parseObjectPath(basePath);
-      
-      const { bucketName, objectName } = parseObjectPath(sourcePath);
-      const bucket = (objectStorageClient as any).bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const fileName = objectName.split("/").pop();
-      const targetObjectName = targetFolder 
-        ? `${baseObjectName}/${targetFolder}/${fileName}`
-        : `${baseObjectName}/${fileName}`;
-      
-      await file.copy(bucket.file(targetObjectName));
-      await file.delete();
-      
-      res.json({ success: true, newPath: `/${bucketName}/${targetObjectName}` });
-    } catch (error) {
-      console.error("Move error:", error);
-      res.status(500).json({ error: "Failed to move" });
-    }
-  });
-  
-  // Delete file/folder
-  app.post("/api/admin/storage/delete", async (req, res) => {
-    try {
-      const { path: filePath } = req.body;
-      if (!filePath) {
-        return res.status(400).json({ error: "path is required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = (objectStorageClient as any).bucket(bucketName);
-      
-      // Check if it's a folder (ends with /) or if we need to delete by prefix
-      if (filePath.endsWith("/")) {
-        const [files] = await bucket.getFiles({ prefix: objectName });
-        await Promise.all(files.map((f: any) => f.delete()));
-      } else {
-        const file = bucket.file(objectName);
-        await file.delete();
-      }
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Delete error:", error);
-      res.status(500).json({ error: "Failed to delete" });
-    }
-  });
-  
-  // Create folder (by creating a placeholder file)
-  app.post("/api/admin/storage/create-folder", async (req, res) => {
-    try {
-      const { parentPath, folderName } = req.body;
-      if (!folderName) {
-        return res.status(400).json({ error: "folderName is required" });
-      }
-      
-      const objectStorageService = new ObjectStorageService();
-      const publicSearchPaths = objectStorageService.getPublicObjectSearchPaths();
-      const basePath = publicSearchPaths[0];
-      const { bucketName, objectName: baseObjectName } = parseObjectPath(basePath);
-      
-      const bucket = (objectStorageClient as any).bucket(bucketName);
-      const folderPath = parentPath 
-        ? `${baseObjectName}/${parentPath}/${folderName}/.keep`
-        : `${baseObjectName}/${folderName}/.keep`;
-      
-      const file = bucket.file(folderPath);
-      await file.save("", { contentType: "text/plain" });
-      
-      res.json({ success: true, path: folderPath });
-    } catch (error) {
-      console.error("Create folder error:", error);
-      res.status(500).json({ error: "Failed to create folder" });
-    }
-  });
-  
-  // Download file
+  // Download file — proxy to backend
   app.get("/api/admin/storage/download", async (req, res) => {
-    try {
-      const filePath = req.query.path as string;
-      if (!filePath) {
-        return res.status(400).json({ error: "path is required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = (objectStorageClient as any).bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const [exists] = await file.exists();
-      if (!exists) {
-        return res.status(404).json({ error: "File not found" });
-      }
-      
-      const [metadata] = await file.getMetadata();
-      res.set({
-        "Content-Type": metadata.contentType || "application/octet-stream",
-        "Content-Disposition": `inline; filename="${objectName.split("/").pop()}"`,
-      });
-      
-      file.createReadStream().pipe(res);
-    } catch (error) {
-      console.error("Download error:", error);
-      res.status(500).json({ error: "Failed to download" });
-    }
+    const filePath = req.query.path as string;
+    if (!filePath) return res.status(400).json({ error: "path is required" });
+    const svc = new ObjectStorageService();
+    const file = await svc.searchPublicObject(filePath);
+    if (!file) return res.status(404).json({ error: "File not found" });
+    await svc.downloadObject(file, res);
   });
-  
-  // Parse 3D model metadata
+
+  // Parse 3D model metadata — returns basic info from backend
   app.get("/api/admin/storage/parse-model", async (req, res) => {
-    try {
-      const filePath = req.query.path as string;
-      if (!filePath) {
-        return res.status(400).json({ error: "path is required" });
-      }
-      
-      const { bucketName, objectName } = parseObjectPath(filePath);
-      const bucket = (objectStorageClient as any).bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const [exists] = await file.exists();
-      if (!exists) {
-        return res.status(404).json({ error: "File not found" });
-      }
-      
-      const [metadata] = await file.getMetadata();
-      const fileName = objectName.split("/").pop() || "";
-      const ext = fileName.split(".").pop()?.toLowerCase() || "";
-      
-      // For now, return basic metadata. Full parsing would require loading the model server-side
-      const result = {
-        id: null,
-        storagePath: filePath,
-        filename: fileName,
-        fileType: ext,
-        fileSize: metadata.size ? parseInt(String(metadata.size)) : undefined,
-        meshes: [],
-        materials: [],
-        animations: [],
-        textures: [],
-        boundingBox: null,
-        sceneInfo: null,
-        folder: objectName.split("/").slice(0, -1).join("/"),
-        tags: []
-      };
-      
-      res.json(result);
-    } catch (error) {
-      console.error("Parse model error:", error);
-      res.status(500).json({ error: "Failed to parse model" });
-    }
+    const filePath = req.query.path as string;
+    if (!filePath) return res.status(400).json({ error: "path is required" });
+    const fileName = filePath.split("/").pop() || "";
+    res.json({
+      id: null, storagePath: filePath, filename: fileName,
+      fileType: fileName.split(".").pop()?.toLowerCase() || "",
+      meshes: [], materials: [], animations: [], textures: [],
+      boundingBox: null, sceneInfo: null,
+      folder: filePath.split("/").slice(0, -1).join("/"),
+      tags: [],
+    });
   });
   
   // Text to 3D generation (for creating new armor parts)
@@ -4059,97 +3447,6 @@ const { grudgedotToolsSchema } = await import("../shared/schema");
   setInterval(() => {
     // Future: Update NPC positions, AI, etc.
   }, 100);
-
-  // ============================================
-  // GRUDGE ENGINE BRIDGE — Scene Export + Deploy
-  // ============================================
-  // Allows grudgeDot to save/load scenes from the Grudge Engine editor,
-  // check engine availability, and list ObjectStore models.
-
-  const ENGINE_EDITOR_URL = process.env.GRUDGE_ENGINE_URL || 'https://grudge-engine-web.vercel.app';
-  const OBJECTSTORE_WORKER_URL = process.env.OBJECTSTORE_WORKER_URL || 'https://objectstore.grudge-studio.com';
-
-  // In-memory scene store (keyed by projectId:sceneId)
-  const engineSceneStore = new Map<string, { scene: any; savedAt: string }>();
-
-  // Engine connection status
-  app.get("/api/engine/status", async (_req, res) => {
-    let engineAvailable = false;
-    try {
-      const r = await fetch(`${ENGINE_EDITOR_URL}/api/engine/status`, { signal: AbortSignal.timeout(5000) });
-      engineAvailable = r.ok;
-    } catch { /* offline */ }
-
-    let objectStoreOnline = false;
-    try {
-      const r = await fetch(`${OBJECTSTORE_WORKER_URL}/v1/health`, { signal: AbortSignal.timeout(5000) });
-      objectStoreOnline = r.ok;
-    } catch { /* offline */ }
-
-    res.json({
-      editorUrl: ENGINE_EDITOR_URL,
-      objectStoreUrl: OBJECTSTORE_WORKER_URL,
-      engineAvailable,
-      objectStoreOnline,
-    });
-  });
-
-  // Save a scene exported from the engine
-  app.post("/api/engine/scenes", (req, res) => {
-    try {
-      const { projectId, scene } = req.body;
-      if (!projectId || !scene?.id) {
-        return res.status(400).json({ error: 'projectId and scene.id are required' });
-      }
-      const key = `${projectId}:${scene.id}`;
-      const entry = { scene, savedAt: new Date().toISOString() };
-      engineSceneStore.set(key, entry);
-      res.status(201).json({ key, savedAt: entry.savedAt });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to save scene' });
-    }
-  });
-
-  // Load a scene for the engine
-  app.get("/api/engine/scenes/:projectId/:sceneId", (req, res) => {
-    const key = `${req.params.projectId}:${req.params.sceneId}`;
-    const entry = engineSceneStore.get(key);
-    if (!entry) {
-      return res.status(404).json({ error: 'Scene not found' });
-    }
-    res.json(entry);
-  });
-
-  // List all saved engine scenes for a project
-  app.get("/api/engine/scenes/:projectId", (req, res) => {
-    const prefix = `${req.params.projectId}:`;
-    const scenes: Array<{ sceneId: string; name: string; savedAt: string }> = [];
-    engineSceneStore.forEach((entry, key) => {
-      if (key.startsWith(prefix)) {
-        scenes.push({
-          sceneId: entry.scene.id,
-          name: entry.scene.name || 'Untitled',
-          savedAt: entry.savedAt,
-        });
-      }
-    });
-    res.json({ scenes });
-  });
-
-  // Proxy ObjectStore model listing for grudgeDot (avoids client CORS)
-  app.get("/api/engine/objectstore/models", async (req, res) => {
-    try {
-      const prefix = (req.query.prefix as string) || '';
-      const limit = parseInt((req.query.limit as string) || '1000', 10);
-      let url = `${OBJECTSTORE_WORKER_URL}/v1/assets?limit=${limit}`;
-      if (prefix) url += `&prefix=${encodeURIComponent(prefix)}`;
-      const r2Res = await fetch(url);
-      const data = await r2Res.json();
-      res.json(data);
-    } catch {
-      res.status(502).json({ error: 'Failed to fetch from ObjectStore' });
-    }
-  });
   
   return httpServer;
 }

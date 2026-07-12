@@ -13,14 +13,10 @@ import { Slider } from "@/components/ui/slider";
 import { 
   Plus, Users, Sword, Navigation, Sparkles, Target, TreePine, 
   Settings, Play, Save, Trash2, Copy, Eye, Crosshair, Shield,
-  Heart, Zap, Move, Wind, Swords, Filter, ExternalLink,
-  GitBranch, Layers, Map,
+  Heart, Zap, Move, Wind, Swords, Filter, ExternalLink
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { GrudgeEmbed } from "@/components/GrudgeEmbed";
-import { HeroRtsOverviewPanel, HeroRtsFlowPanel, HeroRtsAssetsPanel } from "@/components/hero-rts/HubPanels";
-import { HERO_RTS_LINKS } from "@shared/heroRtsFlow";
 import type { 
   OpenRTSUnit, OpenRTSWeapon, OpenRTSMover, OpenRTSEffect, 
   OpenRTSActor, OpenRTSProjectile, OpenRTSTrinket 
@@ -31,35 +27,6 @@ type Heightmap = "Ground" | "Sky" | "Air";
 type StandingMode = "Stand" | "Prone";
 type Race = "human" | "alien" | "undead" | "mechanical" | "nature";
 type DamageType = "physical" | "magic" | "fire" | "ice" | "explosive" | "poison";
-
-interface RtsModel {
-  grudgeId: string;
-  displayName: string;
-  file: string;
-  category: string;
-  unitType: string;
-  customizable?: boolean;
-  sizeBytes: number;
-  tags?: string[];
-}
-
-interface RtsRaceData {
-  name: string;
-  faction: string;
-  emoji: string;
-  color: string;
-  models: RtsModel[];
-}
-
-interface RtsModelCatalog {
-  baseUrl: string;
-  totalModels: number;
-  races: Record<string, RtsRaceData>;
-  vehicles?: RtsModel[];
-  stats?: {
-    totalByRace?: Record<string, number>;
-  };
-}
 
 const RACES: { value: Race; label: string; color: string }[] = [
   { value: "human", label: "Human", color: "bg-blue-500" },
@@ -78,36 +45,9 @@ const DAMAGE_TYPES: { value: DamageType; label: string; icon: typeof Sword }[] =
   { value: "poison", label: "Poison", icon: Shield },
 ];
 
-/** Hero Commander RTS — live Nexus-era top-down 3D RTS. */
-const RTS_GAME_URL = HERO_RTS_LINKS.play;
-
-type HubTab = "overview" | "flow" | "assets" | "play" | "openrts";
-type OpenRtsTab = "units" | "weapons" | "movers" | "effects" | "actors" | "trinkets";
-
 export default function RtsBuilder() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<HubTab | OpenRtsTab>("overview");
-  const [openRtsTab, setOpenRtsTab] = useState<OpenRtsTab>("units");
-  const isOpenRtsMode = activeTab === "openrts" || (
-    activeTab !== "overview" && activeTab !== "flow" && activeTab !== "assets" && activeTab !== "play"
-  );
-  const resolvedOpenRtsTab: OpenRtsTab = isOpenRtsMode
-    ? (activeTab === "openrts" ? openRtsTab : activeTab as OpenRtsTab)
-    : openRtsTab;
-
-  const selectHubTab = (tab: HubTab) => {
-    if (tab === "openrts") {
-      setActiveTab("openrts");
-      setOpenRtsTab(resolvedOpenRtsTab);
-    } else {
-      setActiveTab(tab);
-    }
-  };
-
-  const selectOpenRtsTab = (tab: OpenRtsTab) => {
-    setOpenRtsTab(tab);
-    setActiveTab(tab);
-  };
+  const [activeTab, setActiveTab] = useState("units");
   const [selectedUnit, setSelectedUnit] = useState<OpenRTSUnit | null>(null);
   const [selectedWeapon, setSelectedWeapon] = useState<OpenRTSWeapon | null>(null);
   const [isCreateUnitOpen, setIsCreateUnitOpen] = useState(false);
@@ -182,155 +122,124 @@ export default function RtsBuilder() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Target className="h-6 w-6 text-primary" />
-              Hero Commander RTS
+              OpenRTS Builder
             </h1>
             <p className="text-sm text-muted-foreground">
-              Organization, game flow, asset wiring, and live playtest hub
+              Create units, weapons, movers, and effects for your RTS game
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => window.open(HERO_RTS_LINKS.showcase, "_blank")}>
-              <Layers className="mr-2 h-4 w-4" />
-              Showcase
+            <Button variant="outline" size="sm" data-testid="button-export-dsl">
+              <Copy className="mr-2 h-4 w-4" />
+              Export DSL
             </Button>
-            <Button size="sm" data-testid="button-preview-game" onClick={() => selectHubTab("play")}>
+            <Button size="sm" data-testid="button-preview-game">
               <Play className="mr-2 h-4 w-4" />
-              Play
+              Preview
             </Button>
           </div>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <Tabs
-          value={isOpenRtsMode ? "openrts" : activeTab}
-          onValueChange={(v) => {
-            if (v === "openrts") selectHubTab("openrts");
-            else selectHubTab(v as HubTab);
-          }}
-          className="flex flex-1"
-        >
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1">
           <div className="w-48 border-r bg-muted/30 p-2">
             <TabsList className="flex h-auto flex-col w-full gap-1 bg-transparent">
-              <TabsTrigger value="overview" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-overview">
-                <Layers className="h-4 w-4" />
-                Overview
+              <TabsTrigger 
+                value="units" 
+                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                data-testid="tab-units"
+              >
+                <Users className="h-4 w-4" />
+                Units ({units.length})
               </TabsTrigger>
-              <TabsTrigger value="flow" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-flow">
-                <GitBranch className="h-4 w-4" />
-                Game Flow
-              </TabsTrigger>
-              <TabsTrigger value="assets" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-assets">
-                <Map className="h-4 w-4" />
-                Asset Map
-              </TabsTrigger>
-              <TabsTrigger value="play" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-play">
-                <Play className="h-4 w-4" />
-                Play
-              </TabsTrigger>
-              <TabsTrigger value="openrts" className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-openrts">
+              <TabsTrigger 
+                value="weapons" 
+                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                data-testid="tab-weapons"
+              >
                 <Sword className="h-4 w-4" />
-                OpenRTS DSL
+                Weapons ({weapons.length})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="movers" 
+                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                data-testid="tab-movers"
+              >
+                <Navigation className="h-4 w-4" />
+                Movers ({movers.length})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="effects" 
+                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                data-testid="tab-effects"
+              >
+                <Sparkles className="h-4 w-4" />
+                Effects ({effects.length})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="actors" 
+                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                data-testid="tab-actors"
+              >
+                <Swords className="h-4 w-4" />
+                Actors (3D)
+              </TabsTrigger>
+              <TabsTrigger 
+                value="trinkets" 
+                className="w-full justify-start gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                data-testid="tab-trinkets"
+              >
+                <TreePine className="h-4 w-4" />
+                Trinkets
               </TabsTrigger>
             </TabsList>
-
-            {(activeTab === "openrts" || isOpenRtsMode) && (
-              <Tabs
-                value={resolvedOpenRtsTab}
-                onValueChange={(v) => selectOpenRtsTab(v as OpenRtsTab)}
-                className="mt-3"
-              >
-                <TabsList className="flex h-auto flex-col w-full gap-1 bg-transparent">
-                  <TabsTrigger value="units" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-units">
-                    <Users className="h-3 w-3" />
-                    Units ({units.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="weapons" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-weapons">
-                    <Sword className="h-3 w-3" />
-                    Weapons ({weapons.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="movers" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-movers">
-                    <Navigation className="h-3 w-3" />
-                    Movers ({movers.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="effects" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-effects">
-                    <Sparkles className="h-3 w-3" />
-                    Effects ({effects.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="actors" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-actors">
-                    <Swords className="h-3 w-3" />
-                    Actors (3D)
-                  </TabsTrigger>
-                  <TabsTrigger value="trinkets" className="w-full justify-start gap-2 text-xs data-[state=active]:bg-muted" data-testid="tab-trinkets">
-                    <TreePine className="h-3 w-3" />
-                    Trinkets
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <TabsContent value="overview" className="h-full m-0 p-0">
-              <HeroRtsOverviewPanel />
-            </TabsContent>
-
-            <TabsContent value="flow" className="h-full m-0 p-0">
-              <HeroRtsFlowPanel />
-            </TabsContent>
-
-            <TabsContent value="assets" className="h-full m-0 p-0">
-              <HeroRtsAssetsPanel />
-            </TabsContent>
-
-            <TabsContent value="play" className="h-full m-0 p-0">
-              <GrudgeEmbed
-                src={RTS_GAME_URL}
-                title="Hero Commander RTS"
-                minHeight="100%"
+            <TabsContent value="units" className="h-full m-0 p-0">
+              <UnitsPanel 
+                units={units} 
+                weapons={weapons}
+                movers={movers}
+                selectedUnit={selectedUnit}
+                setSelectedUnit={setSelectedUnit}
+                isCreateOpen={isCreateUnitOpen}
+                setIsCreateOpen={setIsCreateUnitOpen}
+                createMutation={createUnitMutation}
+                deleteMutation={deleteUnitMutation}
+                isLoading={unitsLoading}
               />
             </TabsContent>
 
-            <TabsContent value="openrts" className="h-full m-0 p-0">
-              {resolvedOpenRtsTab === "units" && (
-                <UnitsPanel 
-                  units={units} 
-                  weapons={weapons}
-                  movers={movers}
-                  selectedUnit={selectedUnit}
-                  setSelectedUnit={setSelectedUnit}
-                  isCreateOpen={isCreateUnitOpen}
-                  setIsCreateOpen={setIsCreateUnitOpen}
-                  createMutation={createUnitMutation}
-                  deleteMutation={deleteUnitMutation}
-                  isLoading={unitsLoading}
-                />
-              )}
-              {resolvedOpenRtsTab === "weapons" && (
-                <WeaponsPanel
-                  weapons={weapons}
-                  effects={effects}
-                  selectedWeapon={selectedWeapon}
-                  setSelectedWeapon={setSelectedWeapon}
-                  isCreateOpen={isCreateWeaponOpen}
-                  setIsCreateOpen={setIsCreateWeaponOpen}
-                  createMutation={createWeaponMutation}
-                  deleteMutation={deleteWeaponMutation}
-                  isLoading={weaponsLoading}
-                />
-              )}
-              {resolvedOpenRtsTab === "movers" && (
-                <MoversPanel movers={movers} isLoading={moversLoading} />
-              )}
-              {resolvedOpenRtsTab === "effects" && (
-                <EffectsPanel effects={effects} />
-              )}
-              {resolvedOpenRtsTab === "actors" && (
-                <ActorsPanel />
-              )}
-              {resolvedOpenRtsTab === "trinkets" && (
-                <TrinketsPanel />
-              )}
+            <TabsContent value="weapons" className="h-full m-0 p-0">
+              <WeaponsPanel
+                weapons={weapons}
+                effects={effects}
+                selectedWeapon={selectedWeapon}
+                setSelectedWeapon={setSelectedWeapon}
+                isCreateOpen={isCreateWeaponOpen}
+                setIsCreateOpen={setIsCreateWeaponOpen}
+                createMutation={createWeaponMutation}
+                deleteMutation={deleteWeaponMutation}
+                isLoading={weaponsLoading}
+              />
+            </TabsContent>
+
+            <TabsContent value="movers" className="h-full m-0 p-0">
+              <MoversPanel movers={movers} isLoading={moversLoading} />
+            </TabsContent>
+
+            <TabsContent value="effects" className="h-full m-0 p-0">
+              <EffectsPanel effects={effects} />
+            </TabsContent>
+
+            <TabsContent value="actors" className="h-full m-0 p-0">
+              <ActorsPanel />
+            </TabsContent>
+
+            <TabsContent value="trinkets" className="h-full m-0 p-0">
+              <TrinketsPanel />
             </TabsContent>
           </div>
         </Tabs>
@@ -1114,56 +1023,16 @@ function EffectsPanel({ effects }: { effects: OpenRTSEffect[] }) {
   );
 }
 
-interface ModelCardProps {
-  model: RtsModel;
-  baseUrl: string;
-  testIdPrefix?: string;
-}
-
-function ModelCard({ model, baseUrl, testIdPrefix = "actor" }: ModelCardProps) {
-  return (
-    <Card
-      className="overflow-hidden hover-elevate"
-      data-testid={`card-${testIdPrefix}-${model.grudgeId}`}
-    >
-      <div className="h-20 w-full bg-muted flex items-center justify-center">
-        <Swords className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <CardContent className="p-2">
-        <div className="font-medium text-xs line-clamp-1">{model.displayName}</div>
-        <p className="text-[10px] text-muted-foreground font-mono">{model.grudgeId}</p>
-        <div className="flex flex-wrap gap-1 mt-1">
-          <Badge variant="outline" className="text-[10px] capitalize">{model.category}</Badge>
-          <Badge variant="secondary" className="text-[10px]">{model.unitType}</Badge>
-          {model.customizable && <Badge className="text-[10px] bg-emerald-600">Custom</Badge>}
-        </div>
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-[10px] text-muted-foreground">{(model.sizeBytes / 1024).toFixed(0)} KB</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-xs"
-            onClick={() => window.open(`${baseUrl}/${model.file}`, "_blank")}
-          >
-            <ExternalLink className="h-3 w-3 mr-1" />
-            GLB
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ActorsPanel() {
   const [raceFilter, setRaceFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: rtsModelCatalog, isLoading } = useQuery<RtsModelCatalog>({
+  const { data: rtsModelCatalog, isLoading } = useQuery<any>({
     queryKey: ["objectstore-rts-models"],
     queryFn: async () => {
-      const res = await fetch("/assets/models/rts/catalog.json");
-      if (!res.ok) throw new Error("Failed to load RTS model catalog");
+      const res = await fetch("https://molochdagod.github.io/ObjectStore/api/v1/rtsModels.json");
+      if (!res.ok) throw new Error("Failed to fetch RTS models");
       return res.json();
     },
     staleTime: 5 * 60 * 1000,
@@ -1185,7 +1054,7 @@ function ActorsPanel() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open("/assets/models/rts/catalog.json", "_blank")}
+            onClick={() => window.open("https://molochdagod.github.io/ObjectStore/api/v1/rtsModels.json", "_blank")}
           >
             <ExternalLink className="mr-1 h-3 w-3" />
             API
@@ -1205,7 +1074,7 @@ function ActorsPanel() {
 
         {/* Race Filter */}
         <div className="flex gap-1 flex-wrap mb-2">
-          {["all", ...Object.keys(rtsModelCatalog?.races ?? {})].map((race) => {
+          {["all", ...Object.keys(rtsModelCatalog?.races || {})].map((race) => {
             const raceData = race !== "all" ? rtsModelCatalog?.races[race] : null;
             const count = race === "all"
               ? (rtsModelCatalog?.totalModels ?? 0)
@@ -1252,47 +1121,108 @@ function ActorsPanel() {
         ) : !rtsModelCatalog ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Swords className="mb-4 h-12 w-12 text-muted-foreground opacity-30" />
-            <p className="text-muted-foreground">Could not load 3D model catalog.</p>
+            <p className="text-muted-foreground">Could not load models. Check ObjectStore API.</p>
           </div>
         ) : (
           <>
             {/* Race sections */}
-            {Object.entries(rtsModelCatalog.races)
-              .filter(([raceId]) => raceFilter === "all" || raceFilter === raceId)
-              .map(([raceId, raceData]) => {
-                const models = raceData.models.filter((m) => {
-                  const matchesCat = categoryFilter === "all" || m.category === categoryFilter;
-                  const matchesSearch = searchQuery === "" ||
-                    m.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    m.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
-                  return matchesCat && matchesSearch;
-                });
-                if (models.length === 0) return null;
-                return (
-                  <div key={raceId} className="mb-5">
-                    <div className="mb-2 flex items-center gap-2">
-                      <span>{raceData.emoji}</span>
-                      <h4 className="text-sm font-semibold">{raceData.name}</h4>
-                      <Badge style={{ backgroundColor: raceData.color, color: "#fff" }} className="text-xs">
-                        {raceData.faction}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {models.length} models
-                      </span>
-                    </div>
-                    <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
-                      {models.map((model) => (
-                        <ModelCard
-                          key={model.grudgeId}
-                          model={model}
-                          baseUrl={rtsModelCatalog.baseUrl}
-                          testIdPrefix="actor"
-                        />
-                      ))}
-                    </div>
+            {/*
+              Reusable model card component for race models (and potentially vehicles).
+              Extracted to keep badge/size/link behavior consistent.
+            */}
+            {(() => {
+              type ModelCardProps = {
+                model: any;
+                baseUrl: string;
+                testIdPrefix: string;
+              };
+
+              const ModelCard = ({ model, baseUrl, testIdPrefix }: ModelCardProps) => (
+                <Card
+                  className="overflow-hidden hover-elevate"
+                  data-testid={`card-${testIdPrefix}-${model.grudgeId}`}
+                >
+                  <div className="h-20 w-full bg-muted flex items-center justify-center">
+                    <Swords className="h-6 w-6 text-muted-foreground" />
                   </div>
-                );
-              })}
+                  <CardContent className="p-2">
+                    <div className="font-medium text-xs line-clamp-1">{model.displayName}</div>
+                    <p className="text-[10px] text-muted-foreground font-mono">{model.grudgeId}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {model.category}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {model.unitType}
+                      </Badge>
+                      {model.customizable && (
+                        <Badge className="text-[10px] bg-emerald-600">Custom</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-[10px] text-muted-foreground">
+                        {(model.sizeBytes / 1024).toFixed(0)} KB
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => window.open(`${baseUrl}/${model.file}`, "_blank")}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        GLB
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+
+              return Object.entries(rtsModelCatalog.races as Record<string, any>)
+                .filter(([raceId]) => raceFilter === "all" || raceFilter === raceId)
+                .map(([raceId, raceData]) => {
+                  const models = (raceData.models as any[]).filter((m: any) => {
+                    const matchesCat =
+                      categoryFilter === "all" || m.category === categoryFilter;
+                    const matchesSearch =
+                      searchQuery === "" ||
+                      m.displayName
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                      m.tags?.some((t: string) =>
+                        t.toLowerCase().includes(searchQuery.toLowerCase())
+                      );
+                    return matchesCat && matchesSearch;
+                  });
+                  if (models.length === 0) return null;
+                  return (
+                    <div key={raceId} className="mb-5">
+                      <div className="mb-2 flex items-center gap-2">
+                        <span>{raceData.emoji}</span>
+                        <h4 className="text-sm font-semibold">{raceData.name}</h4>
+                        <Badge
+                          style={{ backgroundColor: raceData.color, color: "#fff" }}
+                          className="text-xs"
+                        >
+                          {raceData.faction}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {models.length} models
+                        </span>
+                      </div>
+                      <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
+                        {models.map((model: any) => (
+                          <ModelCard
+                            key={model.grudgeId}
+                            model={model}
+                            baseUrl={rtsModelCatalog.baseUrl}
+                            testIdPrefix="actor"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+            })()}
             {/* Vehicles section — shown when category is "vehicle" (regardless of race filter)
                 or when showing all categories with no race filter */}
             {(categoryFilter === "vehicle" || (raceFilter === "all" && categoryFilter === "all")) && rtsModelCatalog.vehicles?.length > 0 && (
@@ -1304,18 +1234,37 @@ function ActorsPanel() {
                 </div>
                 <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
                   {rtsModelCatalog.vehicles
-                    .filter((m) => {
+                    .filter((m: any) => {
                       return searchQuery === "" ||
                         m.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        m.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+                        m.tags?.some((t: string) => t.toLowerCase().includes(searchQuery.toLowerCase()));
                     })
-                    .map((model) => (
-                    <ModelCard
-                      key={model.grudgeId}
-                      model={model}
-                      baseUrl={rtsModelCatalog.baseUrl}
-                      testIdPrefix="actor"
-                    />
+                    .map((model: any) => (
+                    <Card key={model.grudgeId} className="overflow-hidden hover-elevate" data-testid={`card-actor-${model.grudgeId}`}>
+                      <div className="h-20 w-full bg-muted flex items-center justify-center">
+                        <Swords className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <CardContent className="p-2">
+                        <div className="font-medium text-xs line-clamp-1">{model.displayName}</div>
+                        <p className="text-[10px] text-muted-foreground font-mono">{model.grudgeId}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <Badge variant="outline" className="text-[10px] capitalize">{model.category}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{model.unitType}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-[10px] text-muted-foreground">{(model.sizeBytes / 1024).toFixed(0)} KB</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => window.open(`${rtsModelCatalog.baseUrl}/${model.file}`, "_blank")}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            GLB
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </div>

@@ -1,11 +1,7 @@
 import { spriteLoader, UnitSprite, EffectSprite, ProjectileSprite, SpriteLoadResult } from './sprite-loader';
-
-// Character config loaded at runtime; fallback to empty if asset not bundled
-let characterConfig: any = { characters: {} };
-try {
-  // @ts-ignore — JSON asset may not exist in all environments
-  characterConfig = require('@/assets/sprites/grudge-swarm/characters.config.json');
-} catch {}
+// characters.config.json may not exist in all environments; use dynamic require with fallback
+const characterConfig: { characters: Record<string, any> } =
+  (() => { try { return require('@/assets/sprites/grudge-swarm/characters.config.json'); } catch { return { characters: {} }; } })();
 
 export interface CharacterAssets {
   unit: UnitSprite;

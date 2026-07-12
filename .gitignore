@@ -31,3 +31,7 @@ Grudge-Engine-Web-1/
 
 # Vercel
 .vercel
+
+# Visual Studio
+.vs/
+
