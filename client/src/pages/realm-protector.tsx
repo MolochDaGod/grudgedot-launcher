@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Shield, Sword, Heart, Coins } from "lucide-react";
 import { Link } from "wouter";
+import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
+import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
 
 interface Unit {
   id: number;
@@ -36,6 +38,14 @@ const UNIT_STATS = {
 };
 
 export default function RealmProtectorPage() {
+  return (
+    <GrudgeGameWrapper gameSlug="realm-protector" gameName="Realm Protector" xpPerThousand={15} goldPerGame={12}>
+      {(session) => <RealmProtectorPageInner session={session} />}
+    </GrudgeGameWrapper>
+  );
+}
+
+function RealmProtectorPageInner({ session }: { session: GrudgeGameSession }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gold, setGold] = useState(100);

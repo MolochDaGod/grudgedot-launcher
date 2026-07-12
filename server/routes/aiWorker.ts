@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { aiWorker } from '../services/aiWorker';
-import { aiLogger } from '../lib/logger';
+import createLogger from '../lib/logger';
+const aiLogger = createLogger('AIWorkerRoute');
 
 const router = Router();
 

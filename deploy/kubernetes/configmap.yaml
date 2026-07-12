@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: gdevelop-assistant
+  name: grudgedot
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gdevelop-config
-  namespace: gdevelop-assistant
+  name: grudgedot-config
+  namespace: grudgedot
 data:
   NODE_ENV: "production"
   AI_AGENT_PORT: "3001"
@@ -17,7 +17,7 @@ data:
   GAME_SERVER_TICK_RATE: "60"
   PUTER_DB_HOST: "mongodb-service"
   PUTER_DB_PORT: "27017"
-  PUTER_DB_NAME: "gdevelop_assistant"
+  PUTER_DB_NAME: "grudgedot"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
   AWS_REGION: "us-east-1"

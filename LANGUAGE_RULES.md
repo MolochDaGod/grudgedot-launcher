@@ -1,4 +1,4 @@
-# GDevelop Assistant — Language Rules & Coding Conventions
+# grudgeDot — Language Rules & Coding Conventions
 
 ---
 

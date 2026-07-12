@@ -1,0 +1,2605 @@
+<!DOCTYPE html>
+<html translate="no" lang="en" translate="no">
+<head>
+<meta charset="UTF-8">
+    <meta name="google" content="notranslate" />
+    <script src="https://client.grudge-studio.com/grudge-game-bootstrap.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grudge Studio — Command Hub · Wallet · Accounts · Treaty · Forge</title>
+<meta name="description" content="Canonical Grudge Studio hub (grudgeDot): accounts, wallet, Treaty, Forge editor, and fleet deployments. Railway Postgres SSOT." />
+<meta property="og:title" content="Grudge Studio — Command Hub" />
+<meta property="og:description" content="Accounts · Wallet · Treaty · Fleet games. Canonical launcher for grudge.studio and launcher.grudge-studio.com." />
+<meta property="og:url" content="https://grudge.studio/" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Puter SDK � Free AI, Cloud Storage, KV, Auth (User Pays Model = $0 cost) -->
+<script src="https://js.puter.com/v2/"></script>
+
+<style>
+:root {
+  --void: #07070f;
+  --iron: #111120;
+  --steel: #1a1a2e;
+  --gold: #c9a84c;
+  --gold-light: #f0c060;
+  --gold-dim: rgba(201,168,76,0.15);
+  --blood: #8B0000;
+  --ember: #ff4500;
+  --green: #22c55e;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --glow-gold: 0 0 20px rgba(201,168,76,0.35);
+  --glow-red: 0 0 20px rgba(139,0,0,0.5);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--void);
+  color: var(--gold);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 100% 50% at 50% -10%, rgba(139,0,0,0.12) 0%, transparent 55%),
+    repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(201,168,76,0.012) 60px, rgba(201,168,76,0.012) 61px),
+    repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(201,168,76,0.012) 60px, rgba(201,168,76,0.012) 61px);
+  pointer-events: none; z-index: 0;
+}
+
+/* ===== LAYOUT ===== */
+#app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ===== HEADER ===== */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px;
+  border-bottom: 1px solid rgba(201,168,76,0.18);
+  background: rgba(7,7,15,0.95);
+  backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 100;
+}
+
+.logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 20px; font-weight: 900;
+  background: linear-gradient(180deg, #f0c060 0%, #c9a84c 60%, #8b6914 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 12px rgba(201,168,76,0.4));
+  text-decoration: none;
+}
+
+.logo span { font-size: 11px; display: block; font-family: 'Share Tech Mono', monospace; color: rgba(201,168,76,0.45); -webkit-text-fill-color: rgba(201,168,76,0.45); letter-spacing: 4px; margin-top: -2px; }
+
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.nav-btn {
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+  padding: 7px 14px; background: transparent;
+  border: 1px solid rgba(201,168,76,0.2);
+  color: rgba(201,168,76,0.55); cursor: pointer; transition: all 0.2s;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+}
+.nav-btn:hover, .nav-btn.active {
+  background: var(--gold-dim); border-color: var(--gold); color: var(--gold-light);
+  box-shadow: var(--glow-gold);
+}
+
+#user-area { display: flex; align-items: center; gap: 10px; }
+#user-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid rgba(201,168,76,0.25);
+  background: rgba(201,168,76,0.06);
+  cursor: pointer; transition: all 0.2s;
+}
+#user-pill:hover { border-color: var(--gold); }
+#user-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--gold); background: var(--blood); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; overflow:hidden; }
+#user-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.account-avatar-big:hover .avatar-edit-hint { opacity:1 !important; }
+#user-name { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px; }
+#logout-btn { font-size: 10px; color: rgba(201,168,76,0.4); cursor: pointer; padding: 4px 8px; border: 1px solid transparent; transition: all 0.2s; }
+#logout-btn:hover { color: var(--ember); border-color: rgba(255,69,0,0.3); }
+
+/* ===== PANELS ===== */
+main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24px; }
+.panel { display: none; animation: fadeIn 0.25s ease; }
+.panel.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* ===== AUTH GATE ===== */
+#auth-gate {
+  position: fixed; inset: 0;
+  background: rgba(7,7,15,0.97);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#auth-gate.hidden { display: none; }
+
+.auth-box {
+  width: 100%; max-width: 460px;
+  border: 1px solid rgba(201,168,76,0.25);
+  background: rgba(17,17,32,0.98);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  padding: 36px;
+  position: relative;
+}
+
+.auth-logo {
+  font-family: 'Cinzel Decorative', serif; font-size: 26px; font-weight: 900;
+  background: linear-gradient(180deg, #f0c060, #c9a84c);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(201,168,76,0.5));
+  text-align: center; margin-bottom: 4px;
+}
+.auth-sub { text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 5px; color: rgba(201,168,76,0.35); margin-bottom: 28px; }
+
+.auth-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+.auth-tab {
+  flex: 1; padding: 9px; text-align: center;
+  font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px;
+  border: 1px solid rgba(201,168,76,0.2); background: transparent;
+  color: rgba(201,168,76,0.45); cursor: pointer; transition: all 0.2s;
+}
+.auth-tab.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-light); }
+
+/* Social login buttons */
+.social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.social-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(201,168,76,0.15);
+  background: rgba(201,168,76,0.04);
+  color: rgba(201,168,76,0.7);
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+}
+.social-btn:hover { border-color: rgba(201,168,76,0.4); background: rgba(201,168,76,0.08); color: var(--gold-light); }
+.social-btn.discord:hover { border-color: rgba(88,101,242,0.6); background: rgba(88,101,242,0.08); }
+.social-btn.google:hover { border-color: rgba(234,67,53,0.5); background: rgba(234,67,53,0.07); }
+.social-btn.github:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
+.social-btn.solana:hover { border-color: rgba(153,69,255,0.5); background: rgba(153,69,255,0.08); }
+.social-btn.puter:hover { border-color: rgba(201,168,76,0.6); background: rgba(201,168,76,0.12); }
+.social-btn.phone:hover { border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.08); }
+
+.social-icon { font-size: 16px; flex-shrink: 0; }
+.social-full { grid-column: 1 / -1; }
+
+.divider-or {
+  text-align: center; position: relative;
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 4px;
+  color: rgba(201,168,76,0.3); margin: 14px 0;
+}
+.divider-or::before, .divider-or::after {
+  content: ''; position: absolute; top: 50%;
+  width: 42%; height: 1px; background: rgba(201,168,76,0.15);
+}
+.divider-or::before { left: 0; }
+.divider-or::after { right: 0; }
+
+/* Form inputs */
+.field-group { margin-bottom: 14px; }
+.field-label { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 3px; color: rgba(201,168,76,0.4); margin-bottom: 6px; display: block; }
+.field-input {
+  width: 100%; padding: 10px 14px;
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(201,168,76,0.2);
+  border-left: 2px solid var(--gold); color: var(--gold-light);
+  font-family: 'Rajdhani', sans-serif; font-size: 15px; outline: none;
+  transition: all 0.2s;
+}
+.field-input:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }
+.field-input::placeholder { color: rgba(201,168,76,0.2); }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.submit-btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, rgba(139,0,0,0.8), rgba(80,0,0,0.9));
+  border: 1px solid rgba(255,69,0,0.4); color: var(--gold-light);
+  font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 4px;
+  cursor: pointer; transition: all 0.2s; margin-top: 8px;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+}
+.submit-btn:hover { background: linear-gradient(135deg, rgba(180,0,0,0.9), rgba(120,0,0,1)); box-shadow: var(--glow-red); }
+
+.auth-footer { text-align: center; margin-top: 16px; font-size: 12px; color: rgba(201,168,76,0.3); }
+.auth-link { color: rgba(201,168,76,0.6); cursor: pointer; text-decoration: underline; }
+.auth-link:hover { color: var(--gold); }
+
+.auth-err { background: rgba(139,0,0,0.2); border: 1px solid rgba(255,69,0,0.3); padding: 8px 12px; font-size: 12px; color: var(--ember); margin-bottom: 12px; display: none; }
+.auth-err.show { display: block; }
+
+/* GUEST quick entry */
+.guest-btn {
+  width: 100%; padding: 10px; margin-top: 12px;
+  background: transparent; border: 1px dashed rgba(201,168,76,0.2);
+  color: rgba(201,168,76,0.4); font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s;
+}
+.guest-btn:hover { border-color: rgba(201,168,76,0.4); color: rgba(201,168,76,0.7); }
+
+/* ===== OVERVIEW ===== */
+.hero-banner {
+  padding: 28px 32px; margin-bottom: 28px;
+  background: linear-gradient(135deg, rgba(139,0,0,0.1), rgba(17,17,32,0.95));
+  border: 1px solid rgba(139,0,0,0.3);
+  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+  display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+}
+.hero-text h2 { font-family: 'Cinzel Decorative', serif; font-size: 28px; color: #ff7755; filter: drop-shadow(0 0 12px rgba(255,69,0,0.3)); }
+.hero-text p { font-size: 15px; color: rgba(201,168,76,0.6); margin-top: 6px; max-width: 550px; line-height: 1.6; }
+.hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.hero-cta {
+  padding: 10px 22px; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px;
+  border: 1px solid rgba(255,69,0,0.4); background: rgba(255,69,0,0.08); color: #ff7755;
+  cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-block;
+}
+.hero-cta:hover { background: rgba(255,69,0,0.15); box-shadow: var(--glow-red); }
+.hero-cta.secondary { border-color: rgba(201,168,76,0.3); background: var(--gold-dim); color: var(--gold); }
+.hero-cta.secondary:hover { border-color: var(--gold); box-shadow: var(--glow-gold); }
+
+.stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.stat-box { padding: 18px; background: rgba(201,168,76,0.03); border: 1px solid rgba(201,168,76,0.12); text-align: center; position: relative; overflow: hidden; }
+.stat-box::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.4; }
+.stat-num { font-family: 'Cinzel Decorative', serif; font-size: 32px; color: var(--gold-light); filter: drop-shadow(0 0 8px rgba(201,168,76,0.3)); }
+.stat-lbl { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 3px; color: rgba(201,168,76,0.4); margin-top: 4px; }
+
+/* Section headers */
+.sh { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.sh-title { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; white-space: nowrap; }
+.sh-line { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201,168,76,0.3), transparent); }
+.sh-badge { font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 2px 8px; border: 1px solid rgba(201,168,76,0.2); color: rgba(201,168,76,0.35); }
+
+/* Quick links */
+.qlinks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-bottom: 28px; }
+.qlink {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  background: rgba(201,168,76,0.03); border: 1px solid rgba(201,168,76,0.12);
+  color: rgba(201,168,76,0.75); text-decoration: none;
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+  cursor: pointer; transition: all 0.2s;
+}
+.qlink:hover { border-color: rgba(201,168,76,0.45); background: var(--gold-dim); color: var(--gold-light); transform: translateX(3px); }
+.qlink-icon { font-size: 16px; flex-shrink: 0; }
+
+/* ===== ACCOUNT PANEL ===== */
+.account-grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+@media (max-width: 900px) { .account-grid { grid-template-columns: 1fr; } }
+
+.account-card {
+  padding: 24px; background: rgba(201,168,76,0.03); border: 1px solid rgba(201,168,76,0.15);
+}
+.account-avatar-big {
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 2px solid var(--gold); background: var(--blood);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: bold; margin: 0 auto 16px;
+  box-shadow: 0 0 20px rgba(139,0,0,0.4);
+}
+.account-username { font-family: 'Cinzel', serif; font-size: 18px; text-align: center; color: var(--gold-light); margin-bottom: 4px; }
+.account-id { font-family: 'Share Tech Mono', monospace; font-size: 10px; text-align: center; color: rgba(201,168,76,0.35); letter-spacing: 2px; margin-bottom: 16px; }
+.grudge-id-box {
+  padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.2);
+  border-left: 3px solid var(--blood); margin-bottom: 12px;
+}
+.grudge-id-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 3px; color: rgba(201,168,76,0.35); margin-bottom: 4px; }
+.grudge-id-value { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--gold); word-break: break-all; }
+
+.connector-list { display: flex; flex-direction: column; gap: 8px; }
+.connector-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border: 1px solid rgba(201,168,76,0.12); background: rgba(0,0,0,0.2);
+}
+.connector-info { display: flex; align-items: center; gap: 10px; }
+.connector-icon { font-size: 18px; }
+.connector-name { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600; color: var(--gold-light); }
+.connector-status { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 2px; }
+.status-connected { color: var(--green); }
+.status-disconnected { color: rgba(201,168,76,0.3); }
+.connector-action {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px;
+  padding: 5px 12px; border: 1px solid; cursor: pointer; transition: all 0.2s; background: transparent;
+}
+.btn-connect { border-color: rgba(201,168,76,0.3); color: var(--gold); }
+.btn-connect:hover { border-color: var(--gold); background: var(--gold-dim); }
+.btn-disconnect { border-color: rgba(255,69,0,0.3); color: var(--ember); }
+.btn-disconnect:hover { border-color: var(--ember); background: rgba(255,69,0,0.08); }
+
+/* Wallet section */
+.wallet-section { margin-top: 20px; }
+.wallet-addr {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  padding: 10px 14px; background: rgba(153,69,255,0.06);
+  border: 1px solid rgba(153,69,255,0.2); color: rgba(200,170,255,0.8);
+  word-break: break-all; margin-top: 8px; position: relative;
+}
+.copy-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 14px; opacity: 0.6; }
+.copy-btn:hover { opacity: 1; }
+
+/* Wallet panel balances */
+.bal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin: 16px 0 24px; }
+.bal-card {
+  padding: 16px; background: rgba(201,168,76,0.04);
+  border: 1px solid rgba(201,168,76,0.18);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.bal-lbl { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px; color: rgba(201,168,76,0.45); margin-bottom: 6px; }
+.bal-val { font-family: 'Cinzel', serif; font-size: 22px; color: var(--gold-light); }
+.bal-sub { font-size: 11px; color: rgba(201,168,76,0.4); margin-top: 4px; }
+
+/* Treaty panel */
+.treaty-shell {
+  display: grid; grid-template-columns: 220px 1fr; gap: 0;
+  min-height: 520px; border: 1px solid rgba(201,168,76,0.2);
+  background: rgba(0,0,0,0.35); overflow: hidden;
+}
+@media (max-width: 800px) { .treaty-shell { grid-template-columns: 1fr; } }
+.treaty-side {
+  border-right: 1px solid rgba(201,168,76,0.15);
+  padding: 12px; overflow-y: auto; max-height: 560px;
+}
+.treaty-side h4 {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px;
+  color: rgba(201,168,76,0.4); margin: 12px 0 8px;
+}
+.treaty-chan {
+  display: block; width: 100%; text-align: left;
+  padding: 8px 10px; margin-bottom: 4px;
+  border: 1px solid transparent; background: transparent;
+  color: rgba(201,168,76,0.7); font-family: 'Rajdhani', sans-serif; font-size: 13px;
+  cursor: pointer; transition: all 0.15s;
+}
+.treaty-chan:hover, .treaty-chan.active {
+  border-color: rgba(201,168,76,0.35); background: rgba(201,168,76,0.08); color: var(--gold-light);
+}
+.treaty-main { display: flex; flex-direction: column; min-height: 520px; }
+.treaty-log {
+  flex: 1; overflow-y: auto; padding: 14px; min-height: 360px; max-height: 440px;
+}
+.treaty-msg {
+  padding: 8px 10px; margin-bottom: 8px;
+  background: rgba(201,168,76,0.04); border: 1px solid rgba(201,168,76,0.1); border-radius: 8px;
+}
+.treaty-msg .who { font-weight: 700; color: var(--gold); font-size: 12px; }
+.treaty-msg .when { color: rgba(201,168,76,0.35); font-size: 10px; margin-left: 8px; font-family: 'Share Tech Mono', monospace; }
+.treaty-msg .body { margin-top: 4px; font-size: 14px; color: rgba(240,220,160,0.9); word-break: break-word; }
+.treaty-composer {
+  display: flex; gap: 8px; padding: 12px; border-top: 1px solid rgba(201,168,76,0.15);
+  background: rgba(0,0,0,0.4);
+}
+.treaty-composer input {
+  flex: 1; padding: 10px 12px; background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(201,168,76,0.25); color: var(--gold-light);
+  font-family: 'Rajdhani', sans-serif; font-size: 14px; outline: none;
+}
+.treaty-composer button {
+  padding: 10px 18px; background: var(--gold-dim); border: 1px solid var(--gold);
+  color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
+  cursor: pointer;
+}
+.treaty-composer button:disabled { opacity: 0.4; cursor: not-allowed; }
+.treaty-empty { text-align: center; padding: 40px 16px; color: rgba(201,168,76,0.4); font-size: 13px; }
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.pill {
+  padding: 6px 12px; border: 1px solid rgba(201,168,76,0.2); background: transparent;
+  color: rgba(201,168,76,0.55); font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  letter-spacing: 1px; cursor: pointer;
+}
+.pill.active { border-color: var(--gold); color: var(--gold-light); background: var(--gold-dim); }
+
+/* ===== APPS PANEL ===== */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.filter-search {
+  flex: 1; min-width: 200px; padding: 9px 14px;
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(201,168,76,0.2); border-left: 2px solid var(--gold);
+  color: var(--gold-light); font-family: 'Share Tech Mono', monospace; font-size: 12px; outline: none;
+}
+.filter-search::placeholder { color: rgba(201,168,76,0.2); }
+.filter-tag {
+  padding: 8px 14px; font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+  border: 1px solid rgba(201,168,76,0.18); background: transparent; color: rgba(201,168,76,0.45);
+  cursor: pointer; transition: all 0.2s;
+}
+.filter-tag:hover, .filter-tag.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+.app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.app-card {
+  padding: 14px 16px; background: rgba(201,168,76,0.02);
+  border: 1px solid rgba(201,168,76,0.1);
+  text-decoration: none; display: block; transition: all 0.2s;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  position: relative; overflow: hidden;
+}
+.app-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; transition: opacity 0.2s; }
+.app-card:hover { border-color: rgba(201,168,76,0.4); background: rgba(201,168,76,0.05); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(201,168,76,0.08); }
+.app-card:hover::before { opacity: 1; }
+.app-card.hot { border-color: rgba(255,69,0,0.25); background: rgba(255,69,0,0.03); }
+.app-card.hot:hover { border-color: rgba(255,69,0,0.5); box-shadow: var(--glow-red); }
+.app-card-name { font-family: 'Cinzel', serif; font-size: 12px; color: var(--gold-light); margin-bottom: 4px; }
+.app-card.hot .app-card-name { color: #ff7755; }
+.app-card-url { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(201,168,76,0.3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-card-meta { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.app-badge { font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 2px 6px; border: 1px solid rgba(201,168,76,0.18); color: rgba(201,168,76,0.45); }
+.app-badge.fire { border-color: rgba(255,69,0,0.35); color: var(--ember); }
+.app-date { font-size: 9px; font-family: 'Share Tech Mono', monospace; color: rgba(201,168,76,0.2); margin-left: auto; }
+
+/* ===== DEPLOYMENTS ===== */
+.deploy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.deploy-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  background: rgba(201,168,76,0.02); border: 1px solid rgba(201,168,76,0.08);
+  text-decoration: none; transition: all 0.2s;
+}
+.deploy-row:hover { border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.05); }
+.deploy-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 4px var(--green); }
+.deploy-name { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--gold); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deploy-folder { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(201,168,76,0.25); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== DNS PANEL ===== */
+.dns-card { padding: 24px; background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.15); margin-bottom: 16px; }
+.dns-card h3 { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 3px; color: var(--gold-light); margin-bottom: 12px; }
+.dns-table { width: 100%; border-collapse: collapse; }
+.dns-table th { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 3px; color: rgba(201,168,76,0.4); text-align: left; padding: 8px; border-bottom: 1px solid rgba(201,168,76,0.15); }
+.dns-table td { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--gold); padding: 10px 8px; border-bottom: 1px solid rgba(201,168,76,0.07); vertical-align: top; }
+.dns-table td.value { color: var(--green); word-break: break-all; }
+.dns-table td.note { font-size: 10px; color: rgba(201,168,76,0.4); }
+
+.code-block {
+  background: rgba(0,0,0,0.5); border: 1px solid rgba(201,168,76,0.15); border-left: 3px solid var(--gold);
+  padding: 16px; font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--gold);
+  line-height: 1.8; overflow-x: auto; margin: 10px 0;
+}
+.code-block .comment { color: rgba(201,168,76,0.35); }
+.code-block .key { color: #60a5fa; }
+.code-block .val { color: var(--green); }
+
+/* ===== AI CONSOLE ===== */
+.terminal-wrap {
+  background: rgba(0,0,0,0.6); border: 1px solid rgba(201,168,76,0.2); overflow: hidden;
+}
+.terminal-top {
+  display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+  background: rgba(201,168,76,0.06); border-bottom: 1px solid rgba(201,168,76,0.12);
+}
+.t-dot { width: 9px; height: 9px; border-radius: 50%; }
+.t-r { background: #ff5f57; } .t-y { background: #febc2e; } .t-g { background: #28c840; }
+.terminal-label { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 3px; color: rgba(201,168,76,0.45); margin-left: 6px; }
+.terminal-body { padding: 16px; min-height: 260px; max-height: 420px; overflow-y: auto; }
+.terminal-line { font-family: 'Share Tech Mono', monospace; font-size: 12px; line-height: 1.9; }
+.t-cmd { color: var(--ember); } .t-ok { color: var(--green); } .t-info { color: #60a5fa; } .t-ai { color: var(--gold-light); }
+.terminal-input-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  border-top: 1px solid rgba(201,168,76,0.1);
+}
+.t-prompt { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--gold); flex-shrink: 0; }
+#ai-input {
+  flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(201,168,76,0.25);
+  outline: none; font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--gold-light); padding: 4px 0;
+}
+#ai-input::placeholder { color: rgba(201,168,76,0.2); }
+.t-send {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 2px;
+  padding: 6px 16px; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.25);
+  color: var(--gold); cursor: pointer; transition: all 0.2s;
+}
+.t-send:hover { background: var(--gold-dim); box-shadow: var(--glow-gold); }
+
+.ai-shortcuts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.ai-sc {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+  padding: 5px 12px; border: 1px solid rgba(201,168,76,0.15); background: transparent;
+  color: rgba(201,168,76,0.5); cursor: pointer; transition: all 0.2s;
+}
+.ai-sc:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--void); }
+::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.25); border-radius: 2px; }
+
+/* ===== SPINNER ===== */
+.spinner { display: inline-block; width: 10px; height: 10px; border: 1px solid rgba(201,168,76,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Status bar */
+.status-bar {
+  display: flex; gap: 20px; padding: 10px 20px;
+  background: rgba(201,168,76,0.03); border: 1px solid rgba(201,168,76,0.1);
+  border-left: 3px solid var(--gold); align-items: center; flex-wrap: wrap;
+  margin-bottom: 24px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: rgba(201,168,76,0.5);
+}
+.status-dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 2s ease-in-out infinite; display: inline-block; margin-right: 6px; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Notification toast */
+#toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 12px 20px; background: rgba(17,17,32,0.97);
+  border: 1px solid rgba(201,168,76,0.3); border-left: 3px solid var(--gold);
+  font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--gold);
+  z-index: 500; transform: translateY(80px); opacity: 0;
+  transition: all 0.3s; max-width: 320px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.err { border-left-color: var(--ember); color: var(--ember); }
+
+@media (max-width: 768px) {
+  header { flex-wrap: wrap; gap: 10px; }
+  nav { display: none; }
+  .account-grid { grid-template-columns: 1fr; }
+  .hero-banner { flex-direction: column; }
+}
+
+/* --- GRUDGE MODAL SYSTEM (extracted from reference designs) --- */
+.gm-overlay {
+  position:fixed;inset:0;background:rgba(4,2,1,0.88);
+  display:flex;align-items:center;justify-content:center;z-index:9999;
+  backdrop-filter:blur(6px) saturate(0.6);animation:gm-overlay-in 0.2s ease;
+}
+@keyframes gm-overlay-in { from{opacity:0} to{opacity:1} }
+.gm-modal {
+  position:relative;background:#111118;border:1px solid #2a1f0f;
+  min-width:380px;max-width:520px;width:100%;margin:1rem;
+  font-family:'Rajdhani',sans-serif;color:#d4c4a8;overflow:hidden;
+  animation:gm-modal-in 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes gm-modal-in { from{opacity:0;transform:translateY(18px) scale(0.97)} to{opacity:1;transform:none} }
+.gm-accent-bar { height:3px;background:linear-gradient(90deg,transparent 0%,#7a5418 20%,#c8922a 50%,#7a5418 80%,transparent 100%); }
+.gm-corner { position:absolute;width:18px;height:18px; }
+.gm-corner-tl { top:3px;left:0;border-top:2px solid #7a5418;border-left:2px solid #7a5418; }
+.gm-corner-tr { top:3px;right:0;border-top:2px solid #7a5418;border-right:2px solid #7a5418; }
+.gm-corner-bl { bottom:0;left:0;border-bottom:2px solid #7a5418;border-left:2px solid #7a5418; }
+.gm-corner-br { bottom:0;right:0;border-bottom:2px solid #7a5418;border-right:2px solid #7a5418; }
+.gm-header { display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px 14px;border-bottom:1px solid #2a1f0f;gap:12px; }
+.gm-icon { width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid #7a5418;color:#c8922a;background:rgba(200,146,42,0.07); }
+.gm-title { font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:#f0e6d0;letter-spacing:0.06em;text-transform:uppercase;margin:0; }
+.gm-subtitle { font-size:11px;color:#7a5418;letter-spacing:0.12em;text-transform:uppercase;margin-top:2px; }
+.gm-close { background:none;border:none;cursor:pointer;color:#5a4f3c;padding:2px;font-size:18px;transition:color 0.15s; }
+.gm-close:hover { color:#c8922a; }
+.gm-body { padding:20px 24px;font-size:14px;line-height:1.65; }
+.gm-footer { display:flex;justify-content:flex-end;gap:10px;padding:16px 24px 20px;border-top:1px solid #2a1f0f; }
+.gm-btn { font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;padding:8px 20px;border:1px solid;cursor:pointer;transition:all 0.15s;background:none; }
+.gm-btn-ghost { color:#5a4f3c;border-color:#1e1812; }
+.gm-btn-ghost:hover { color:#d4c4a8;border-color:#2a1f0f; }
+.gm-btn-primary { color:#0a0a0c;background:#c8922a;border-color:#c8922a;font-weight:700; }
+.gm-btn-primary:hover { background:#e8b84b;box-shadow:0 0 16px rgba(200,146,42,0.35); }
+.gm-btn-danger { color:#f0d0d0;background:#8b1a1a;border-color:#cc2222;font-weight:700; }
+.gm-btn-danger:hover { background:#cc2222;box-shadow:0 0 16px rgba(204,34,34,0.35); }
+.gm-wallet-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px; }
+.gm-wallet-item { display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #2a1f0f;background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.15s;font-size:13px;font-weight:600;color:#d4c4a8; }
+.gm-wallet-item:hover { border-color:#7a5418;background:rgba(200,146,42,0.06);color:#f0e6d0; }
+.gm-badge { display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;padding:3px 8px;border:1px solid;font-weight:600; }
+.gm-badge-gold { color:#c8922a;border-color:#7a5418;background:rgba(200,146,42,0.08); }
+.gm-badge-green { color:#44cc66;border-color:#1a6b2a;background:rgba(34,170,68,0.08); }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ===== AUTH GATE ===== -->
+<div id="auth-gate">
+  <div class="auth-box">
+    <div class="auth-logo">GRUDGE STUDIO</div>
+    <div class="auth-sub">COMMAND HUB // IDENTITY LAYER</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login', this)">SIGN IN</button>
+      <button class="auth-tab" onclick="switchAuthTab('register', this)">CREATE ID</button>
+    </div>
+
+    <div id="auth-err" class="auth-err"></div>
+
+    <!-- SOCIAL LOGINS -->
+    <div class="social-grid">
+      <button class="social-btn puter" onclick="loginWithGrudgeId()" title="Canonical Grudge ID � loads Warlords Railway characters">
+        <span class="social-icon">?</span> Grudge ID
+      </button>
+      <button class="social-btn discord" onclick="loginDiscord()">
+        <span class="social-icon">??</span> Discord
+      </button>
+      <button class="social-btn solana" onclick="loginPhantom()">
+        <span class="social-icon">?</span> Phantom
+      </button>
+      <button class="social-btn phone" onclick="loginPhone()">
+        <span class="social-icon">??</span> Phone
+      </button>
+      <button class="social-btn google" onclick="loginGoogle()" title="Google sign-in via Puter">
+        <span class="social-icon">??</span> Google
+      </button>
+      <button class="social-btn github" onclick="loginGithub()">
+        <span class="social-icon">??</span> GitHub
+      </button>
+    </div>
+
+    <div class="divider-or">OR</div>
+
+    <!-- EMAIL/PASS FORM � LOGIN -->
+    <div id="login-form">
+      <div class="field-group">
+        <label class="field-label">USERNAME OR EMAIL</label>
+        <input class="field-input" id="login-user" type="text" placeholder="racalvin or you@email.com" autocomplete="username">
+      </div>
+      <div class="field-group">
+        <label class="field-label">PASSWORD</label>
+        <input class="field-input" id="login-pass" type="password" placeholder="��������" autocomplete="current-password">
+      </div>
+      <button class="submit-btn" onclick="loginEmail()">? ENTER THE HUB</button>
+      <div class="auth-footer">
+        <span class="auth-link" onclick="showForgot()">Forgot password?</span>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="register-form" style="display:none">
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">USERNAME</label>
+          <input class="field-input" id="reg-user" type="text" placeholder="PirateKing" autocomplete="username">
+        </div>
+        <div class="field-group">
+          <label class="field-label">DISPLAY NAME</label>
+          <input class="field-input" id="reg-display" type="text" placeholder="Racalvin">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">EMAIL</label>
+        <input class="field-input" id="reg-email" type="email" placeholder="you@email.com" autocomplete="email">
+      </div>
+      <div class="field-group">
+        <label class="field-label">PHONE (OPTIONAL)</label>
+        <input class="field-input" id="reg-phone" type="tel" placeholder="+1 555 000 0000">
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">PASSWORD</label>
+          <input class="field-input" id="reg-pass" type="password" placeholder="��������" autocomplete="new-password">
+        </div>
+        <div class="field-group">
+          <label class="field-label">CONFIRM</label>
+          <input class="field-input" id="reg-pass2" type="password" placeholder="��������" autocomplete="new-password">
+        </div>
+      </div>
+      <button class="submit-btn" onclick="registerEmail()">? FORGE MY GRUDGE ID</button>
+      <div class="auth-footer" style="margin-top:10px; font-size:11px; color:rgba(201,168,76,0.25)">
+        By creating an account you get a Grudge ID + Puter ID automatically. 
+        Solana wallet optional but recommended.
+      </div>
+    </div>
+
+    <button class="guest-btn" onclick="loginGuest()">? PLAY AS GUEST � NO ACCOUNT NEEDED</button>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app">
+  <header>
+    <a class="logo" href="/" onclick="goPanel('overview');return false;">GRUDGE STUDIO<span>// grudgeDot HUB · FORGE · FLEET</span></a>
+    <nav>
+      <button type="button" class="nav-btn active" data-panel="overview" onclick="goPanel('overview', this)">HOME</button>
+      <button type="button" class="nav-btn" data-panel="account" onclick="goPanel('account', this)">ACCOUNTS</button>
+      <button type="button" class="nav-btn" data-panel="wallet" onclick="goPanel('wallet', this)">WALLET</button>
+      <button type="button" class="nav-btn" data-panel="treaty" onclick="goPanel('treaty', this)">TREATY</button>
+      <button type="button" class="nav-btn" data-panel="forge" onclick="goPanel('forge', this)">FORGE</button>
+      <button type="button" class="nav-btn" data-panel="apps" onclick="goPanel('apps', this)">APPS</button>
+      <button type="button" class="nav-btn" data-panel="deployments" onclick="goPanel('deployments', this)">DEPLOY</button>
+      <button type="button" class="nav-btn" data-panel="dns" onclick="goPanel('dns', this)">FLEET</button>
+      <button type="button" class="nav-btn" data-panel="stack" onclick="goPanel('stack', this)">STACK</button>
+      <button type="button" class="nav-btn" data-panel="ai" onclick="goPanel('ai', this)">AI</button>
+    </nav>
+    <div id="user-area">
+      <div id="user-pill" onclick="goPanel('account')">
+        <div id="user-avatar">?</div>
+        <div id="user-name">LOADING...</div>
+      </div>
+      <span id="logout-btn" onclick="logout()">LOGOUT</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="status-bar">
+        <span><span class="status-dot-live"></span>SYSTEMS ONLINE</span>
+        <span id="fleet-health" style="font-family:'Share Tech Mono',monospace;font-size:10px">PROBE�</span>
+        <span>? GRUDGE ID</span>
+        <span>?? WARLORDS</span>
+        <span id="status-date"></span>
+        <span style="margin-left:auto">? RACALVIN THE PIRATE KING</span>
+      </div>
+
+      <div class="hero-banner">
+        <div class="hero-text">
+          <h2>Grudge Studio Command Hub</h2>
+          <p><strong>grudge.studio</strong> is the canonical hub — grudgeDot launcher merged here for deploy.
+          Accounts · Wallet · Treaty · <strong>Forge</strong> · fleet games.
+          One truth: Railway Postgres characters/account · ObjectStore definitions · R2 assets.</p>
+          <div class="hero-actions">
+            <a class="hero-cta" href="https://grudgewarlords.com" target="_blank" rel="noopener">WARLORDS LIVE</a>
+            <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio" target="_blank" rel="noopener">OPEN FORGE</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('wallet')">WALLET</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('account')">ACCOUNT</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('treaty')">TREATY</a>
+            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/?from=grudge.studio" target="_blank" rel="noopener">CRAFTING</a>
+            <a class="hero-cta secondary" href="https://character.grudge-studio.com?era=warlords&amp;from=grudge.studio" target="_blank" rel="noopener">CHARACTERS</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('deployments')">DEPLOYMENTS</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-num">FLEET</div><div class="stat-lbl">ONE TRUTH</div></div>
+        <div class="stat-box"><div class="stat-num">ID</div><div class="stat-lbl">GRUDGE AUTH</div></div>
+        <div class="stat-box"><div class="stat-num">PG</div><div class="stat-lbl">RAILWAY SSOT</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-users">�</div><div class="stat-lbl">CHARS LOADED</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#a855f7">?</div><div class="stat-lbl">SOLANA</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:var(--green)">?</div><div class="stat-lbl">RAILWAY LIVE</div></div>
+      </div>
+
+      <div class="sh"><div class="sh-title">YOUR CHARACTERS</div><div class="sh-line"></div><div class="sh-badge">RAILWAY POSTGRES</div></div>
+      <div id="launcher-characters" style="margin-bottom:24px;padding:4px 0">
+        <div style="font-size:12px;color:rgba(201,168,76,0.45)">Sign in with Grudge ID to load characters�</div>
+      </div>
+
+      <!-- ===== FLEET SERVICES ===== -->
+      <div class="sh"><div class="sh-title">FLEET TOOLS</div><div class="sh-line"></div><div class="sh-badge" id="services-status">SIGN IN FOR ACCOUNT DATA</div></div>
+      <div id="services-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:28px">
+        <!-- Cards rendered by renderServices() -->
+      </div>
+
+      <div class="sh"><div class="sh-title">QUICK ACCESS</div><div class="sh-line"></div></div>
+      <div class="qlinks">
+        <a class="qlink" href="https://grudgewarlords.com" target="_blank" rel="noopener"><span class="qlink-icon">W</span>WARLORDS</a>
+        <a class="qlink" href="https://forge.grudge-studio.com?from=grudge.studio" target="_blank" rel="noopener"><span class="qlink-icon">F</span>FORGE</a>
+        <a class="qlink" href="javascript:void(0)" onclick="goPanel('wallet')"><span class="qlink-icon">$</span>WALLET</a>
+        <a class="qlink" href="javascript:void(0)" onclick="goPanel('account')"><span class="qlink-icon">A</span>ACCOUNT</a>
+        <a class="qlink" href="javascript:void(0)" onclick="goPanel('treaty')"><span class="qlink-icon">T</span>TREATY</a>
+        <a class="qlink" href="https://grudge-crafting.puter.site/?from=grudge.studio" target="_blank" rel="noopener"><span class="qlink-icon">C</span>CRAFTING</a>
+        <a class="qlink" href="https://character.grudge-studio.com?era=warlords&amp;from=grudge.studio" target="_blank" rel="noopener"><span class="qlink-icon">G</span>GCS</a>
+        <a class="qlink" id="qlink-id" href="https://id.grudge-studio.com/login" target="_blank" rel="noopener"><span class="qlink-icon">ID</span>GRUDGE ID</a>
+        <a class="qlink" href="https://client.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">CL</span>CLIENT</a>
+        <a class="qlink" href="https://fleet.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">MAP</span>FLEET MAP</a>
+        <a class="qlink" href="https://objectstore.grudge-studio.com/api/v1/master-recipes.json" target="_blank" rel="noopener"><span class="qlink-icon">OS</span>OBJECTSTORE</a>
+        <a class="qlink" href="https://assets.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">R2</span>ASSETS CDN</a>
+        <a class="qlink" href="https://browse.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">BR</span>BROWSE</a>
+        <a class="qlink" href="https://ui.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">UI</span>UI EDITOR</a>
+        <a class="qlink" href="https://grudox.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">GX</span>GRUDOX</a>
+        <a class="qlink" href="https://gameopen.vercel.app" target="_blank" rel="noopener"><span class="qlink-icon">GO</span>GAMEOPEN</a>
+      </div>
+    </div>
+
+    <!-- ACCOUNT / GRUDGE ID -->
+    <div class="panel" id="panel-account">
+      <div class="sh"><div class="sh-title">ACCOUNTS · GRUDGE ID</div><div class="sh-line"></div><div class="sh-badge">IDENTITY HUB · RAILWAY SSOT</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 18px;line-height:1.5">
+        One Grudge ID per human · many characters · account bag shared across games.
+        Auth via <code style="color:var(--gold)">id.grudge-studio.com</code> · player state on Railway Postgres.
+      </p>
+
+      <div class="account-grid">
+        <div>
+          <!-- Identity card -->
+          <div class="account-card" style="margin-bottom:14px">
+            <div id="acct-avatar-big" class="account-avatar-big" onclick="changeAvatar()" title="Click to change avatar" style="cursor:pointer;position:relative;overflow:hidden">
+              <img id="acct-avatar-img" src="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:none">
+              <span id="acct-avatar-letter">?</span>
+              <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);font-size:8px;text-align:center;padding:2px 0;color:var(--gold);letter-spacing:1px;opacity:0;transition:opacity .2s" class="avatar-edit-hint">CHANGE</div>
+            </div>
+            <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+            <div class="account-username" id="acct-username">�</div>
+            <div class="account-id" id="acct-display">�</div>
+
+            <div class="grudge-id-box">
+              <div class="grudge-id-label">GRUDGE ID</div>
+              <div class="grudge-id-value" id="acct-grudge-id">�</div>
+            </div>
+            <div class="grudge-id-box" style="border-left-color: rgba(6,182,212,0.7)">
+              <div class="grudge-id-label">PUTER ID</div>
+              <div class="grudge-id-value" id="acct-puter-id">�</div>
+            </div>
+
+            <!-- Solana Wallet -->
+            <div class="wallet-section">
+              <div class="sh" style="margin-bottom:8px"><div class="sh-title" style="font-size:10px;color:rgba(153,69,255,0.8)">SOLANA WALLET</div><div class="sh-line" style="background:linear-gradient(90deg,rgba(153,69,255,0.3),transparent)"></div></div>
+              <div id="wallet-display">
+                <button class="social-btn solana" style="width:100%;justify-content:center;margin-bottom:8px" onclick="loginPhantom()">
+                  <span class="social-icon">?</span> Connect Phantom Wallet
+                </button>
+                <button class="social-btn phone" style="width:100%;justify-content:center" onclick="loginPhone()">
+                  <span class="social-icon">??</span> Link Phone Number
+                </button>
+              </div>
+              <div id="wallet-connected" style="display:none">
+                <div class="wallet-addr" id="wallet-addr">
+                  �
+                  <span class="copy-btn" onclick="copyWallet()">??</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connected services -->
+        <div>
+          <div class="account-card">
+            <div class="sh" style="margin-bottom:16px"><div class="sh-title">CONNECTED ACCOUNTS</div><div class="sh-line"></div></div>
+            <div class="connector-list" id="connector-list">
+              <!-- rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Account settings -->
+          <div class="account-card" style="margin-top:14px">
+            <div class="sh" style="margin-bottom:16px"><div class="sh-title">ACCOUNT SETTINGS</div><div class="sh-line"></div></div>
+            <div class="field-group">
+              <label class="field-label">DISPLAY NAME</label>
+              <input class="field-input" id="settings-display" type="text" placeholder="Your display name">
+            </div>
+            <div class="field-group">
+              <label class="field-label">EMAIL</label>
+              <input class="field-input" id="settings-email" type="email" placeholder="your@email.com">
+            </div>
+            <div class="field-group">
+              <label class="field-label">PHONE NUMBER</label>
+              <input class="field-input" id="settings-phone" type="tel" placeholder="+1 555 000 0000">
+            </div>
+            <button class="submit-btn" onclick="saveSettings()" style="margin-top:12px">SAVE SETTINGS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WALLET PANEL -->
+    <div class="panel" id="panel-wallet">
+      <div class="sh"><div class="sh-title">WALLET · WAR CHEST</div><div class="sh-line"></div><div class="sh-badge">RAILWAY /api/wallet · ACCOUNT SCOPE</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 18px;line-height:1.5">
+        Solana wallet + GBUX live on Railway account scope (not character). Phantom external or Crossmint custodial.
+      </p>
+      <div class="bal-grid">
+        <div class="bal-card">
+          <div class="bal-lbl">GBUX</div>
+          <div class="bal-val" id="wallet-gbux">—</div>
+          <div class="bal-sub">Fleet currency</div>
+        </div>
+        <div class="bal-card">
+          <div class="bal-lbl">GOLD / RESOURCES</div>
+          <div class="bal-val" id="wallet-gold">—</div>
+          <div class="bal-sub">Account bag</div>
+        </div>
+        <div class="bal-card">
+          <div class="bal-lbl">WALLET TYPE</div>
+          <div class="bal-val" id="wallet-type" style="font-size:16px">—</div>
+          <div class="bal-sub" id="wallet-has">status</div>
+        </div>
+        <div class="bal-card">
+          <div class="bal-lbl">SOLANA ADDRESS</div>
+          <div class="bal-val" id="wallet-panel-addr" style="font-size:12px;word-break:break-all;font-family:'Share Tech Mono',monospace">—</div>
+          <div class="bal-sub"><span class="copy-btn" style="position:static;transform:none" onclick="copyWallet()">📋 Copy</span></div>
+        </div>
+      </div>
+      <div class="account-grid">
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">CONNECT / CREATE</div><div class="sh-line"></div></div>
+          <button class="social-btn solana" style="width:100%;justify-content:center;margin-bottom:8px" onclick="loginPhantom()">
+            <span class="social-icon">◎</span> Connect Phantom
+          </button>
+          <button class="submit-btn" style="margin-bottom:8px" onclick="ensureServerWallet()">CREATE SERVER WALLET (Crossmint)</button>
+          <button class="social-btn" style="width:100%;justify-content:center" onclick="refreshWalletPanel()">
+            <span class="social-icon">↻</span> Refresh balances
+          </button>
+          <p id="wallet-panel-msg" style="margin-top:12px;font-size:12px;color:rgba(201,168,76,0.45);line-height:1.5">Sign in to load Railway wallet status.</p>
+        </div>
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">ACCOUNT INVENTORY PREVIEW</div><div class="sh-line"></div></div>
+          <div id="wallet-inv-preview" style="font-size:13px;color:rgba(201,168,76,0.55);line-height:1.6">—</div>
+          <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/?from=grudge.studio" target="_blank" rel="noopener" style="text-decoration:none">Crafting bag</a>
+            <a class="hero-cta secondary" href="/app/wallet" style="text-decoration:none">grudgeDot War Chest</a>
+            <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio-wallet" target="_blank" rel="noopener" style="text-decoration:none">Open Forge</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREATY PANEL -->
+    <div class="panel" id="panel-treaty">
+      <div class="sh"><div class="sh-title">TREATY · FLEET SOCIAL</div><div class="sh-line"></div><div class="sh-badge">ACCOUNT-SCOPED · RAILWAY /api/treaty</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 14px;line-height:1.5">
+        Friends, DMs, groups, and fleet server chat keyed to <strong>Grudge ID account</strong> (not character).
+        Same social graph in every game. History stays on Railway Postgres.
+      </p>
+      <div class="pill-row">
+        <button type="button" class="pill active" data-treaty-tab="servers" onclick="setTreatyTab('servers', this)">SERVER CHAT</button>
+        <button type="button" class="pill" data-treaty-tab="dms" onclick="setTreatyTab('dms', this)">DMs</button>
+        <button type="button" class="pill" data-treaty-tab="friends" onclick="setTreatyTab('friends', this)">FRIENDS</button>
+        <button type="button" class="pill" data-treaty-tab="groups" onclick="setTreatyTab('groups', this)">GROUPS</button>
+        <a class="pill" href="https://grudgewarlords.com/treaty" target="_blank" rel="noopener" style="text-decoration:none">OPEN FULL APP →</a>
+        <a class="pill" href="/treaty-embed.html?game=fleet" target="_blank" rel="noopener" style="text-decoration:none">EMBED</a>
+      </div>
+      <div class="treaty-shell">
+        <aside class="treaty-side">
+          <h4 id="treaty-side-title">CHANNELS</h4>
+          <div id="treaty-channels"><div class="treaty-empty">Sign in to load Treaty…</div></div>
+          <div style="margin-top:16px">
+            <div class="field-group" id="treaty-friend-box" style="display:none">
+              <label class="field-label">ADD FRIEND</label>
+              <input class="field-input" id="treaty-friend-query" type="text" placeholder="username or grudge id">
+              <button class="submit-btn" style="margin-top:8px" onclick="treatyAddFriend()">SEND REQUEST</button>
+            </div>
+          </div>
+        </aside>
+        <div class="treaty-main">
+          <div class="treaty-log" id="treaty-log"><div class="treaty-empty">Select a channel or sign in.</div></div>
+          <div class="treaty-composer">
+            <input id="treaty-input" type="text" maxlength="2000" placeholder="Message…" disabled />
+            <button id="treaty-send" type="button" disabled onclick="treatySend()">SEND</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- FORGE PANEL -->
+    <div class="panel" id="panel-forge">
+      <div class="sh"><div class="sh-title">FORGE · STUDIO EDITOR</div><div class="sh-line"></div><div class="sh-badge">forge.grudge-studio.com</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 18px;line-height:1.5">
+        Canonical 3D scene / map / effects editor. Loads ObjectStore definitions + R2 assets.
+        Open Forge with SSO-friendly return to this hub via <code style="color:var(--gold)">?from=grudge.studio</code>.
+      </p>
+      <div class="hero-actions" style="margin-bottom:20px;flex-wrap:wrap">
+        <a class="hero-cta" href="https://forge.grudge-studio.com?from=grudge.studio" target="_blank" rel="noopener">LAUNCH FORGE</a>
+        <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio&amp;mode=scene" target="_blank" rel="noopener">SCENE MODE</a>
+        <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio&amp;mode=map" target="_blank" rel="noopener">MAP MODE</a>
+        <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio&amp;mode=effects" target="_blank" rel="noopener">EFFECTS</a>
+        <a class="hero-cta secondary" href="https://objectstore.grudge-studio.com/" target="_blank" rel="noopener">OBJECTSTORE</a>
+        <a class="hero-cta secondary" href="https://assets.grudge-studio.com" target="_blank" rel="noopener">ASSETS CDN</a>
+        <a class="hero-cta secondary" href="https://browse.grudge-studio.com" target="_blank" rel="noopener">BROWSE MESHES</a>
+      </div>
+      <div class="account-grid">
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">FORGE CONNECTS TO</div><div class="sh-line"></div></div>
+          <div style="font-size:13px;line-height:1.7;color:rgba(201,168,76,0.7)">
+            <div><span style="color:var(--gold)">Auth</span> — id.grudge-studio.com (Grudge ID JWT)</div>
+            <div><span style="color:var(--gold)">Player state</span> — Railway /api/characters · /api/account</div>
+            <div><span style="color:var(--gold)">Definitions</span> — objectstore.grudge-studio.com/api/v1/*.json</div>
+            <div><span style="color:var(--gold)">Binaries</span> — assets.grudge-studio.com (R2)</div>
+            <div><span style="color:var(--gold)">Hub return</span> — grudge.studio (this page)</div>
+          </div>
+        </div>
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">RELATED STUDIO TOOLS</div><div class="sh-line"></div></div>
+          <div class="qlinks" style="margin:0">
+            <a class="qlink" href="https://character.grudge-studio.com?era=warlords" target="_blank" rel="noopener"><span class="qlink-icon">G</span>GCS</a>
+            <a class="qlink" href="https://ui.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">UI</span>UI EDITOR</a>
+            <a class="qlink" href="https://client.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">CL</span>CLIENT</a>
+            <a class="qlink" href="https://grudge-studio-editor.vercel.app" target="_blank" rel="noopener"><span class="qlink-icon">ME</span>MAP EDITOR</a>
+            <a class="qlink" href="/app" target="_blank" rel="noopener"><span class="qlink-icon">DOT</span>grudgeDot APP</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPS PANEL -->
+    <div class="panel" id="panel-apps">
+      <div class="sh"><div class="sh-title">PUTER APPS</div><div class="sh-line"></div><div class="sh-badge" id="app-count-badge">61 APPS</div></div>
+      <div class="filter-bar">
+        <input class="filter-search" id="app-search" placeholder="// search apps..." oninput="filterApps(this.value)">
+        <button class="filter-tag active" onclick="tagFilter('all',this)">ALL</button>
+        <button class="filter-tag" onclick="tagFilter('game',this)">GAMES</button>
+        <button class="filter-tag" onclick="tagFilter('chain',this)">WEB3</button>
+        <button class="filter-tag" onclick="tagFilter('studio',this)">STUDIO</button>
+        <button class="filter-tag" onclick="tagFilter('sandbox',this)">SANDBOX</button>
+        <button class="filter-tag" onclick="tagFilter('engine',this)">ENGINE</button>
+      </div>
+      <div class="app-grid" id="app-grid"></div>
+    </div>
+
+    <!-- DEPLOYMENTS -->
+    <div class="panel" id="panel-deployments">
+      <div class="sh"><div class="sh-title">LIVE DEPLOYMENTS</div><div class="sh-line"></div><div class="sh-badge">PRODUCTION FLEET + PUTER</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 14px;line-height:1.5">
+        Canonical production origins (not Vercel deploy-hash URLs). Forge + games + studio tools first; Puter apps secondary.
+      </p>
+      <div class="filter-bar" id="deploy-filters">
+        <button type="button" class="filter-tag active" data-deploy-tag="all" onclick="filterDeploys('all', this)">ALL</button>
+        <button type="button" class="filter-tag" data-deploy-tag="core" onclick="filterDeploys('core', this)">CORE</button>
+        <button type="button" class="filter-tag" data-deploy-tag="studio" onclick="filterDeploys('studio', this)">STUDIO</button>
+        <button type="button" class="filter-tag" data-deploy-tag="games" onclick="filterDeploys('game', this)">GAMES</button>
+        <button type="button" class="filter-tag" data-deploy-tag="data" onclick="filterDeploys('data', this)">DATA</button>
+        <button type="button" class="filter-tag" data-deploy-tag="puter" onclick="filterDeploys('puter', this)">PUTER</button>
+      </div>
+      <div class="deploy-grid" id="deploy-grid"></div>
+    </div>
+
+    <!-- FLEET TRUTH / OPS -->
+    <div class="panel" id="panel-dns">
+      <div class="sh"><div class="sh-title">FLEET ONE TRUTH</div><div class="sh-line"></div><div class="sh-badge">PRODUCTION 2026</div></div>
+
+      <div class="dns-card">
+        <h3>Production endpoints (do not invent parallel SSOT)</h3>
+        <p style="font-size:13px;color:rgba(201,168,76,0.5);margin-bottom:14px">
+          This hub (<code style="color:var(--gold)">grudge.studio</code>) same-origin <code>/api/*</code> rewrites to Railway + ID.
+        </p>
+        <table class="dns-table">
+          <tr><th>ROLE</th><th>HOST</th><th>SSOT</th><th>NOTE</th></tr>
+          <tr>
+            <td>Hub (grudgeDot)</td>
+            <td class="value">grudge.studio</td>
+            <td>Portal</td>
+            <td class="note">Accounts · wallet · Treaty · Forge entry · deploy map</td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td class="value">id.grudge-studio.com</td>
+            <td>JWT / SSO</td>
+            <td class="note">/login?redirect_uri= → Railway auth impl</td>
+          </tr>
+          <tr>
+            <td>Game data</td>
+            <td class="value">grudge-api-production-0d46.up.railway.app</td>
+            <td>Postgres</td>
+            <td class="note">characters · account bag · island · wallet · treaty</td>
+          </tr>
+          <tr>
+            <td>Forge editor</td>
+            <td class="value">forge.grudge-studio.com</td>
+            <td>Studio</td>
+            <td class="note">3D scene/map/effects · ObjectStore + R2</td>
+          </tr>
+          <tr>
+            <td>Definitions</td>
+            <td class="value">objectstore.grudge-studio.com/api/v1</td>
+            <td>JSON</td>
+            <td class="note">recipes, items, races — not player state</td>
+          </tr>
+          <tr>
+            <td>Binaries</td>
+            <td class="value">assets.grudge-studio.com</td>
+            <td>R2</td>
+            <td class="note">icons, GLB, audio, grudge-fleet.js</td>
+          </tr>
+          <tr>
+            <td>AI</td>
+            <td class="value">ai.grudge-studio.com</td>
+            <td>Workers</td>
+            <td class="note">+ Puter AI (user-pays)</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="dns-card">
+        <h3>Retired / never use as player SSOT</h3>
+        <table class="dns-table">
+          <tr><th>BAD</th><th>WHY</th><th>USE INSTEAD</th></tr>
+          <tr>
+            <td class="value">api.grudge-studio.com</td>
+            <td class="note">Split-brain — not Railway characters</td>
+            <td class="value">same-origin /api/* → Railway</td>
+          </tr>
+          <tr>
+            <td class="value">MySQL 8 on VPS</td>
+            <td class="note">Legacy docs only</td>
+            <td class="value">Railway Postgres</td>
+          </tr>
+          <tr>
+            <td class="value">D1 for islands/chars</td>
+            <td class="note">Asset registry only</td>
+            <td class="value">Railway home_islands</td>
+          </tr>
+          <tr>
+            <td class="value">Puter KV as sole truth</td>
+            <td class="note">Cache only</td>
+            <td class="value">Railway + optional KV mirror</td>
+          </tr>
+          <tr>
+            <td class="value">*.vercel.app deploy hashes</td>
+            <td class="note">Per-deploy instances</td>
+            <td class="value">stable *.grudge-studio.com aliases</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="dns-card">
+        <h3>Scope matrix (account vs character)</h3>
+        <div class="code-block">
+<span class="comment"># Account scope — shared bag across all characters</span>
+GET  <span class="key">/api/account</span>
+GET  <span class="key">/api/account/resources</span>
+GET  <span class="key">/api/account/inventory</span>
+GET  <span class="key">/api/wallet</span>
+GET  <span class="key">/api/treaty/*</span>  <span class="comment"># friends · DMs · groups · servers</span>
+
+<span class="comment"># Character scope — UUID primary key, profession XP, equipment</span>
+GET  <span class="key">/api/characters?era=warlords</span>
+GET  <span class="key">/api/characters/:id</span>
+POST <span class="key">/api/characters/:id/progress</span>  <span class="comment"># expectedRevision</span>
+
+<span class="comment"># Auth handoff from id.grudge-studio.com</span>
+?grudge_token=… → POST <span class="key">/api/auth/grudge-bridge</span> { token, audience }
+?sso_token=… or ?token=… → store as grudge_auth_token
+        </div>
+      </div>
+
+      <div class="dns-card">
+        <h3>Live product links</h3>
+        <div class="code-block">
+<span class="key">Hub</span>          <span class="val">https://grudge.studio</span>
+<span class="key">Warlords</span>     <span class="val">https://grudgewarlords.com</span>
+<span class="key">Forge</span>        <span class="val">https://forge.grudge-studio.com</span>
+<span class="key">Crafting</span>     <span class="val">https://grudge-crafting.puter.site</span>
+<span class="key">GCS</span>          <span class="val">https://character.grudge-studio.com</span>
+<span class="key">Client</span>       <span class="val">https://client.grudge-studio.com</span>
+<span class="key">Fleet map</span>    <span class="val">https://fleet.grudge-studio.com</span>
+<span class="key">GRUDOX</span>       <span class="val">https://grudox.grudge-studio.com</span>
+<span class="key">GameOpen</span>     <span class="val">https://gameopen.vercel.app</span>
+
+<span class="comment"># Probe health</span>
+curl <span class="val">https://grudge.studio/api/health</span>
+curl <span class="val">https://grudge-api-production-0d46.up.railway.app/api/health</span>
+        </div>
+      </div>
+
+      <div class="dns-card">
+        <h3>Deploy this hub (grudgeDot → grudge.studio)</h3>
+        <div class="code-block">
+<span class="comment"># Repo: MolochDaGod/grudgedot-launcher</span>
+<span class="comment"># Vercel project: grudgedot-launcher (team grudgenexus)</span>
+<span class="comment"># Production aliases: grudge.studio · www.grudge.studio · dev.grudge-studio.com</span>
+
+npm run vercel-build   <span class="comment"># vite build + promote portal → index.html</span>
+vercel deploy --prod --scope grudgenexus
+
+<span class="comment"># SPA (React grudgeDot) remains at /app → app.html</span>
+<span class="comment"># Forge stays external: forge.grudge-studio.com</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH STACK & DEPENDENCIES -->
+    <div class="panel" id="panel-stack">
+      <div class="sh"><div class="sh-title">TECH STACK & DEPENDENCIES</div><div class="sh-line"></div><div class="sh-badge">RAILWAY · VERCEL · CF</div></div>
+
+      <div class="dns-card">
+        <h3>??? Backend Services (Docker Compose)</h3>
+        <table class="dns-table">
+          <tr><th>SERVICE</th><th>CONTAINER</th><th>PORT</th><th>URL</th></tr>
+          <tr><td>Grudge Identity</td><td class="value">grudge-id</td><td>3001</td><td class="value">id.grudge-studio.com</td></tr>
+          <tr><td>Wallet Service</td><td class="value">wallet-service</td><td>3002</td><td class="note">(internal only)</td></tr>
+          <tr><td>Game API</td><td class="value">Railway</td><td>—</td><td class="value">grudge-api-production-0d46</td></tr>
+          <tr><td>AI Gateway</td><td class="value">CF Worker</td><td>—</td><td class="value">ai.grudge-studio.com</td></tr>
+          <tr><td>Account / chars</td><td class="value">Railway</td><td>—</td><td class="value">/api/account · /api/characters</td></tr>
+          <tr><td>Command Hub</td><td class="value">Vercel</td><td>—</td><td class="value">grudge.studio (grudgeDot)</td></tr>
+          <tr><td>Forge</td><td class="value">Vercel</td><td>—</td><td class="value">forge.grudge-studio.com</td></tr>
+          <tr><td>Colyseus WS</td><td class="value">Railway</td><td>—</td><td class="value">wss://grudge-api-production-0d46…</td></tr>
+          <tr><td>Postgres</td><td class="value">Railway</td><td>—</td><td class="note">characters · account · islands SSOT</td></tr>
+          <tr><td>ObjectStore</td><td class="value">Worker</td><td>—</td><td class="value">objectstore.grudge-studio.com</td></tr>
+        </table>
+      </div>
+
+      <div class="dns-card">
+        <h3>?? Core Dependencies</h3>
+        <table class="dns-table">
+          <tr><th>PACKAGE</th><th>PURPOSE</th><th>LAYER</th></tr>
+          <tr><td>Node.js 20</td><td>Runtime for all backend services</td><td class="value">Backend</td></tr>
+          <tr><td>Express.js 4</td><td>REST API framework for all services</td><td class="value">Backend</td></tr>
+          <tr><td>Socket.IO 4.7</td><td>WebSocket � /game, /crew, /global, /pvp namespaces</td><td class="value">Backend</td></tr>
+          <tr><td>pg / drizzle</td><td>Railway Postgres — player SSOT</td><td class="value">Backend</td></tr>
+          <tr><td>ioredis</td><td>Redis 7 client � rate limiting, pub/sub, caching</td><td class="value">Backend</td></tr>
+          <tr><td>jsonwebtoken</td><td>JWT auth (issued by grudge-id, verified everywhere)</td><td class="value">Backend</td></tr>
+          <tr><td>bcryptjs</td><td>Password hashing for local auth</td><td class="value">Backend</td></tr>
+          <tr><td>Colyseus</td><td>Multiplayer game server framework (headless-server)</td><td class="value">Game Server</td></tr>
+          <tr><td>BabylonJS</td><td>3D engine for game clients</td><td class="value">Frontend</td></tr>
+          <tr><td>React 19</td><td>UI framework for Vercel-deployed frontends</td><td class="value">Frontend</td></tr>
+          <tr><td>Three.js</td><td>3D rendering for web game clients</td><td class="value">Frontend</td></tr>
+          <tr><td>Web3Auth</td><td>Solana wallet authentication (JWKS-verified)</td><td class="value">Auth</td></tr>
+          <tr><td>@solana/web3.js</td><td>Solana blockchain interaction</td><td class="value">Web3</td></tr>
+          <tr><td>Crossmint SDK</td><td>Server-side custodial wallets + cNFT minting</td><td class="value">Web3</td></tr>
+        </table>
+      </div>
+
+      <div class="dns-card">
+        <h3>?? Infrastructure & DevOps</h3>
+        <table class="dns-table">
+          <tr><th>TOOL</th><th>PURPOSE</th><th>STATUS</th></tr>
+          <tr><td>Docker Compose</td><td>Container orchestration for all services</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Coolify</td><td>Self-hosted PaaS on VPS (deploy management)</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Traefik</td><td>Reverse proxy � TLS termination, routing</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Cloudflare Workers</td><td>Edge compute � site, dashboard, R2 CDN, auth-gateway</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Cloudflare R2</td><td>S3-compatible object storage for game assets</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Cloudflare KV</td><td>Edge key-value � status caching, rate limiting</td><td class="value">ACTIVE</td></tr>
+          <tr><td>Vercel</td><td>Frontend deployments (all game clients + apps)</td><td class="value">ACTIVE</td></tr>
+          <tr><td>GitHub Actions</td><td>CI/CD � lint, test, deploy on push</td><td class="value">ACTIVE</td></tr>
+          <tr><td>PM2</td><td>Process manager for non-Docker Node services</td><td class="value">AVAILABLE</td></tr>
+          <tr><td>Wrangler CLI</td><td>Cloudflare Worker deploy tool</td><td class="value">ACTIVE</td></tr>
+        </table>
+      </div>
+
+      <div class="dns-card">
+        <h3>?? AI & Tooling</h3>
+        <table class="dns-table">
+          <tr><th>SERVICE</th><th>USE CASE</th><th>INTEGRATION</th></tr>
+          <tr><td>Claude (Anthropic)</td><td>Character generation, story AI, code assist</td><td class="value">Server-side API</td></tr>
+          <tr><td>Gemini (Google)</td><td>AI console, NPC dialogue, fast inference</td><td class="value">Server-side API</td></tr>
+          <tr><td>OpenAI / DALL-E</td><td>Image generation for characters, islands</td><td class="value">Server-side API</td></tr>
+          <tr><td>Puter AI</td><td>Client-side AI (user-pays model, $0 cost)</td><td class="value">Client SDK</td></tr>
+          <tr><td>Meshy / Tripo</td><td>Text-to-3D voxel model generation</td><td class="value">Server-side API</td></tr>
+          <tr><td>Twilio Verify</td><td>SMS OTP for phone authentication</td><td class="value">Server-side API</td></tr>
+        </table>
+      </div>
+
+      <div class="dns-card">
+        <h3>?? Game Server Stack</h3>
+        <table class="dns-table">
+          <tr><th>COMPONENT</th><th>PURPOSE</th><th>PORT / URL</th></tr>
+          <tr><td>Colyseus Server</td><td>Authoritative multiplayer rooms (combat, islands)</td><td class="value">7777 (internal)</td></tr>
+          <tr><td>Socket.IO /game</td><td>Island rooms � real-time player movement, events</td><td class="value">ws.grudge-studio.com</td></tr>
+          <tr><td>Socket.IO /crew</td><td>Crew chat + coordination</td><td class="value">ws.grudge-studio.com</td></tr>
+          <tr><td>Socket.IO /global</td><td>Server-wide broadcasts (kills, claims, events)</td><td class="value">ws.grudge-studio.com</td></tr>
+          <tr><td>Socket.IO /pvp</td><td>PvP matchmaking + arena state</td><td class="value">ws.grudge-studio.com</td></tr>
+          <tr><td>Redis Pub/Sub</td><td>Cross-process event bridge for WS namespaces</td><td class="value">6379 (internal)</td></tr>
+          <tr><td>ObjectStore API</td><td>Static game data (weapons, armor, recipes, races)</td><td class="value"><a href="https://objectstore.grudge-studio.com/" target="_blank" style="color:var(--gold)">GitHub Pages</a></td></tr>
+        </table>
+      </div>
+
+      <div class="dns-card">
+        <h3>?? Auth Providers</h3>
+        <table class="dns-table">
+          <tr><th>PROVIDER</th><th>ENDPOINT</th><th>STATUS</th></tr>
+          <tr><td>Email / Password</td><td class="value">POST /auth/login + /auth/register</td><td class="value">LIVE</td></tr>
+          <tr><td>Discord OAuth</td><td class="value">GET /auth/discord ? callback</td><td class="value">LIVE</td></tr>
+          <tr><td>Google OAuth</td><td class="value">GET /auth/google ? callback</td><td class="value">LIVE</td></tr>
+          <tr><td>GitHub OAuth</td><td class="value">GET /auth/github ? callback</td><td class="value">LIVE</td></tr>
+          <tr><td>Web3Auth (Phantom)</td><td class="value">POST /auth/wallet</td><td class="value">LIVE</td></tr>
+          <tr><td>Puter Cloud</td><td class="value">POST /auth/puter</td><td class="value">LIVE</td></tr>
+          <tr><td>Phone SMS (Twilio)</td><td class="value">POST /auth/phone-send + /phone-verify</td><td class="value">LIVE</td></tr>
+          <tr><td>Guest (Device ID)</td><td class="value">POST /auth/guest</td><td class="value">LIVE</td></tr>
+          <tr><td>SSO Cookie</td><td class="value">GET /auth/sso-check</td><td class="value">LIVE</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- AI CONSOLE -->
+    <div class="panel" id="panel-ai">
+      <div class="sh"><div class="sh-title">AI COMMAND CONSOLE</div><div class="sh-line"></div><div class="sh-badge">GRUDGE AI</div></div>
+
+      <div class="ai-shortcuts">
+        <button class="ai-sc" onclick="aiPrompt('Explain Grudge fleet ONE TRUTH for grudge.studio hub: auth, Railway, Forge, ObjectStore')">? FLEET TRUTH</button>
+        <button class="ai-sc" onclick="aiPrompt('How does grudge.studio proxy /api/characters and /api/treaty to Railway?')">?? API PROXY</button>
+        <button class="ai-sc" onclick="aiPrompt('Write a Solana wallet auth middleware for Express')">? SOLANA AUTH</button>
+        <button class="ai-sc" onclick="aiPrompt('How do I set up Crossmint server-side wallet creation for game users?')">?? CROSSMINT SETUP</button>
+        <button class="ai-sc" onclick="aiPrompt('Write a Discord OAuth2 callback route for Express')">?? DISCORD OAUTH</button>
+        <button class="ai-sc" onclick="aiPrompt('Write a PM2 ecosystem config for the grudge-server backend')">?? PM2 CONFIG</button>
+        <button class="ai-sc" onclick="aiPrompt('Give me the full Grudge ID generation logic � unique, readable IDs for game players')">?? GRUDGE ID GEN</button>
+        <button class="ai-sc" onclick="aiPrompt('What should my Grudge Studio backend API look like for the games system?')">??? API DESIGN</button>
+      </div>
+
+      <div class="terminal-wrap">
+        <div class="terminal-top">
+          <div class="t-dot t-r"></div><div class="t-dot t-y"></div><div class="t-dot t-g"></div>
+          <span class="terminal-label">GRUDGE AI // Grudge AI Backend</span>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+          <div class="terminal-line t-ok">? GRUDGE AI CONSOLE INITIALIZED</div>
+          <div class="terminal-line t-info">? GRUDGE AI API connected</div>
+          <div class="terminal-line t-cmd">? Context: Grudge Studio | Owner: Racalvin The Pirate King</div>
+          <div class="terminal-line t-cmd"> Stack: Grudge ID · Railway Postgres · ObjectStore · R2 · Puter · Vercel</div>
+          <div class="terminal-line t-ok">? Ready � type a command or use shortcuts above</div>
+        </div>
+        <div class="terminal-input-row">
+          <span class="t-prompt">GRUDGE ?</span>
+          <input id="ai-input" type="text" placeholder="ask anything about servers, DNS, auth, Web3, games..."
+                 onkeydown="if(event.key==='Enter') sendAI()">
+          <button class="t-send" onclick="sendAI()">RUN</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ===== GRUDGE STUDIO HUB — grudgeDot merged (grudge.studio) =====
+// Same-origin /api/* → Railway Postgres SSOT (characters, account, island, wallet, treaty)
+// Auth → id.grudge-studio.com · Forge → forge.grudge-studio.com
+// Never use api.grudge-studio.com or MySQL as player-state SSOT.
+const FLEET = {
+  hub: 'https://grudge.studio',
+  auth: 'https://id.grudge-studio.com',
+  gameData: 'https://grudge-api-production-0d46.up.railway.app',
+  assets: 'https://assets.grudge-studio.com',
+  objectStore: 'https://objectstore.grudge-studio.com/api/v1',
+  objectStoreHome: 'https://objectstore.grudge-studio.com/',
+  ai: 'https://ai.grudge-studio.com',
+  warlords: 'https://grudgewarlords.com',
+  crafting: 'https://grudge-crafting.puter.site',
+  characters: 'https://character.grudge-studio.com',
+  forge: 'https://forge.grudge-studio.com',
+  fleetMap: 'https://fleet.grudge-studio.com',
+  client: 'https://client.grudge-studio.com',
+  browse: 'https://browse.grudge-studio.com',
+  ui: 'https://ui.grudge-studio.com',
+  grudox: 'https://grudox.grudge-studio.com',
+  gameopen: 'https://gameopen.vercel.app',
+  carrier: 'https://carrier.grudge-studio.com',
+  grudge6: 'https://grudge6.grudge-studio.com/game',
+  water: 'https://water.grudge-studio.com',
+  drive: 'https://drive.grudge-studio.com',
+  arena: 'https://grudge-arena.grudge-studio.com',
+  survival: 'https://survival.grudge-studio.com',
+  dcq: 'https://dcq.grudge-studio.com',
+  studioEditor: 'https://grudge-studio-editor.vercel.app',
+  engineGallery: 'https://grudge-engine-psi.vercel.app',
+  identityPortal: 'https://grudge-studio.com',
+};
+
+const ID_API   = '/api/auth';
+const WARLORDS = '/api/auth/discord';
+const GAME_API = '/api'; // same-origin ? Railway
+const TOKEN_KEYS = ['grudge_auth_token', 'grudge_session_token', 'grudge.token', 'sso_token'];
+const CLIENT_URL = location.origin;
+
+let currentUser = null;
+let authToken = null;
+let grudgeCharacters = [];
+let activeTag = 'all';
+
+// ===== INIT =====
+document.getElementById('status-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+
+function readStoredToken() {
+  try {
+    for (const k of TOKEN_KEYS) {
+      const v = localStorage.getItem(k);
+      if (v) return v;
+    }
+    return sessionStorage.getItem('grudge_token') || null;
+  } catch { return null; }
+}
+
+function persistToken(token) {
+  authToken = token;
+  try {
+    localStorage.setItem('grudge_auth_token', token);
+    localStorage.setItem('grudge_session_token', token);
+    sessionStorage.setItem('grudge_token', token);
+  } catch {}
+}
+
+function clearTokens() {
+  authToken = null;
+  try {
+    TOKEN_KEYS.forEach((k) => localStorage.removeItem(k));
+    sessionStorage.removeItem('grudge_token');
+  } catch {}
+}
+
+function cleanAuthUrl() {
+  const u = new URL(location.href);
+  ['token','sso_token','jwt','access_token','grudge_token','launch_token','grudge_id','grudgeId','user_id','username','grudge_username'].forEach((k) => u.searchParams.delete(k));
+  const hash = location.hash && !/token|jwt|grudge_token/i.test(location.hash) ? location.hash : '';
+  history.replaceState({}, '', u.pathname + (u.search || '') + hash);
+}
+
+/** Auth page returns ?grudge_token= � exchange for Railway session JWT. */
+async function bridgeLaunchToken(launchToken) {
+  const res = await fetch(`${ID_API}/grudge-bridge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: launchToken, audience: CLIENT_URL }),
+  });
+  if (!res.ok) {
+    // Fallback: some handoffs already return a usable JWT as sso_token
+    return null;
+  }
+  return res.json();
+}
+
+async function bootstrapAuth() {
+  const params = new URLSearchParams(location.search);
+  let hashParams = null;
+  if (location.hash && location.hash.length > 1) {
+    hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  }
+  const pget = (k) => params.get(k) || (hashParams && hashParams.get(k)) || null;
+
+  const launch = pget('grudge_token') || pget('launch_token');
+  if (launch) {
+    try {
+      const bridged = await bridgeLaunchToken(launch);
+      if (bridged && (bridged.sessionToken || bridged.token)) {
+        cleanAuthUrl();
+        await initFromToken(bridged.sessionToken || bridged.token, bridged);
+        return;
+      }
+    } catch (e) { console.warn('grudge-bridge', e); }
+  }
+
+  const callbackToken = pget('token') || pget('sso_token') || pget('jwt');
+  if (callbackToken) {
+    cleanAuthUrl();
+    await initFromToken(callbackToken);
+    return;
+  }
+
+  const saved = readStoredToken();
+  if (saved) {
+    await initFromToken(saved);
+    return;
+  }
+  // Do NOT silent-mint empty Puter guest accounts (empty roster trap).
+  showAuthGate();
+}
+
+async function initFromToken(token, seed) {
+  try {
+    persistToken(token);
+    // Prefer Railway account (player SSOT); fall back to auth/me
+    let data = seed?.user || null;
+    if (!data) {
+      let res = await fetch(`${GAME_API}/account`, {
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      });
+      if (res.ok) data = await res.json();
+      if (!res.ok) {
+        res = await fetch(`${ID_API}/me`, { headers: { Authorization: 'Bearer ' + token } });
+        if (!res.ok) res = await fetch(`${ID_API}/user`, { headers: { Authorization: 'Bearer ' + token } });
+        if (!res.ok) throw new Error('Token expired');
+        data = await res.json();
+      }
+    }
+    currentUser = {
+      ...data,
+      username: data.username || data.displayName || seed?.username,
+      displayName: data.displayName || data.username || seed?.username,
+      grudgeId: data.grudgeId || data.grudge_id || seed?.grudgeId,
+    };
+    if (currentUser.grudgeId) {
+      try {
+        localStorage.setItem('grudge_id', currentUser.grudgeId);
+        localStorage.setItem('grudge_account_id', currentUser.grudgeId);
+      } catch {}
+    }
+    if (currentUser.username) {
+      try { localStorage.setItem('grudge_username', currentUser.username); } catch {}
+    }
+    showHub();
+    updateUserUI();
+    loadSavedAvatar();
+    await loadCharactersFromRailway();
+    unlockGatedServices();
+    refreshWalletPanel();
+    showToast('\u2694 Welcome, ' + (currentUser.displayName || currentUser.username || 'Warlord'));
+  } catch (e) {
+    console.warn('initFromToken', e);
+    clearTokens();
+    showAuthGate();
+  }
+}
+
+/** Characters from Railway Postgres � same DB as Warlords / GCS / crafting. */
+async function loadCharactersFromRailway() {
+  if (!authToken) { grudgeCharacters = []; return []; }
+  try {
+    let res = await fetch(`${GAME_API}/characters?era=warlords`, {
+      headers: { Authorization: 'Bearer ' + authToken },
+    });
+    if (!res.ok) res = await fetch(`${GAME_API}/characters`, {
+      headers: { Authorization: 'Bearer ' + authToken },
+    });
+    if (!res.ok) { grudgeCharacters = []; return []; }
+    const raw = await res.json();
+    grudgeCharacters = Array.isArray(raw) ? raw : (raw.characters || []);
+    renderCharactersStrip();
+    return grudgeCharacters;
+  } catch (e) {
+    console.warn('characters', e);
+    grudgeCharacters = [];
+    return [];
+  }
+}
+
+function renderCharactersStrip() {
+  const el = document.getElementById('launcher-characters');
+  if (!el) return;
+  if (!authToken) {
+    el.innerHTML = '<div style="font-size:12px;color:rgba(201,168,76,0.45)">Sign in with Grudge ID to load Railway characters.</div>';
+    return;
+  }
+  if (!grudgeCharacters.length) {
+    el.innerHTML = `<div style="font-size:12px;color:rgba(201,168,76,0.55);line-height:1.5">
+      No characters on this account.
+      <a href="${FLEET.characters}?era=warlords" target="_blank" style="color:var(--gold)">Create at Character Studio</a>
+      � <a href="${FLEET.warlords}/character" target="_blank" style="color:var(--gold)">Warlords</a>
+    </div>`;
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' + grudgeCharacters.map((c) => {
+    const name = c.name || c.displayName || c.grudgeCode || 'Warlord';
+    const meta = [c.race || c.raceId, c.class || c.classId, 'Lv ' + (c.level || 1)].filter(Boolean).join(' � ');
+    return `<a href="${FLEET.warlords}/?characterId=${encodeURIComponent(c.id)}" target="_blank"
+      style="display:block;padding:10px 12px;border:1px solid rgba(201,168,76,0.25);border-radius:8px;text-decoration:none;background:rgba(201,168,76,0.06);min-width:140px">
+      <div style="font-size:13px;font-weight:700;color:var(--gold)">${name}</div>
+      <div style="font-size:11px;color:rgba(201,168,76,0.55)">${meta}</div>
+    </a>`;
+  }).join('') + '</div>';
+}
+
+bootstrapAuth();
+
+// ===== API HELPER =====
+async function apiPost(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(authToken ? {'Authorization': `Bearer ${authToken}`} : {}) },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+// ===== AUTH FLOWS � ALL REAL =====
+function showAuthGate() { document.getElementById('auth-gate').classList.remove('hidden'); }
+function hideAuthGate() { document.getElementById('auth-gate').classList.add('hidden'); }
+function showHub() { hideAuthGate(); }
+
+function switchAuthTab(tab, el) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+function showAuthErr(msg) {
+  const el = document.getElementById('auth-err');
+  el.textContent = '\u26a0 ' + msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function handleAuthSuccess(data) {
+  const token = data.sessionToken || data.token;
+  if (!token) { showAuthErr('No session token in response'); return; }
+  currentUser = data.user || data;
+  persistToken(token);
+  if (data.grudgeId || currentUser.grudgeId) {
+    try {
+      localStorage.setItem('grudge_id', data.grudgeId || currentUser.grudgeId);
+      localStorage.setItem('grudge_account_id', data.grudgeId || currentUser.grudgeId);
+    } catch {}
+  }
+  showHub();
+  updateUserUI();
+  unlockGatedServices();
+  loadCharactersFromRailway();
+}
+
+/** Primary sign-in: Grudge ID (real Warlords account). */
+function loginWithGrudgeId() {
+  const ret = CLIENT_URL + '/';
+  window.location.href = FLEET.auth + '/login?redirect_uri=' + encodeURIComponent(ret);
+}
+
+// ===== LOGIN (email/username + password) � Railway via ID hub =====
+async function loginEmail() {
+  const identifier = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  if (!identifier || !password) return showAuthErr('Username and password required');
+  try {
+    // Railway expects { username, password }
+    const data = await apiPost(`${ID_API}/login`, { username: identifier, password, identifier });
+    handleAuthSuccess(data);
+    showToast('\u2694 Welcome back, ' + (data.username || identifier));
+  } catch(e) { showAuthErr(e.message); }
+}
+
+// ===== REGISTER =====
+async function registerEmail() {
+  const username = document.getElementById('reg-user').value.trim();
+  const display = document.getElementById('reg-display').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  if (!username) return showAuthErr('Username is required');
+  if (password !== pass2) return showAuthErr('Passwords do not match');
+  if (password.length < 4) return showAuthErr('Password must be 4+ characters');
+  try {
+    const data = await apiPost(`${ID_API}/register`, { username, email: email || undefined, password });
+    handleAuthSuccess(data);
+    showToast('\u2694 GRUDGE ID forged: ' + (data.grudgeId || data.grudge_id));
+  } catch(e) { showAuthErr(e.message); }
+}
+
+// ===== DISCORD OAuth (callback approved at grudgewarlords.com/api/discord/callback) =====
+// Hits same-origin /api/auth/discord; the Pages Function proxies to
+// grudgewarlords.com/discord while preserving the redirect_uri query.
+function loginDiscord() {
+  window.location.href = `${WARLORDS}?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
+}
+
+// ===== GOOGLE � routed via Puter (their modal supports Google sign-in) =====
+// Falls back to direct backend Google OAuth if Puter SDK is unavailable.
+async function loginGoogle() {
+  try {
+    if (typeof puter !== 'undefined' && puter.auth) {
+      // Puter's signIn modal lets user pick Google � preferred path
+      await puter.auth.signIn();
+      const pu = await puter.auth.getUser();
+      if (pu) { await authViaPuter(pu.uuid, pu.username); return; }
+    }
+  } catch(e) { /* fall through to direct OAuth */ }
+  window.location.href = `${ID_API}/google?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
+}
+
+// ===== GITHUB OAuth =====
+function loginGithub() {
+  window.location.href = `${ID_API}/github?redirect_uri=${encodeURIComponent(CLIENT_URL)}`;
+}
+
+// ===== PUTER AUTH (secondary � prefer Grudge ID for Warlords characters) =====
+async function loginPuter() {
+  // Prefer canonical Grudge ID so roster matches Warlords / crafting
+  if (!confirm('Open Grudge ID sign-in?\n\n(OK = Grudge ID � recommended for characters)\n(Cancel = Puter UUID only � may create empty roster)')) {
+    try {
+      if (typeof puter !== 'undefined' && puter.auth) {
+        await puter.auth.signIn();
+        const pu = await puter.auth.getUser();
+        await authViaPuter(pu.uuid, pu.username);
+      } else { showAuthErr('Puter SDK not loaded. Try refreshing.'); }
+    } catch(e) { showAuthErr('Puter sign-in failed: ' + e.message); }
+    return;
+  }
+  loginWithGrudgeId();
+}
+
+async function authViaPuter(puterUuid, puterUsername) {
+  try {
+    const data = await apiPost(`${ID_API}/puter`, {
+      puterUuid,
+      puterId: puterUuid,
+      puterUsername,
+      displayName: puterUsername,
+    });
+    handleAuthSuccess(data);
+    showToast('\u2601 Signed in via Puter');
+    if (!grudgeCharacters.length) {
+      showToast('No characters on this Puter-linked account � use Grudge ID if you play Warlords', true);
+    }
+  } catch(e) { showAuthErr(e.message); showAuthGate(); }
+}
+
+// ===== PHANTOM WALLET =====
+async function loginPhantom() {
+  try {
+    const phantom = window.solana || window.phantom?.solana;
+    if (!phantom || !phantom.isPhantom) {
+      showToast('\u26a0 Phantom wallet not found. Install from phantom.app', true);
+      return;
+    }
+    const resp = await phantom.connect();
+    const wallet_address = resp.publicKey.toString();
+    const data = await apiPost(`${ID_API}/wallet`, { wallet_address });
+    handleAuthSuccess(data);
+    showToast('\u25ce Signed in with wallet: ' + wallet_address.slice(0,8) + '...');
+  } catch(e) { showAuthErr('Wallet auth failed: ' + e.message); }
+}
+
+// ===== PHONE (SMS OTP via Twilio Verify) =====
+// Two-step: send code -> verify code. Backend endpoints already exist:
+//   POST /auth/phone-send  { phone }
+//   POST /auth/phone-verify { phone, code }
+async function loginPhone() {
+  const raw = window.prompt('\ud83d\udcf1 Enter your phone number (E.164, e.g. +15555550123):');
+  if (!raw) return;
+  const phone = raw.trim();
+  if (!/^\+\d{8,15}$/.test(phone)) {
+    return showAuthErr('Phone must be E.164 format, e.g. +15555550123');
+  }
+  try {
+    await apiPost(`${ID_API}/phone-send`, { phone });
+    showToast('\ud83d\udcec Code sent � check your messages');
+  } catch(e) {
+    return showAuthErr('Could not send code: ' + e.message);
+  }
+  const code = window.prompt('\ud83d\udd11 Enter the 6-digit code we just texted to ' + phone + ':');
+  if (!code) return;
+  try {
+    const data = await apiPost(`${ID_API}/phone-verify`, { phone, code: code.trim() });
+    handleAuthSuccess(data);
+    showToast('\u2694 Phone verified � welcome');
+  } catch(e) { showAuthErr('Code did not verify: ' + e.message); }
+}
+
+// ===== GUEST =====
+async function loginGuest() {
+  try {
+    const deviceId = 'web_' + (crypto.randomUUID ? crypto.randomUUID().slice(0,12) : Math.random().toString(36).slice(2,14));
+    const data = await apiPost(`${ID_API}/guest`, { deviceId });
+    handleAuthSuccess(data);
+    showToast('\u25b7 Playing as guest \u2014 create an account to save progress');
+  } catch(e) { showAuthErr(e.message); }
+}
+
+// ===== LOGOUT =====
+async function logout() {
+  try { await fetch(`${ID_API}/logout`, { method: 'POST', credentials: 'include' }); } catch(e) {}
+  currentUser = null;
+  grudgeCharacters = [];
+  clearTokens();
+  renderCharactersStrip();
+  unlockGatedServices();
+  showAuthGate();
+  showToast('Logged out');
+}
+
+// ===== UI UPDATES =====
+function updateUserUI() {
+  if (!currentUser) return;
+  const initial = (currentUser.displayName || currentUser.username || '?')[0].toUpperCase();
+  const avatarUrl = currentUser.avatarUrl || currentUser.avatar_url;
+
+  // Header avatar (small)
+  const headerAvatar = document.getElementById('user-avatar');
+  if (avatarUrl) {
+    headerAvatar.innerHTML = '<img src="' + avatarUrl + '" alt="">';
+  } else {
+    headerAvatar.textContent = initial;
+  }
+  document.getElementById('user-name').textContent = currentUser.displayName || currentUser.username;
+
+  // Account page avatar (big)
+  const bigImg = document.getElementById('acct-avatar-img');
+  const bigLetter = document.getElementById('acct-avatar-letter');
+  if (avatarUrl) {
+    bigImg.src = avatarUrl;
+    bigImg.style.display = 'block';
+    bigLetter.style.display = 'none';
+  } else {
+    bigImg.style.display = 'none';
+    bigLetter.style.display = 'block';
+    bigLetter.textContent = initial;
+  }
+
+  document.getElementById('acct-username').textContent = currentUser.username || '\u2014';
+  document.getElementById('acct-display').textContent = currentUser.displayName || '';
+  document.getElementById('acct-grudge-id').textContent = currentUser.grudgeId || currentUser.grudge_id || '\u2014';
+  document.getElementById('acct-puter-id').textContent = currentUser.puter_id || '\u2014';
+  // Wallet
+  const walletAddr = currentUser.serverWalletAddress || currentUser.walletAddress;
+  if (walletAddr) updateWalletUI(walletAddr);
+  updateConnectors();
+  // Settings
+  document.getElementById('settings-display').value = currentUser.displayName || '';
+  document.getElementById('settings-email').value = currentUser.email || '';
+  document.getElementById('settings-phone').value = currentUser.phone || '';
+  // Stats
+  const statUsers = document.getElementById('stat-users');
+  if (statUsers) statUsers.textContent = String(grudgeCharacters.length || '\u2014');
+}
+
+// ===== AVATAR UPLOAD =====
+function changeAvatar() {
+  document.getElementById('avatar-upload').click();
+}
+
+async function uploadAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return showToast('Please select an image file', true);
+  if (file.size > 2 * 1024 * 1024) return showToast('Image must be under 2MB', true);
+
+  // Preview immediately
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const url = e.target.result;
+    document.getElementById('acct-avatar-img').src = url;
+    document.getElementById('acct-avatar-img').style.display = 'block';
+    document.getElementById('acct-avatar-letter').style.display = 'none';
+    document.getElementById('user-avatar').innerHTML = '<img src="' + url + '" alt="">';
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to Puter cloud (free) and save URL
+  try {
+    if (typeof puter !== 'undefined' && puter.fs) {
+      const uploaded = await puter.fs.write('grudge-studio/avatar.png', file, { overwrite: true, createMissingParents: true });
+      const publicUrl = await puter.fs.getReadURL('grudge-studio/avatar.png');
+      // Save avatar URL to Puter KV
+      if (puter.kv) await puter.kv.set('grudge_avatar', publicUrl);
+      currentUser.avatarUrl = publicUrl;
+      showToast('\u2713 Avatar updated');
+    } else {
+      // Fallback: convert to data URL and store in session
+      showToast('\u2713 Avatar updated (session only \u2014 sign in with Puter to save permanently)');
+    }
+  } catch(e) {
+    showToast('Avatar saved locally \u2014 ' + e.message);
+  }
+  input.value = '';
+}
+
+// Load avatar from Puter KV on init
+async function loadSavedAvatar() {
+  try {
+    if (typeof puter !== 'undefined' && puter.kv) {
+      const url = await puter.kv.get('grudge_avatar');
+      if (url && currentUser) {
+        currentUser.avatarUrl = url;
+        updateUserUI();
+      }
+    }
+  } catch {}
+}
+
+function updateWalletUI(addr) {
+  document.getElementById('wallet-display').style.display = 'none';
+  document.getElementById('wallet-connected').style.display = 'block';
+  document.getElementById('wallet-addr').childNodes[0].textContent = addr;
+}
+
+function copyWallet() {
+  const addr = currentUser?.serverWalletAddress || currentUser?.walletAddress;
+  if (addr) { navigator.clipboard.writeText(addr); showToast('\ud83d\udccb Wallet address copied'); }
+}
+
+const CONNECTORS = [
+  { key: 'puter',   icon: '\u2694',       name: 'Grudge ID (Puter)', oauth: loginPuter,    field: 'puter_id' },
+  { key: 'discord', icon: '\ud83c\udfae', name: 'Discord',           oauth: loginDiscord,  field: 'discord_id' },
+  { key: 'google',  icon: '\ud83d\udd34', name: 'Google',            oauth: loginGoogle,   field: 'google_id' },
+  { key: 'github',  icon: '\ud83d\udc19', name: 'GitHub',            oauth: loginGithub,   field: 'github_id' },
+  { key: 'solana',  icon: '\u25ce',       name: 'Phantom Wallet',    oauth: loginPhantom,  field: 'walletAddress' },
+  { key: 'phone',   icon: '\ud83d\udcf1', name: 'Phone',             oauth: loginPhone,    field: 'phone' },
+  { key: 'email',   icon: '\ud83d\udce7', name: 'Email',             oauth: null,          field: 'email' },
+];
+
+function updateConnectors() {
+  const list = document.getElementById('connector-list');
+  if (!list || !currentUser) return;
+  list.innerHTML = CONNECTORS.map(c => {
+    const val = currentUser[c.field];
+    const connected = !!val;
+    return `
+    <div class="connector-item">
+      <div class="connector-info">
+        <span class="connector-icon">${c.icon}</span>
+        <div>
+          <div class="connector-name">${c.name}</div>
+          <div class="connector-status ${connected ? 'status-connected' : 'status-disconnected'}">${connected ? '\u2713 ' + (typeof val === 'string' && val.length > 16 ? val.slice(0,8)+'...' : val || 'CONNECTED') : '\u25cb NOT CONNECTED'}</div>
+        </div>
+      </div>
+      ${c.oauth && !connected ? `<button class="connector-action btn-connect" onclick="${c.oauth.name}()">CONNECT</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function saveSettings() {
+  if (!currentUser || !authToken) return;
+  const username = document.getElementById('settings-display').value;
+  try {
+    await fetch(`/api/identity/me`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ username: username || undefined })
+    });
+    currentUser.displayName = username;
+    updateUserUI();
+    showToast('\u2713 Settings saved to server');
+  } catch(e) { showToast('Failed to save: ' + e.message, true); }
+}
+
+// ===== PANEL SWITCHING =====
+function switchPanel(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      const t = (b.textContent || '').toLowerCase();
+      if (t.includes(name.toLowerCase().slice(0, 4)) || (name === 'account' && t.includes('account')) || (name === 'wallet' && t.includes('wallet')) || (name === 'treaty' && t.includes('treaty'))) {
+        b.classList.add('active');
+      }
+    });
+  }
+  if (name === 'wallet') refreshWalletPanel();
+  if (name === 'treaty') initTreatyPanel();
+}
+
+// ===== APPS DATA =====
+const APPS = [
+  {name:'Nexus Nemesis',url:'https://puter.com/app/GrudgeStudio',runs:210,date:'Jun 2025',tags:'game studio',hot:true},
+  {name:'GRUDACHAIN',url:'https://puter.com/app/grudachain',runs:195,date:'Jun 2025',tags:'chain',hot:true},
+  {name:'Grudge Launcher',url:'https://puter.com/app/grudge-launcher',runs:86,date:'Jul 2025',tags:'studio',hot:true},
+  {name:'Grudge Nexus',url:'https://puter.com/app/grudge-Nexus',runs:85,date:'Sep 2025',tags:'studio',hot:true},
+  {name:'THC DOPE BUDZ',url:'https://puter.com/app/thc-dope-budz',runs:81,date:'Jul 2025',tags:'game'},
+  {name:'DiGrudge',url:'https://puter.com/app/DiGrudge',runs:86,date:'Jan 2026',tags:'studio',hot:true},
+  {name:'GrudgeWeb',url:'https://puter.com/app/grudgeweb',runs:47,date:'Jan 2026',tags:'studio'},
+  {name:'Grudge Editor',url:'https://puter.com/app/GrudgeGames',runs:41,date:'Jan 2026',tags:'engine studio'},
+  {name:'Grudge 2oons',url:'https://puter.com/app/GrudgeToons',runs:41,date:'Dec 2025',tags:'studio'},
+  {name:'GrudgeRPG',url:'https://puter.com/app/grudgeRPG',runs:41,date:'Feb 2026',tags:'game',hot:true},
+  {name:'Grudge Auth',url:'https://puter.com/app/grudge-auth',runs:40,date:'Dec 2025',tags:'studio'},
+  {name:'AKWA Power',url:'https://puter.com/app/AWKA-JZ',runs:40,date:'Dec 2025',tags:'game'},
+  {name:'Grudge.Gruda',url:'https://puter.com/app/grudgegruda',runs:37,date:'Feb 2026',tags:'game chain'},
+  {name:'grudge-server',url:'https://puter.com/app/grudge-server',runs:37,date:'Dec 2025',tags:'studio'},
+  {name:'Grudge Match 3',url:'https://puter.com/app/GrudgeMatch',runs:58,date:'Aug 2025',tags:'game'},
+  {name:'Warlords',url:'https://puter.com/app/warlords',runs:61,date:'Sep 2025',tags:'game',hot:true},
+  {name:'DappNFT',url:'https://puter.com/app/dapp-NFT-Grudge',runs:56,date:'Sep 2025',tags:'game chain',hot:true},
+  {name:'Grudge Crafting',url:'https://puter.com/app/meta-build',runs:55,date:'Dec 2025',tags:'game'},
+  {name:'Grudge Client',url:'https://puter.com/app/grudge-client',runs:64,date:'Dec 2025',tags:'studio',hot:true},
+  {name:'GrudgeCloud',url:'https://puter.com/app/grudgecloud',runs:33,date:'Dec 2025',tags:'studio'},
+  {name:'GrudgeSozne',url:'https://puter.com/app/grudgesozne',runs:32,date:'Feb 2026',tags:'game'},
+  {name:'Quick Sprites',url:'https://puter.com/app/sensible-mouse-1616',runs:28,date:'Jan 2026',tags:'studio'},
+  {name:'Gruda3d',url:'https://puter.com/app/GrudgeGameEngine',runs:25,date:'Oct 2025',tags:'engine'},
+  {name:'Grudge Warlords',url:'https://puter.com/app/grudge-warlords',runs:23,date:'Jan 2026',tags:'game',hot:true},
+  {name:'Grudge Apps',url:'https://puter.com/app/grudgechain-ai-system',runs:23,date:'Jan 2026',tags:'chain studio'},
+  {name:'GrudaPuter',url:'https://puter.com/app/grudaputer',runs:17,date:'Feb 2026',tags:'chain studio'},
+  {name:'GrudaWay',url:'https://puter.com/app/grudaway',runs:21,date:'Feb 2026',tags:'chain'},
+  {name:'Grudge Warlords Live',url:'https://puter.com/app/grudge-warlords',runs:23,date:'Jan 2026',tags:'game'},
+  {name:'GameEngine v1',url:'https://puter.com/app/Grudge-Game-Editor',runs:31,date:'Dec 2025',tags:'engine',hot:true},
+  {name:'GRUDGEGAMEENGINE',url:'https://puter.com/app/grudgegameengine-1',runs:20,date:'Dec 2025',tags:'engine'},
+  {name:'Grudge Angler',url:'https://puter.com/app/grudge-angler',runs:30,date:'Feb 2026',tags:'game',hot:true},
+  {name:'GrudgeRPG',url:'https://puter.com/app/grudgeRPG',runs:41,date:'Feb 2026',tags:'game'},
+  {name:'BetaGameGruda',url:'https://puter.com/app/betagamegruda',runs:18,date:'Feb 2026',tags:'game chain'},
+  {name:'GRUDA-SEARCH',url:'https://puter.com/app/gruda-search',runs:24,date:'Jan 2026',tags:'chain studio'},
+  {name:'App Connection',url:'https://puter.com/app/app-connection',runs:31,date:'Jan 2026',tags:'studio'},
+  {name:'Grudge-Network',url:'https://puter.com/app/grudge-network',runs:44,date:'Jan 2026',tags:'studio chain'},
+  {name:'sandbox-gamestores',url:'https://puter.com/app/sandbox-gamestores',runs:6,date:'Feb 2026',tags:'sandbox game'},
+  {name:'sandbox-grudge-loader',url:'https://puter.com/app/sandbox-grudge-loader',runs:2,date:'Feb 2026',tags:'sandbox'},
+  {name:'sandbox-orchestrator',url:'https://puter.com/app/sandbox-orchestrator',runs:1,date:'Feb 2026',tags:'sandbox'},
+  {name:'GrudaAiLegion',url:'https://puter.com/app/grudaailegion',runs:6,date:'Dec 2025',tags:'studio chain'},
+];
+
+function renderApps(list) {
+  const grid = document.getElementById('app-grid');
+  document.getElementById('app-count-badge').textContent = list.length + ' APPS';
+  grid.innerHTML = list.map(a => `
+    <a class="app-card ${a.hot?'hot':''}" href="${a.url}" target="_blank">
+      <div class="app-card-name">${a.name}</div>
+      <div class="app-card-url">${a.url.replace('https://','')}</div>
+      <div class="app-card-meta">
+        <span class="app-badge ${a.hot?'fire':''}">${a.runs} RUNS</span>
+        <span class="app-date">${a.date}</span>
+      </div>
+    </a>`).join('');
+}
+
+function filterApps(q) {
+  const filtered = APPS.filter(a => a.name.toLowerCase().includes(q.toLowerCase()));
+  renderApps(filtered);
+}
+
+function tagFilter(tag, el) {
+  document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active'); activeTag = tag;
+  renderApps(tag === 'all' ? APPS : APPS.filter(a => a.tags?.includes(tag)));
+}
+
+renderApps(APPS);
+
+// ===== FLEET SERVICES � live Grudge Studio tools (consolidated truth) =====
+const SERVICES = [
+  { id:'warlords',   icon:'\u2694', title:'Grudge Warlords', desc:'Main game — islands, combat, professions. Railway character SSOT.', path:FLEET.warlords, badge:'LIVE', tag:'game' },
+  { id:'forge',      icon:'\u2699', title:'Studio Forge', desc:'3D scene / map / effects editor. ObjectStore + R2 assets.', path:FLEET.forge + '?from=grudge.studio', badge:'EDITOR', tag:'studio' },
+  { id:'characters', icon:'\uD83C\uDFA8', title:'Character Studio', desc:'Create/edit heroes (GCS). Saves to Railway /api/characters.', path:FLEET.characters + '?era=warlords&from=grudge.studio', badge:'GCS', tag:'studio' },
+  { id:'crafting',   icon:'\u2692', title:'Crafting Suite', desc:'Shared account bag + per-character XP. Puter UI → Railway.', path:FLEET.crafting + '/?from=grudge.studio', badge:'CRAFT', tag:'game' },
+  { id:'id',         icon:'\uD83D\uDD11', title:'Grudge ID', desc:'Unified auth — login, SSO, Puter bridge.', path:FLEET.auth + '/login?redirect_uri=' + encodeURIComponent(CLIENT_URL + '/'), badge:'AUTH', tag:'core' },
+  { id:'account',    icon:'\uD83D\uDC64', title:'Accounts', desc:'Grudge ID profile, linked providers, settings.', path:'#panel:account', badge:'ID', tag:'core' },
+  { id:'wallet',     icon:'\uD83D\uDCB0', title:'Wallet / War Chest', desc:'Solana · Crossmint · GBUX (Railway /api/wallet).', path:'#panel:wallet', badge:'WEB3', tag:'core' },
+  { id:'treaty',     icon:'\uD83D\uDCAC', title:'Treaty', desc:'Account friends, DMs, groups, fleet server chat.', path:'#panel:treaty', badge:'SOCIAL', tag:'core' },
+  { id:'client',     icon:'\uD83D\uDDA5', title:'Client', desc:'Fleet client shell (client.grudge-studio.com).', path:FLEET.client, badge:'CLIENT', tag:'studio' },
+  { id:'grudox',     icon:'\uD83C\uDFAE', title:'GRUDOX', desc:'Arcade / studio hub on grudox.grudge-studio.com.', path:FLEET.grudox, badge:'HUB', tag:'game' },
+  { id:'gameopen',   icon:'\u26A1', title:'GameOpen', desc:'Open combat/studio platform (SSO).', path:FLEET.gameopen, badge:'OPEN', tag:'game' },
+  { id:'fleet',      icon:'\uD83D\uDDFA', title:'Fleet Map', desc:'Live topology — Workers, Railway, R2, Vercel.', path:FLEET.fleetMap, badge:'OPS', tag:'data' },
+  { id:'objectstore',icon:'\uD83D\uDDC4', title:'ObjectStore', desc:'Definitions JSON — recipes, items, races.', path:FLEET.objectStore + '/master-recipes.json', badge:'DATA', tag:'data' },
+  { id:'assets',     icon:'\uD83D\uDDBC', title:'Assets CDN', desc:'R2 binaries — icons, GLB, audio.', path:FLEET.assets, badge:'CDN', tag:'data' },
+  { id:'browse',     icon:'\uD83D\uDD0D', title:'Browse', desc:'Mesh / equipment browser (browse.grudge-studio.com).', path:FLEET.browse, badge:'MESH', tag:'studio' },
+  { id:'ai',         icon:'\u2728', title:'AI Gateway', desc:'ai.grudge-studio.com + Puter AI console.', path:FLEET.ai, badge:'AI', tag:'data' },
+];
+
+
+function renderServices() {
+  const grid = document.getElementById('services-grid');
+  if (!grid) return;
+  const authed = !!authToken;
+  // Fleet tools stay open � account-bound features still benefit from login
+  grid.innerHTML = SERVICES.map(s => {
+    const external = s.path.startsWith('http');
+    const cta = external ? 'OPEN' : (authed ? 'OPEN' : 'SIGN IN');
+    const lockClr = 'var(--green)';
+    const pathEsc = s.path.replace(/'/g, "\\'");
+    return `
+      <div class="app-card" style="cursor:pointer;opacity:1;position:relative"
+           onclick="openService('${pathEsc}')">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span style="font-size:22px">${s.icon}</span>
+          <div class="app-card-name" style="margin:0">${s.title}</div>
+          <span class="app-badge" style="margin-left:auto">${s.badge}</span>
+        </div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:rgba(201,168,76,0.55);line-height:1.5;margin:6px 0 12px">${s.desc}</div>
+        <div class="app-card-meta" style="justify-content:space-between">
+          <span class="app-badge" style="color:${lockClr};border-color:${lockClr}">\u279c ${cta}</span>
+          <span class="app-date" style="font-family:'Share Tech Mono',monospace;font-size:9px;max-width:40%;overflow:hidden;text-overflow:ellipsis">${external ? new URL(s.path).hostname : s.path}</span>
+        </div>
+      </div>`;
+  }).join('');
+  const status = document.getElementById('services-status');
+  if (status) {
+    status.textContent = authed
+      ? 'SIGNED IN \u2014 ' + grudgeCharacters.length + ' CHARS \u00b7 ' + SERVICES.length + ' TOOLS'
+      : SERVICES.length + ' TOOLS OPEN \u00b7 SIGN IN FOR ROSTER';
+  }
+  const statUsers = document.getElementById('stat-users');
+  if (statUsers) statUsers.textContent = authToken ? String(grudgeCharacters.length) : '\u2014';
+}
+
+function openService(path) {
+  if (path.startsWith('#panel:')) {
+    const name = path.slice(7);
+    switchPanel(name, null);
+    return;
+  }
+  if (path.startsWith('http')) { window.open(path, '_blank'); return; }
+  if (path.startsWith('/app') && !authToken) { showAuthGate(); return; }
+  window.location.href = path;
+}
+
+function unlockGatedServices() { renderServices(); }
+
+renderServices();
+
+// ===== DEPLOYMENTS (production fleet first, Puter secondary) =====
+const PRODUCTION_DEPLOYS = [
+  { name: 'grudge.studio (this hub)', url: 'https://grudge.studio', tag: 'core', badge: 'HUB' },
+  { name: 'id.grudge-studio.com', url: 'https://id.grudge-studio.com/login', tag: 'core', badge: 'AUTH' },
+  { name: 'forge.grudge-studio.com', url: 'https://forge.grudge-studio.com?from=grudge.studio', tag: 'studio', badge: 'FORGE' },
+  { name: 'grudgewarlords.com', url: 'https://grudgewarlords.com', tag: 'game', badge: 'LIVE' },
+  { name: 'character.grudge-studio.com', url: 'https://character.grudge-studio.com?era=warlords', tag: 'studio', badge: 'GCS' },
+  { name: 'client.grudge-studio.com', url: 'https://client.grudge-studio.com', tag: 'studio', badge: 'CLIENT' },
+  { name: 'grudge-crafting.puter.site', url: 'https://grudge-crafting.puter.site/', tag: 'game', badge: 'CRAFT' },
+  { name: 'fleet.grudge-studio.com', url: 'https://fleet.grudge-studio.com', tag: 'data', badge: 'MAP' },
+  { name: 'objectstore.grudge-studio.com', url: 'https://objectstore.grudge-studio.com/', tag: 'data', badge: 'JSON' },
+  { name: 'assets.grudge-studio.com', url: 'https://assets.grudge-studio.com', tag: 'data', badge: 'R2' },
+  { name: 'browse.grudge-studio.com', url: 'https://browse.grudge-studio.com', tag: 'studio', badge: 'MESH' },
+  { name: 'ui.grudge-studio.com', url: 'https://ui.grudge-studio.com', tag: 'studio', badge: 'UI' },
+  { name: 'grudox.grudge-studio.com', url: 'https://grudox.grudge-studio.com', tag: 'game', badge: 'GX' },
+  { name: 'gameopen.vercel.app', url: 'https://gameopen.vercel.app', tag: 'game', badge: 'OPEN' },
+  { name: 'carrier.grudge-studio.com', url: 'https://carrier.grudge-studio.com', tag: 'game', badge: 'PVP' },
+  { name: 'water.grudge-studio.com', url: 'https://water.grudge-studio.com', tag: 'game', badge: 'TI' },
+  { name: 'drive.grudge-studio.com', url: 'https://drive.grudge-studio.com', tag: 'game', badge: 'DRIVE' },
+  { name: 'grudge-arena.grudge-studio.com', url: 'https://grudge-arena.grudge-studio.com', tag: 'game', badge: 'ARENA' },
+  { name: 'survival.grudge-studio.com', url: 'https://survival.grudge-studio.com', tag: 'game', badge: 'SURV' },
+  { name: 'dcq.grudge-studio.com', url: 'https://dcq.grudge-studio.com', tag: 'game', badge: 'DCQ' },
+  { name: 'grudge6.grudge-studio.com', url: 'https://grudge6.grudge-studio.com/game', tag: 'game', badge: 'G6' },
+  { name: 'ai.grudge-studio.com', url: 'https://ai.grudge-studio.com', tag: 'data', badge: 'AI' },
+  { name: 'dev.grudge-studio.com', url: 'https://dev.grudge-studio.com', tag: 'core', badge: 'DEV' },
+  { name: 'grudge-studio.com (portal)', url: 'https://grudge-studio.com', tag: 'core', badge: 'PORTAL' },
+  { name: 'grudgeDot /app SPA', url: '/app', tag: 'core', badge: 'APP' },
+];
+
+const PUTER_DEPLOYS = [
+  'grudgestudio.puter.site','grudge-crafting.puter.site','puter.com/app/warlords',
+  'puter.com/app/grudge-angler','puter.com/app/grudge-launcher','puter.com/app/GrudgeStudio',
+  'grudachain-command-center.puter.site','grudge-heros.puter.site','meta-build-jb36g.puter.site',
+].map((d) => ({
+  name: d,
+  url: d.startsWith('puter.com') ? 'https://' + d : 'https://' + d,
+  tag: 'puter',
+  badge: 'PUTER',
+}));
+
+const ALL_DEPLOYS = PRODUCTION_DEPLOYS.concat(PUTER_DEPLOYS);
+let deployTag = 'all';
+
+function renderDeploys(list) {
+  const grid = document.getElementById('deploy-grid');
+  if (!grid) return;
+  grid.innerHTML = list.map((d) => `
+    <a class="deploy-row" href="${d.url}" target="_blank" rel="noopener" title="${d.badge || ''}">
+      <div class="deploy-dot"></div>
+      <div class="deploy-name">${d.name}</div>
+      <div class="deploy-folder">${d.badge || d.tag || ''}</div>
+    </a>`).join('');
+}
+
+function filterDeploys(tag, el) {
+  deployTag = tag;
+  document.querySelectorAll('#deploy-filters .filter-tag').forEach((t) => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const list = tag === 'all' ? ALL_DEPLOYS : ALL_DEPLOYS.filter((d) => d.tag === tag);
+  renderDeploys(list);
+}
+
+renderDeploys(ALL_DEPLOYS);
+
+function goPanel(name, btn) {
+  const el = btn || document.querySelector('.nav-btn[data-panel="' + name + '"]');
+  switchPanel(name, el || null);
+  try {
+    if (['wallet','account','treaty','forge','deployments','apps','dns','stack','ai','overview'].includes(name)) {
+      const u = new URL(location.href);
+      if (name === 'overview') u.searchParams.delete('panel');
+      else u.searchParams.set('panel', name);
+      history.replaceState({}, '', u.pathname + (u.search || '') + (u.hash || ''));
+    }
+  } catch {}
+}
+
+// Wire Grudge ID quick link redirect_uri after CLIENT_URL is known
+(function wireIdLink() {
+  const a = document.getElementById('qlink-id');
+  if (a) a.href = FLEET.auth + '/login?redirect_uri=' + encodeURIComponent(location.origin + '/');
+})();
+
+
+// ===== AI CONSOLE � Powered by Puter.js (FREE, user-pays model) =====
+const AI_CONTEXT = `You are the Grudge Studio AI assistant for the canonical hub at grudge.studio (grudgeDot merged).
+ONE TRUTH fleet (2026):
+- Hub: https://grudge.studio — accounts, wallet, Treaty, Forge entry, deploy map
+- Auth: id.grudge-studio.com /login?redirect_uri= → Railway auth
+- Player SSOT: Railway Postgres grudge-api-production-0d46.up.railway.app — characters, account, islands, wallet, treaty
+- NEVER MySQL or api.grudge-studio.com as character SSOT
+- Forge: forge.grudge-studio.com (scene/map/effects) · ObjectStore + R2
+- Definitions: objectstore.grudge-studio.com/api/v1/*.json
+- Binaries: assets.grudge-studio.com
+- Games: grudgewarlords.com, grudge-crafting.puter.site, character.grudge-studio.com, grudox, gameopen
+- Inventory account-shared; profession XP per character UUID
+Be concise, technical, and production-ready.`;
+
+function aiPrompt(text) {
+  document.getElementById('ai-input').value = text;
+  switchPanel('ai', null);
+  sendAI();
+}
+
+async function sendAI() {
+  const input = document.getElementById('ai-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  addLine('t-cmd', '\u276f ' + text);
+  const loadEl = addLine('t-info', '<span class="spinner"></span>thinking via Puter AI (free)...');
+
+  try {
+    // Use Puter.js client-side AI � FREE (user-pays model, $0 cost to developer)
+    if (typeof puter !== 'undefined' && puter.ai) {
+      const resp = await puter.ai.chat([
+        { role: 'system', content: AI_CONTEXT },
+        { role: 'user', content: text }
+      ], { model: 'claude-sonnet-4-20250514', stream: true });
+      loadEl.remove();
+      let fullText = '';
+      for await (const part of resp) {
+        if (part?.text) {
+          fullText += part.text;
+          // Update the last line or add new ones
+          const lines = fullText.split('\n');
+          const container = document.getElementById('terminal-body');
+          // Clear previous AI output
+          container.querySelectorAll('.ai-stream').forEach(el => el.remove());
+          lines.forEach(line => {
+            const div = document.createElement('div');
+            div.className = 'terminal-line t-ai ai-stream';
+            div.textContent = line || ' ';
+            container.appendChild(div);
+          });
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+      addLine('t-ok', '\u2500\u2500 done (via Puter AI \u2014 free) \u2500\u2500');
+    } else {
+      // Fallback: try backend AI proxy
+      loadEl.textContent = 'Puter SDK not loaded \u2014 trying backend...';
+      const res = await fetch(`${GAME_API}/ai/chat`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', ...(authToken?{'Authorization':'Bearer '+authToken}:{})},
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      loadEl.remove();
+      (data.content || data.error || 'No response').split('\n').forEach(line => {
+        addLine(line.startsWith('```') ? 't-cmd' : 't-ai', line || '\u00a0');
+      });
+      addLine('t-ok', `\u2500\u2500 done (via ${data.provider || 'backend'}) \u2500\u2500`);
+    }
+  } catch(e) {
+    loadEl.remove();
+    addLine('t-cmd', '\u2717 Error: ' + e.message);
+  }
+}
+
+function addLine(cls, html) {
+  const body = document.getElementById('terminal-body');
+  const div = document.createElement('div');
+  div.className = 'terminal-line ' + cls;
+  div.innerHTML = html;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+  return div;
+}
+
+// ===== TOAST =====
+function showToast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (err ? ' err' : '');
+  setTimeout(() => t.className = '', 3500);
+}
+
+function showForgot() { showToast('Use Grudge ID login � password reset at id.grudge-studio.com'); }
+
+// Probe fleet health strip
+(async function probeFleetHealth() {
+  const el = document.getElementById('fleet-health');
+  if (!el) return;
+  try {
+    const r = await fetch(GAME_API + '/health');
+    const j = await r.json().catch(() => ({}));
+    const ok = r.ok && (j.status === 'healthy' || j.database === 'connected');
+    el.textContent = ok ? 'RAILWAY DB CONNECTED' : 'API DEGRADED';
+    el.style.color = ok ? 'var(--green)' : 'var(--ember)';
+  } catch {
+    el.textContent = 'API UNREACHABLE';
+    el.style.color = 'var(--ember)';
+  }
+})();
+
+// ===== WALLET PANEL (Railway /api/wallet + /api/account) =====
+async function refreshWalletPanel() {
+  const msg = document.getElementById('wallet-panel-msg');
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  if (!authToken) {
+    set('wallet-gbux', '—'); set('wallet-gold', '—'); set('wallet-type', '—');
+    set('wallet-panel-addr', '—'); set('wallet-has', 'sign in required');
+    if (msg) msg.textContent = 'Sign in with Grudge ID to load Railway wallet + account bag.';
+    return;
+  }
+  if (msg) msg.textContent = 'Loading wallet from Railway…';
+  try {
+    const headers = { Authorization: 'Bearer ' + authToken, Accept: 'application/json' };
+    const [statusRes, acctRes, invRes] = await Promise.all([
+      fetch(GAME_API + '/wallet/status', { headers }),
+      fetch(GAME_API + '/account', { headers }),
+      fetch(GAME_API + '/account/resources', { headers }).catch(() => null),
+    ]);
+    let status = {};
+    if (statusRes.ok) status = await statusRes.json();
+    let acct = {};
+    if (acctRes.ok) acct = await acctRes.json();
+    let resources = {};
+    if (invRes && invRes.ok) resources = await invRes.json();
+
+    const addr = status.walletAddress || acct.walletAddress || acct.serverWalletAddress || currentUser?.walletAddress || currentUser?.serverWalletAddress || null;
+    const wtype = status.walletType || acct.walletType || (addr ? 'linked' : 'none');
+    const gbux = resources.gbux ?? resources.GBUX ?? acct.gbux ?? acct.resources?.gbux ?? overviewSafe(resources, 'gbux');
+    const gold = resources.gold ?? resources.GOLD ?? acct.gold ?? acct.resources?.gold ?? overviewSafe(resources, 'gold');
+
+    set('wallet-gbux', gbux != null ? Number(gbux).toLocaleString() : '—');
+    set('wallet-gold', gold != null ? Number(gold).toLocaleString() : '—');
+    set('wallet-type', String(wtype).toUpperCase());
+    set('wallet-has', status.hasWallet || addr ? 'connected' : 'no wallet yet');
+    set('wallet-panel-addr', addr || '—');
+    if (addr) {
+      currentUser = currentUser || {};
+      currentUser.walletAddress = addr;
+      updateWalletUI(addr);
+    }
+
+    const invEl = document.getElementById('wallet-inv-preview');
+    if (invEl) {
+      const bag = resources.resources || resources.items || resources.inventory || resources;
+      if (bag && typeof bag === 'object' && !Array.isArray(bag)) {
+        const entries = Object.entries(bag).filter(([, v]) => v != null && typeof v !== 'object').slice(0, 12);
+        invEl.innerHTML = entries.length
+          ? entries.map(([k, v]) => `<div><span style="color:var(--gold)">${escapeHtml(k)}</span>: ${escapeHtml(String(v))}</div>`).join('')
+          : 'No resource summary — open Crafting for full bag.';
+      } else if (Array.isArray(bag)) {
+        invEl.innerHTML = bag.slice(0, 8).map((it) => `<div>${escapeHtml(it.name || it.itemId || JSON.stringify(it).slice(0, 40))}</div>`).join('') || 'Empty bag';
+      } else {
+        invEl.textContent = 'Account resources load after craft/play activity.';
+      }
+    }
+    if (msg) msg.textContent = 'Synced from Railway · ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    if (msg) msg.textContent = 'Wallet load failed: ' + (e.message || e);
+  }
+}
+
+function overviewSafe(obj, key) {
+  try {
+    if (obj && obj.balances && obj.balances[key] != null) return obj.balances[key];
+  } catch {}
+  return null;
+}
+
+async function ensureServerWallet() {
+  if (!authToken) { showAuthGate(); return; }
+  const email = currentUser?.email || document.getElementById('settings-email')?.value;
+  if (!email) {
+    showToast('Set email in Accounts first (required for Crossmint)', true);
+    switchPanel('account', null);
+    return;
+  }
+  try {
+    const res = await fetch(GAME_API + '/wallet/create', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + authToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+    showToast('Server wallet ready');
+    if (data.walletAddress) {
+      currentUser.walletAddress = data.walletAddress;
+      currentUser.serverWalletAddress = data.walletAddress;
+      updateWalletUI(data.walletAddress);
+    }
+    await refreshWalletPanel();
+  } catch (e) {
+    showToast('Wallet create failed: ' + e.message, true);
+  }
+}
+
+// ===== TREATY PANEL (Railway /api/treaty — account social SSOT) =====
+const treatyState = { tab: 'servers', channels: [], channelSlug: '', threadId: null, groupId: null, poll: null };
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function treatyApi(path, init) {
+  const headers = Object.assign({ Accept: 'application/json' }, (init && init.headers) || {});
+  if (authToken) headers.Authorization = 'Bearer ' + authToken;
+  if (init && init.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  const res = await fetch(GAME_API + '/treaty' + path, Object.assign({}, init, { headers }));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+  return data;
+}
+
+function setTreatyComposer(on) {
+  const input = document.getElementById('treaty-input');
+  const send = document.getElementById('treaty-send');
+  if (input) input.disabled = !on;
+  if (send) send.disabled = !on;
+}
+
+function setTreatyTab(tab, btn) {
+  treatyState.tab = tab;
+  document.querySelectorAll('[data-treaty-tab]').forEach((b) => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const friendBox = document.getElementById('treaty-friend-box');
+  if (friendBox) friendBox.style.display = tab === 'friends' ? 'block' : 'none';
+  const title = document.getElementById('treaty-side-title');
+  if (title) {
+    title.textContent = tab === 'servers' ? 'CHANNELS' : tab === 'dms' ? 'THREADS' : tab === 'groups' ? 'GROUPS' : 'FRIENDS';
+  }
+  loadTreatyTab();
+}
+
+function initTreatyPanel() {
+  if (!authToken) {
+    document.getElementById('treaty-channels').innerHTML = '<div class="treaty-empty">Sign in with Grudge ID to use Treaty.</div>';
+    document.getElementById('treaty-log').innerHTML = '<div class="treaty-empty">Account-scoped social · friends · DMs · fleet chat.</div>';
+    setTreatyComposer(false);
+    return;
+  }
+  loadTreatyTab();
+  if (treatyState.poll) clearInterval(treatyState.poll);
+  treatyState.poll = setInterval(() => {
+    if (document.getElementById('panel-treaty')?.classList.contains('active')) loadTreatyMessagesOnly();
+  }, 6000);
+}
+
+async function loadTreatyTab() {
+  if (!authToken) return;
+  const side = document.getElementById('treaty-channels');
+  const log = document.getElementById('treaty-log');
+  try {
+    if (treatyState.tab === 'servers') {
+      const data = await treatyApi('/servers?game=fleet');
+      treatyState.channels = data.channels || data.servers || [];
+      if (!treatyState.channelSlug && treatyState.channels.length) {
+        treatyState.channelSlug = treatyState.channels[0].slug || treatyState.channels[0].id;
+      }
+      side.innerHTML = treatyState.channels.length
+        ? treatyState.channels.map((c) => {
+            const slug = c.slug || c.id;
+            const active = slug === treatyState.channelSlug ? ' active' : '';
+            return `<button type="button" class="treaty-chan${active}" onclick="selectTreatyChannel('${escapeHtml(slug)}')">${escapeHtml(c.name || slug)}</button>`;
+          }).join('')
+        : '<div class="treaty-empty">No fleet channels yet.</div>';
+      await loadTreatyMessagesOnly();
+    } else if (treatyState.tab === 'dms') {
+      const data = await treatyApi('/dm/threads');
+      const threads = data.threads || [];
+      side.innerHTML = threads.length
+        ? threads.map((t) => {
+            const id = t.id || t.threadId;
+            const active = id === treatyState.threadId ? ' active' : '';
+            return `<button type="button" class="treaty-chan${active}" onclick="selectTreatyDm('${escapeHtml(id)}')">${escapeHtml(t.displayName || t.grudgeId || 'DM')}</button>`;
+          }).join('')
+        : '<div class="treaty-empty">No DMs — add friends first.</div>';
+      if (threads.length && !treatyState.threadId) treatyState.threadId = threads[0].id || threads[0].threadId;
+      await loadTreatyMessagesOnly();
+    } else if (treatyState.tab === 'groups') {
+      const data = await treatyApi('/groups');
+      const groups = data.groups || [];
+      side.innerHTML = groups.length
+        ? groups.map((g) => {
+            const id = g.id;
+            const active = id === treatyState.groupId ? ' active' : '';
+            return `<button type="button" class="treaty-chan${active}" onclick="selectTreatyGroup('${escapeHtml(id)}')">${escapeHtml(g.name || id)}</button>`;
+          }).join('')
+        : '<div class="treaty-empty">No groups yet. Create one in the full Treaty app.</div>';
+      if (groups.length && !treatyState.groupId) treatyState.groupId = groups[0].id;
+      await loadTreatyMessagesOnly();
+    } else {
+      const data = await treatyApi('/social');
+      const friends = (data.friends || []).filter((f) => f.status === 'accepted' || !f.status);
+      const pending = data.pendingIncoming || data.incoming || [];
+      side.innerHTML = '';
+      log.innerHTML = [
+        '<div class="treaty-msg"><span class="who">Friends</span><div class="body">' +
+          (friends.length ? friends.map((f) => escapeHtml(f.displayName || f.grudgeId || f.username)).join(', ') : 'None yet') +
+          '</div></div>',
+        '<div class="treaty-msg"><span class="who">Incoming requests</span><div class="body">' +
+          (pending.length
+            ? pending.map((f) => {
+                const id = f.id || f.requestId;
+                return `${escapeHtml(f.displayName || f.grudgeId)} ` +
+                  `<button class="pill" onclick="treatyRespond('${escapeHtml(id)}', true)">Accept</button> ` +
+                  `<button class="pill" onclick="treatyRespond('${escapeHtml(id)}', false)">Decline</button>`;
+              }).join('<br>')
+            : 'None') +
+          '</div></div>',
+      ].join('');
+      setTreatyComposer(false);
+    }
+  } catch (e) {
+    side.innerHTML = '';
+    log.innerHTML = `<div class="treaty-empty err" style="color:#f87171">Treaty: ${escapeHtml(e.message)}</div>`;
+    setTreatyComposer(false);
+  }
+}
+
+function selectTreatyChannel(slug) {
+  treatyState.channelSlug = slug;
+  loadTreatyTab();
+}
+function selectTreatyDm(id) {
+  treatyState.threadId = id;
+  loadTreatyTab();
+}
+function selectTreatyGroup(id) {
+  treatyState.groupId = id;
+  loadTreatyTab();
+}
+
+async function loadTreatyMessagesOnly() {
+  const log = document.getElementById('treaty-log');
+  if (!log || !authToken) return;
+  try {
+    let messages = [];
+    if (treatyState.tab === 'servers' && treatyState.channelSlug) {
+      const data = await treatyApi('/servers/' + encodeURIComponent(treatyState.channelSlug) + '/messages?limit=80');
+      messages = data.messages || [];
+      setTreatyComposer(true);
+    } else if (treatyState.tab === 'dms' && treatyState.threadId) {
+      const data = await treatyApi('/dm/threads/' + encodeURIComponent(treatyState.threadId) + '/messages?limit=80');
+      messages = data.messages || [];
+      setTreatyComposer(true);
+    } else if (treatyState.tab === 'groups' && treatyState.groupId) {
+      const data = await treatyApi('/groups/' + encodeURIComponent(treatyState.groupId) + '/messages?limit=80');
+      messages = data.messages || [];
+      setTreatyComposer(true);
+    } else if (treatyState.tab !== 'friends') {
+      log.innerHTML = '<div class="treaty-empty">Nothing selected.</div>';
+      setTreatyComposer(false);
+      return;
+    } else return;
+
+    if (!messages.length) {
+      log.innerHTML = '<div class="treaty-empty">No messages yet — say hello.</div>';
+      return;
+    }
+    log.innerHTML = messages.map((m) => {
+      const who = m.senderDisplayName || m.senderGrudgeId || m.displayName || 'Player';
+      const when = m.createdAt ? new Date(m.createdAt).toLocaleTimeString() : '';
+      return `<div class="treaty-msg"><span class="who">${escapeHtml(who)}</span><span class="when">${escapeHtml(when)}</span><div class="body">${escapeHtml(m.content || m.body || '')}</div></div>`;
+    }).join('');
+    log.scrollTop = log.scrollHeight;
+  } catch (e) {
+    log.innerHTML = `<div class="treaty-empty" style="color:#f87171">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function treatySend() {
+  const input = document.getElementById('treaty-input');
+  const text = (input?.value || '').trim();
+  if (!text || !authToken) return;
+  try {
+    if (treatyState.tab === 'servers' && treatyState.channelSlug) {
+      await treatyApi('/servers/' + encodeURIComponent(treatyState.channelSlug) + '/messages', {
+        method: 'POST', body: JSON.stringify({ content: text }),
+      });
+    } else if (treatyState.tab === 'dms' && treatyState.threadId) {
+      await treatyApi('/dm/threads/' + encodeURIComponent(treatyState.threadId) + '/messages', {
+        method: 'POST', body: JSON.stringify({ content: text }),
+      });
+    } else if (treatyState.tab === 'groups' && treatyState.groupId) {
+      await treatyApi('/groups/' + encodeURIComponent(treatyState.groupId) + '/messages', {
+        method: 'POST', body: JSON.stringify({ content: text }),
+      });
+    }
+    input.value = '';
+    await loadTreatyMessagesOnly();
+  } catch (e) {
+    showToast('Send failed: ' + e.message, true);
+  }
+}
+
+async function treatyAddFriend() {
+  const q = document.getElementById('treaty-friend-query')?.value?.trim();
+  if (!q) return;
+  try {
+    await treatyApi('/friends/request', { method: 'POST', body: JSON.stringify({ query: q }) });
+    showToast('Friend request sent');
+    document.getElementById('treaty-friend-query').value = '';
+    loadTreatyTab();
+  } catch (e) {
+    showToast(e.message, true);
+  }
+}
+
+async function treatyRespond(id, accept) {
+  try {
+    await treatyApi('/friends/' + encodeURIComponent(id) + '/respond', {
+      method: 'POST', body: JSON.stringify({ accept: !!accept }),
+    });
+    showToast(accept ? 'Friend accepted' : 'Request declined');
+    loadTreatyTab();
+  } catch (e) {
+    showToast(e.message, true);
+  }
+}
+
+// Enter key for treaty composer
+document.getElementById('treaty-input')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') treatySend();
+});
+
+// Deep-link ?panel=wallet|account|treaty or /wallet|/account|/treaty paths
+(function deepLinkPanel() {
+  try {
+    const fromQuery = new URLSearchParams(location.search).get('panel');
+    const path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+    const fromPath = path === '/wallet' ? 'wallet'
+      : path === '/account' || path === '/accounts' ? 'account'
+      : path === '/treaty' ? 'treaty'
+      : path === '/apps' ? 'apps'
+      : null;
+    const p = fromQuery || fromPath;
+    if (p && ['wallet', 'account', 'treaty', 'forge', 'deployments', 'apps', 'dns', 'stack', 'ai', 'overview'].includes(p)) {
+      setTimeout(() => switchPanel(p, null), 400);
+    }
+  } catch {}
+})();
+</script>
+</body>
+</html>

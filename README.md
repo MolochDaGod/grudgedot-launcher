@@ -1,58 +1,41 @@
-# GDevelop Assistant — Grudge Studio Multi-Game Platform
-
-> Games, crafting, AI agents, CNFT character ownership, and dev tools for the Grudge Warlords universe.
-
+# grudgeDot — Grudge Studio Launcher
+> Games, crafting, AI agents, CNFT character ownership, and dev tools for the Grudge Warlords universe, wrapped in a single launcher.
 ## Overview
-
-GDevelop Assistant (GGE) is a full-stack web platform hosting multiple games and tools for the Grudge Studio ecosystem. Every game shares a **universal hero system** — the same 8 WCS attributes (Strength, Vitality, Endurance, Intellect, Wisdom, Dexterity, Agility, Tactics), tier gear (T0–T5), professions, and crafting — so a character created once lives across all Grudge universe titles.
-
-Characters and islands are owned on-chain as **Solana cNFTs via Crossmint**. The canonical character creation flow originates from [Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder), which mints characters with their full WCS stats as NFT metadata. Any Grudge game (Gruda Wars, Warlord Crafting Suite, GDevelop, etc.) can read a player's cNFT to load their hero.
-
-**Live**: [gdevelop-assistant.vercel.app](https://gdevelop-assistant.vercel.app)  
-**Auth**: Auto-guest on first visit; full auth via [id.grudge-studio.com](https://id.grudge-studio.com) (Grudge ID SSO)  
+grudgeDot is the full-stack web launcher for Grudge Studio. It hosts multiple games and creator tools on top of a shared **universal hero system** — the same 8 WCS attributes (Strength, Vitality, Endurance, Intellect, Wisdom, Dexterity, Agility, Tactics), tier gear (T0–T5), professions, and crafting — so a character created once lives across every Grudge Warlords title.
+Characters and home islands are owned on-chain as **Solana cNFTs via Crossmint**. The canonical character creation flow lives in [Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder); any Grudge game (Gruda Wars, Warlord Crafting Suite, grudgeDot, etc.) reads a player's cNFT to load their hero.
+**Auth**: Optional/progressive. If a Grudge ID JWT is present (via URL `?token=`, `#token=`, or localStorage) it is captured and validated silently. The launcher is fully accessible without being signed in.  
+**Production**: Railway (Docker) — [railway.app](https://railway.app) via `grudge-studio` service deployment.  
 **Discord**: [discord.gg/FtGtmxmwkh](https://discord.gg/FtGtmxmwkh)
-
 ## Tech Stack
-
 - **Frontend**: React 18, TypeScript, Vite, TailwindCSS, Radix UI, React Query
-- **Backend**: Node.js, Express, TypeScript
-- **Database**: PostgreSQL via Drizzle ORM (`@neondatabase/serverless`)
-- **Auth**: JWT via Grudge Auth Gateway (hub-and-spoke model)
-- **Deployment**: Vercel (serverless API + static frontend)
-- **Real-time**: Socket.IO (development mode)
-
+- **Backend**: Node.js, Express, TypeScript — VPS game API at `api.grudge-studio.com` (Coolify/Docker + Traefik)
+- **Database**: PostgreSQL via Drizzle ORM
+- **Auth**: Optional/progressive token-based auth; JWT captured from URL params or localStorage
+- **Deployment**: Railway (Docker, primary) + Vercel (static/serverless)
+- **Storage**: Cloudflare R2 via `objectstore.grudge-studio.com` Cloudflare Worker proxy
+- **Real-time**: Socket.IO / Colyseus (development mode)
 ## Quick Start
-
 ```bash
-git clone https://github.com/MolochDaGod/GDevelopAssistant.git
-cd GDevelopAssistant
+git clone https://github.com/MolochDaGod/grudgeDot.git
+cd grudgeDot
 npm install
-cp .env.example .env   # Add DATABASE_URL, SESSION_SECRET, etc.
+cp .env.example .env   # Fill in DATABASE_URL, SESSION_SECRET, etc.
 npm run dev             # Starts Express + Vite dev server
 ```
-
-The app runs at `http://localhost:5000` by default.
-
+The app runs at `http://localhost:5000` by default. The launcher is publicly accessible — no login required to browse.
 ## Registered Games & Tools (Tabs)
-
 All tabs are listed in `client/src/tabs.registry.json`. See [TABS_AND_APPS.md](docs/TABS_AND_APPS.md) for full details.
-
 | Slug | Title | Description |
 |------|-------|-------------|
 | `grudge-swarm` | Grudge Swarm RTS | Top-down RTS with faction-based AI swarm battles |
 | `mmo` | MMO World | Phaser 3 MMO with shared WCS heroes, souls-like indicators, crafting/professions |
 | `grudge-drive` | Grudge Drive | Asset management and sprite deployment tool |
-
 **Platform Pages:**
-
 | Path | Title | Description |
 |------|-------|-------------|
 | `/connections` | Connections | Live backend health probes, account/wallet tools, AI launchers |
-
 ## Shared Hero System & CNFT Ownership
-
 All games draw from the same hero identity:
-
 - **WCS Attributes**: 8 core stats defined in `shared/grudachain.ts`
 - **Hero Roster**: 4 Gruda Wars heroes (Thane, Lyra, Kael, Mira) in `shared/grudaWarsHeroes.ts`
 - **Tier Gear**: T0–T5 equipment system with class restrictions
@@ -62,57 +45,41 @@ All games draw from the same hero identity:
   - Parent collection: `5061318d-ff65-4893-ac4b-9b28efb18ace`
 - **Character Creation**: Originates from [Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder) — generates avatar, mints cNFT with WCS stats as on-chain metadata
 - **Cross-game**: Any Grudge game reads the player's cNFT to load their hero, stats, and gear
-
 ## Project Structure
-
 ```
-GDevelopAssistant/
-├── api/                  # Vercel serverless entry point
-│   └── index.ts          # Express app for Vercel
+grudgeDot/
 ├── apps/                 # Per-tab packaging & metadata
-│   ├── mmo/              # MMO World tab config
-│   └── grudge-drive/     # Grudge Drive tab config
 ├── client/               # React frontend (Vite)
 │   ├── src/
 │   │   ├── components/   # UI components (Radix-based)
-│   │   ├── lib/          # auth.ts, mmo-systems.ts, mmo-indicators.ts, SpriteEffects2D.ts
+│   │   │   └── AuthGuard.tsx  # Gates the app on a valid Grudge ID JWT
+│   │   ├── lib/          # auth.ts (SSO token handling), mmo-systems.ts, ...
 │   │   ├── pages/        # App pages (mmo-world, grudge-box, crypt-crawlers, etc.)
 │   │   └── tabs.registry.json  # All registered game tabs
-│   ├── public/           # Favicons, static assets
 │   └── index.html        # Vite entry point
 ├── server/               # Express backend
 │   ├── routes.ts         # All API routes
+│   ├── grudgeAuth.ts     # Token verify/user/logout proxies to id.grudge-studio.com
 │   ├── index.ts          # Dev server entry (Vite middleware)
-│   ├── serverUtils.ts    # log() and serveStatic() for serverless
 │   ├── middleware/        # grudgeJwt.ts (JWT verification)
 │   └── services/         # grudaLegion.ts, etc.
 ├── shared/               # Shared types and schemas
-│   ├── schema.ts         # Drizzle ORM database schema
-│   ├── grudachain.ts     # WCS hero attributes & conversion
-│   └── grudaWarsHeroes.ts # Gruda Wars hero definitions
 ├── docs/                 # Project documentation
-│   ├── AI_SYSTEMS_GUIDE.md  # AI architecture & best practices
-│   └── TABS_AND_APPS.md     # Tab system guide
-├── vercel.json           # Vercel deployment config
 ├── vite.config.ts        # Vite build config
-├── drizzle.config.ts     # Drizzle ORM config
 └── package.json
 ```
-
 ## Authentication
+grudgeDot uses **optional/progressive token-based auth**. The launcher is publicly accessible without a login — auth unlocks per-user features (characters, wallet, cloud saves).
 
-GGE uses the **Grudge Auth Gateway** (`id.grudge-studio.com`) for all authentication. See [AUTH_INTEGRATION.md](AUTH_INTEGRATION.md) for details.
+**How tokens arrive:**
+- **grudge-studio launcher** — appends `?token=<jwt>` (or `#token=<jwt>`) to the URL when opening grudgeDot; `captureAuthCallback()` reads it and persists to `localStorage`.
+- **SSO hand-off** — clicking "Sign In" links to `id.grudge-studio.com` which returns via `#token=…` or `?sso_token=…`.
+- **Returning session** — `getAuthData()` reads `localStorage.grudge_auth_token` and validates the JWT hasn't expired.
 
-Supported login methods:
-- **Grudge Login** — Puter-backed cloud auth (displayed as Grudge branding; Puter is backend-only)
-- Username/password via `id.grudge-studio.com`
-- Discord OAuth (goes through VPS)
-- Guest accounts (device ID)
+**Validation:** `AuthGuard` background-verifies against `/api/auth/verify`. On failure it clears localStorage and emits `grudge:auth:expired` — **no hard redirect**. UI components listen for this event to show a sign-in prompt inline.
 
-All methods produce a JWT stored as `grudge_auth_token` in localStorage.
-
+See [AUTH_INTEGRATION.md](AUTH_INTEGRATION.md) for full details.
 ## Available Scripts
-
 ```bash
 npm run dev          # Start dev server (Express + Vite HMR)
 npm run build        # Production build (Vite)
@@ -120,102 +87,79 @@ npm run start        # Start production server
 npm run check        # TypeScript type checking
 npm run db:push      # Push Drizzle schema changes to database
 ```
-
 ## Environment Variables
-
 ```env
-DATABASE_URL=postgresql://...       # Grudge VPS PostgreSQL connection string
-SESSION_SECRET=your-secret          # Express session secret
-JWT_SECRET=your-jwt-secret          # JWT signing secret (shared with auth-gateway)
+DATABASE_URL=postgresql://...                  # Grudge VPS PostgreSQL connection string
+SESSION_SECRET=your-secret                     # JWT signing secret (shared with id.grudge-studio.com)
+GRUDGE_AUTH_URL=https://id.grudge-studio.com   # SSO origin (proxied by grudgeAuth.ts)
+GRUDGE_BACKEND_URL=https://api.grudge-studio.com
+GRUDGEDOT_BACKEND_PREFIX=/api/gdevelop         # Upstream path prefix on the VPS; flip to /api/grudgedot after VPS rename
 ```
-
+See [.env.example](.env.example) for the full list.
 ## Deployment
 
-The Vite client builds to `dist/public/` and deploys to **Vercel** as static files. The Express backend runs in dev mode only (`npm run dev`) — it is not deployed to Vercel serverless.
+### Railway (primary — grudge-studio production)
 
-Only `api/health.ts` is deployed as a Vercel serverless function. The SPA catch-all rewrite in `vercel.json` serves `index.html` for all non-API routes.
+GrudgeDot runs as a single Docker container on Railway. The `railway.toml` at the project root configures the build and healthcheck.
 
 ```bash
-npm run build:vercel       # Build client
-vercel --prod --yes        # Deploy to production
+# First-time setup
+npm install -g @railway/cli
+railway login
+railway link   # link to your grudge-studio Railway project
+
+# Deploy
+railway up     # builds & deploys the Docker image
+railway domain # assign grudgedot.com as the custom domain
 ```
 
-> **CRITICAL**: Both `server/routes.ts` (dev) and `server/vercelApp.ts` (Vercel) **must** call
-> `setupGrudgeProxy(app)` or all `/api/grudge/*` backend calls will 404 on the deployed site.
-> See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the full architecture.
+Set all required env vars in the Railway dashboard (or `railway variables set KEY=VALUE`). See `railway.toml` for the full list of required vars. The container listens on `$PORT` (injected by Railway) and the health endpoint is `/api/health`.
 
-After deploying, verify backend connectivity by visiting `/connections` on the live URL.
+### Cloudflare Pages (static SPA)
 
+The Vite client builds to `dist/public/` and is published to the Cloudflare Pages project `grudgedot` by `.github/workflows/pages-deploy.yml` on every push to `main`. There is no Vercel deployment for this repo — the legacy `gdevelop-assistant` Vercel project has been retired.
+
+```bash
+npm run build      # produces dist/public/
+# CI then runs cloudflare/pages-action against project=grudgedot
+```
+
+> **Note**: All runtime API routes are handled by `server/routes.ts` against the Railway / VPS container. Static-only deploys (Cloudflare Pages) proxy `/api/*` to `api.grudge-studio.com` via the client's fetch calls. See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md).
+
+After any deploy, verify backend connectivity at `/connections`.
 ## Warlord Suite (Native Pages)
-
-The Warlord Suite tabs at `/warlord-suite/:page` are fully native React pages using **canonical WCS data** from `shared/wcs/` and **WCS fantasy MMO styling** (gold-bordered panels, dark fantasy theme, Cinzel Decorative/MedievalSharp fonts, skill node icons, gem-glow animations).
-
-All pages connect to the Grudge backend via React Query hooks for live character/inventory/profession sync.
-
-- **Skill Tree** (`/warlord-suite/skill-tree`) — Unified class skill builder with collapsible class overview (description, playstyle, allowed weapons/armor, 8-attribute grid), interactive tier-by-tier skill selection, special ability panel, and build summary. 4 classes (warrior/mage/ranger/worge), 6 tiers each, pick-one-per-tier.
-- **Arsenal** (`/warlord-suite/arsenal`) — 144 equipment items (cloth/leather/metal), filterable by material/set/slot. Stone-panel item cards with stat breakdowns and tooltip lore.
-- **Crafting** (`/warlord-suite/crafting`) — Backend-synced recipe browser + crafting queue, 10 canonical professions (5 gathering + 5 crafting) with XP progress. Parchment-panel recipes, gilded craft buttons.
-- **Weapon Skills** (`/warlord-suite/weapon-skills`) — 10 weapon skill trees (SWORD/AXE/BOW/STAFF/DAGGER/MACE/HAMMER/SPEAR/WAND/SCYTHE), 4 slots each with upgrade paths showing damage/cooldown scaling. Skill icons from canonical data.
-- **Character Builder** (`/warlord-suite/character-builder`) — Full WCS attribute allocator (8 attrs, 18 secondary stats, diminishing returns), 4 races (orc/elf/human/undead), 4 classes, derived combat stats via `calculateStats()`. Ornate-frame attribute sliders with DR indicators.
-
+The Warlord Suite tabs at `/warlord-suite/:page` are fully native React pages using **canonical WCS data** from `shared/wcs/` and **WCS fantasy MMO styling**.
+- **Skill Tree** (`/warlord-suite/skill-tree`) — 4 classes (warrior/mage/ranger/worge), 6 tiers each, pick-one-per-tier.
+- **Arsenal** (`/warlord-suite/arsenal`) — 144 equipment items (cloth/leather/metal).
+- **Crafting** (`/warlord-suite/crafting`) — Backend-synced recipe browser + crafting queue, 10 canonical professions.
+- **Weapon Skills** (`/warlord-suite/weapon-skills`) — 10 weapon skill trees, 4 slots each.
+- **Character Builder** (`/warlord-suite/character-builder`) — Full WCS attribute allocator.
 Source: `client/src/pages/warlord-suite/`
 ## Key Modules
-
 - `client/src/lib/mmo-systems.ts` — Combat formulas, equipment tiers, crafting recipes, gathering professions (all built on WCS stats)
-- `client/src/lib/mmo-indicators.ts` — Souls-like attack telegraph system for Phaser 3 (6 indicator types, dodge windows)
+- `client/src/lib/mmo-indicators.ts` — Souls-like attack telegraph system for Phaser 3
 - `shared/grudachain.ts` — Universal WCS hero attribute definitions and conversion functions
 - `shared/grudaWarsHeroes.ts` — Hero roster with per-hero stats, abilities, and equipment IDs
-
 ## Backend Connection Architecture
-
-See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the **production-verified** backend proxy pattern:
-- Service map (game, account, id, launcher APIs)
-- Dual registration requirement (dev + Vercel entry points)
-- Domain convention (`grudge-studio.com` with hyphen)
-- CORS, OAuth redirect handling, health monitoring
-- Checklist for adding backend connectivity to any new Grudge Studio app
-
+See [docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the **production-verified** backend proxy pattern.
 ## AI Systems
-
 See [docs/AI_SYSTEMS_GUIDE.md](docs/AI_SYSTEMS_GUIDE.md) for the full AI architecture: AIWorker/Grok, GRUDA Legion, AI Agent Server, sprite pipeline, combat AI behavior trees, and best practices.
-
-## Native 2D Game Pages
-
-The platform includes fully native canvas-based game pages (no iframes):
-
-- **Grudge Box** (`/grudge-box`) — Native 2D canvas fighting game with multi-class combat, AI opponents, and sprite effects
-- **Crypt Crawlers** (`/crypt-crawlers`) — 2D dungeon crawler with BSP + cellular automata dungeon generation, A* pathfinding enemies, class selection (Warrior/Mage/Ranger/Worge), fog of war minimap, multi-floor progression
-- **Grudge Gangs** (`/grudge-gangs`) — 2D sprite effect showcase with integrated SpriteEffects2D library
-
-Source: `client/src/pages/` with shared effect library at `client/src/lib/SpriteEffects2D.ts`
-
-## ObjectStore Integration
-
-- **[Grudge Crafting (Puter)](https://grudge-crafting.puter.site)** fetches `items-database.json` from [ObjectStore](https://molochdagod.github.io/ObjectStore) for a browsable Item Database tab (3,425 items) and replaces emoji icons with real sprite icons across the crafting bench, inventory, and recipe lists
-- Source: `grudge-studio/apps/grudge-crafting/index.html`
-
 ## Related Projects
-
 - **[Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder)** — Universal character creation + Crossmint cNFT minting
-- **[ObjectStore](https://github.com/MolochDaGod/ObjectStore)** — Unified game data API, 49+ JSON endpoints, 10,000+ assets
+- **[ObjectStore](https://github.com/MolochDaGod/ObjectStore)** — Unified game data API
 - **[Auth Gateway](https://github.com/MolochDaGod/Warlord-Crafting-Suite/tree/main/auth-gateway)** — Grudge ID SSO system
 - **[Grudachain](https://github.com/MolochDaGod/grudachain)** — GRUDA Legion standalone AI system
 - **[Warlord Crafting Suite](https://github.com/MolochDaGod/Warlord-Crafting-Suite)** — Main game platform
-
 ## Community
-
 - **Discord**: [discord.gg/FtGtmxmwkh](https://discord.gg/FtGtmxmwkh)
 - **Game**: [grudgewarlords.com](https://grudgewarlords.com)
 - **Studio**: [grudge-studio.com](https://grudge-studio.com)
-
 ## Recent Changes
-
+- **Rebrand** — project renamed `GDevelopAssistant` → `grudgeDot`
+- **Auth consolidation** — in-app login removed; all auth delegated to `id.grudge-studio.com`
+- **Configurable backend prefix** — `GRUDGEDOT_BACKEND_PREFIX` env var lets the launcher move off `/api/gdevelop/*` once the VPS is renamed
 - **Discord invite** — all invite links updated to `discord.gg/FtGtmxmwkh`
-- **Grudge Login branding** — auth button uses Grudge logo; Puter is now backend-only (no Puter branding shown to users)
-- **Auth consolidation** — all auth flows route through `id.grudge-studio.com` VPS
 - **GrudgeEmbed + GKO Boxing** — Phase 1 engine bridge integration
 - **GBUX Economy API** — live price feed and on-chain tracker endpoints
-
 ## License
-
 MIT

@@ -1,14 +1,14 @@
 // Warcraft 3-inspired Medieval RTS Game Mode Templates
 // Medieval Warfare (PvP) and Grudge Wars (Campaign)
 
-import type { GDevelopTools } from "../shared/schema";
+import type { GrudgedotTools } from "../shared/schema";
 
 export interface GameModeTemplate {
   name: string;
   description: string;
   gameMode: "pvp" | "campaign";
   thumbnailUrl?: string;
-  gdevelopTools: GDevelopTools;
+  grudgedotTools: GrudgedotTools;
   mapData: {
     width: number;
     height: number;
@@ -116,7 +116,7 @@ export const medievalWarfarePVP: GameModeTemplate = {
   name: "Medieval Warfare - PvP",
   description: "Classic competitive multiplayer RTS. Build your base, train armies, and destroy your opponents in epic medieval battles. Inspired by Warcraft 3.",
   gameMode: "pvp",
-  gdevelopTools: {
+  grudgedotTools: {
     behaviors: [
       {
         name: "Top-down Movement",
@@ -399,7 +399,7 @@ export const grudgeWarsCampaign: GameModeTemplate = {
   name: "Grudge Wars - Campaign Mission 1",
   description: "Story-driven single-player campaign. Complete objectives, level up your hero, and unravel an epic medieval tale of betrayal and redemption.",
   gameMode: "campaign",
-  gdevelopTools: {
+  grudgedotTools: {
     behaviors: [
       {
         name: "Top-down Movement",

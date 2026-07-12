@@ -1,55 +1,49 @@
-# Grudge Auth Gateway Integration
-
+# grudgeDot Auth Integration
 ## Overview
-
-GGE authenticates via the **Grudge Auth Gateway** at `https://id.grudge-studio.com`. All auth flows produce a **JWT** stored in localStorage as `grudge_auth_token`. The auth gateway is the source of truth for the shared `accounts` table across all Grudge Studio apps.
-
+grudgeDot has **no in-app login**. Every authentication flow is handled by the unified Grudge ID SSO at `https://id.grudge-studio.com/auth`. The launcher only stores a JWT (keyed `grudge_auth_token` in `localStorage`) and forwards it on API calls. This makes grudgeDot a pure consumer of Grudge ID; adding or changing login methods never requires a grudgeDot deploy.
 ## Authentication Flow
-
 ```
-User visits GGE
+User loads any grudgeDot URL (e.g. /)
     ↓
-AuthGuard checks localStorage for JWT
+<AuthGuard> mounts and calls captureAuthCallback()
     ↓
-No token? → Redirect to id.grudge-studio.com?return=GGE_URL
-    ↓
-User logs in (password, Puter, guest, or wallet)
-    ↓
-Auth gateway issues JWT, stores in localStorage:
-  - grudge_auth_token  (JWT)
-  - grudge_id          (Grudge ID, e.g. GRUDGE_LQXM8K_...)
-  - grudge_user_id     (numeric user ID)
-  - grudge_username    (display name)
-    ↓
-Redirect back to GGE → User authenticated ✅
+┌── Token in URL (hash or query)? ──┐
+│ yes                               │ no
+│  Store it, clean the URL          │
+│  Render the app                   │
+│                                   ↓
+│                       ┌── JWT already in localStorage? ──┐
+│                       │ yes                              │ no
+│                       │  Render the app optimistically   │  window.location.replace →
+│                       │  Background /api/auth/verify     │  https://id.grudge-studio.com/auth
+│                       │    ✘ logoutSilent() + redirect   │    ?app=grudgedot&redirect=<current-url>
+│                       │    ✔ stay logged in              │
+└───────────────────────┴──────────────────────────────────┘
 ```
-
+All login forms, OAuth providers, Puter/Web3 wallet flows, and phone/guest accounts live on `id.grudge-studio.com`. When the SSO finishes, it redirects back to the original grudgeDot URL with the JWT appended as `#token=...` or `?token=...`, and `captureAuthCallback()` picks it up.
 ## Key Files
-
-- `client/src/lib/auth.ts` — All auth functions (login, logout, token storage, API helper)
-- `client/src/components/AuthGuard.tsx` — Wraps the app, redirects if not authenticated
-- `server/middleware/grudgeJwt.ts` — Express middleware that verifies JWT on protected routes
-
+- `client/src/lib/auth.ts` — SSO redirect + token capture, `apiCall()` helper, logout
+- `client/src/components/AuthGuard.tsx` — Wraps the app, redirects unauthenticated users
+- `client/src/hooks/useAuth.ts` — React Query wrapper around `/api/auth/user`
+- `server/grudgeAuth.ts` — Thin token proxies (`verify`, `user`, `me`, `logout`) to `id.grudge-studio.com`
+- `server/middleware/grudgeJwt.ts` — Express middleware that verifies the JWT on protected routes
 ## Client-Side API (`client/src/lib/auth.ts`)
-
 | Function | Description |
 |---|---|
-| `getAuthData()` | Returns current auth data (token, grudgeId, username) or `null` |
-| `checkAuth()` | Same as `getAuthData()` but redirects to login if not authenticated |
-| `loginWithPassword(user, pass)` | Login via auth-gateway `/api/login` |
-| `registerAccount(user, pass, email?)` | Register via auth-gateway `/api/register` |
-| `loginWithPuter(uuid, username)` | Bridge Puter.js auth to Grudge JWT |
-| `loginAsGuest(deviceId?)` | Guest login via auth-gateway `/api/guest` |
-| `verifyToken()` | Verify current JWT with server |
-| `apiCall(endpoint, options)` | Fetch wrapper that auto-attaches `Authorization: Bearer` header |
-| `logout()` | Clear all auth data and redirect to login |
-| `logoutSilent()` | Clear auth data without redirect |
-
+| `getAuthData()` | Returns current auth data (token, grudgeId, userId, username) or `null`. Automatically clears expired tokens. |
+| `checkAuth()` | Same as `getAuthData()` but redirects to SSO if not logged in. |
+| `hasAuthToken()` | `true` if a token is present in localStorage (does not validate it). |
+| `isTokenExpired(token, bufferSeconds?)` | Client-side JWT `exp` check (no signature verification). |
+| `storeAuth(data)` | Persist the token/grudgeId/userId/username from an SSO callback. |
+| `captureAuthCallback()` | Reads the token from the current URL (hash, `sso_token`, or `token` query) and stores it. Returns `true` if captured. Call on page load **before** any `getAuthData()`. |
+| `redirectToLogin(returnUrl?)` | `window.location.replace` to `https://id.grudge-studio.com/auth?app=grudgedot&redirect=<returnUrl>`. |
+| `verifyToken()` | `GET /api/auth/verify` (proxied to SSO). Returns full profile or `null`. |
+| `apiCall(endpoint, options)` | Fetch wrapper that auto-attaches `Authorization: Bearer`. Boots the user to SSO on 401. |
+| `logout()` | Calls `/api/auth/logout` (SSO), clears localStorage, redirects back to SSO. |
+| `logoutSilent()` | Same as `logout()` but does not redirect. |
 ## Usage in Components
-
 ```tsx
 import { getAuthData, logout, apiCall } from '@/lib/auth';
-
 function MyComponent() {
   const auth = getAuthData();
   return (
@@ -59,131 +53,63 @@ function MyComponent() {
     </div>
   );
 }
-
 // Authenticated API call (auto-attaches JWT)
 const profile = await apiCall('user/profile');
 ```
-
 ## localStorage Keys
-
 | Key | Value |
 |---|---|
-| `grudge_auth_token` | JWT (signed by auth-gateway) |
+| `grudge_auth_token` | JWT issued by `id.grudge-studio.com` |
 | `grudge_id` | Universal Grudge ID (e.g. `GRUDGE_LQXM8K_7H9P4W2NXQ`) |
 | `grudge_user_id` | Numeric account ID |
 | `grudge_username` | Display name |
-| `grudge_puter_auth` | `"true"` if logged in via Puter |
-
+Legacy keys (`grudge_puter_auth`, `grudge_auth_provider`) are cleared on logout but no longer written.
 ## Server-Side Verification
-
-The Express middleware at `server/middleware/grudgeJwt.ts` verifies JWTs on protected routes. It decodes the token and attaches the user to `req.user`.
-
-## Auth Endpoints (Direct DB — `server/grudgeAuth.ts`)
-
-All auth flows hit the shared Neon `accounts` table directly. No external gateway proxy needed.
-
-**Core Auth:**
-- `POST /api/login` — Username/email/grudgeId + password
-- `POST /api/register` — Create account (auto-creates Crossmint wallet if `CROSSMINT_SERVER_API_KEY` is set)
-- `POST /api/guest` — Guest login (500 starting gold)
-
-**OAuth Providers:**
-- `GET /api/auth/google` + `/api/auth/google/callback` — Google OAuth (requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
-- `GET /api/auth/discord` + `/api/auth/discord/callback` — Discord OAuth (requires `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`)
-- `GET /api/auth/github` + `/api/auth/github/callback` — GitHub OAuth (requires `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`)
-
-**Other Auth Methods:**
-- `POST /api/auth/puter` — Puter UUID → JWT bridge
-- `POST /api/auth/wallet` — Connect Solana wallet (login or link)
-- `POST /api/auth/phone` — SMS verification (requires `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`; returns 503 if not configured)
-
-**Token / Profile:**
-- `GET /api/auth/verify` — Verify token (returns full profile)
-- `GET /api/auth/user` — Current user (local JWT decode)
-- `GET /api/auth/me` — Full profile
-- `POST /api/auth/link-puter` — Link Puter UUID to existing account (auth required)
-
+`server/middleware/grudgeJwt.ts` verifies the JWT on protected routes. It first attempts a local verify with `SESSION_SECRET`; if that fails (e.g. the SSO has rotated secrets), it falls back to `POST ${GRUDGE_AUTH_URL}/auth/verify` (5s timeout). The resulting user is attached to `req.grudgeUser`.
+## Auth Endpoints (launcher side)
+Only four proxy routes are retained. Everything else is handled directly by the SSO.
+| Method | Path | Proxies to |
+|---|---|---|
+| GET | `/api/auth/verify` | `GET /auth/verify` on `id.grudge-studio.com` |
+| GET | `/api/auth/user`   | `GET /auth/user` |
+| GET | `/api/auth/me`     | `GET /auth/user` |
+| POST | `/api/auth/logout` | `POST /auth/logout` |
+| GET/POST | `/api/login` | 302 → `id.grudge-studio.com/auth?app=grudgedot&redirect=/` |
+| GET/POST | `/api/register` | 302 → `id.grudge-studio.com/auth?app=grudgedot&redirect=/` |
+The 302 redirects exist only to keep stale bookmarks working; they should not be called in normal flows.
 ## Required Environment Variables
-
 ```env
-# CRITICAL — JWT signing key shared across all Grudge Studio apps
+# JWT signing key (shared with id.grudge-studio.com so local verify works)
 SESSION_SECRET=your-shared-jwt-secret
-
-# Grudge backend grudge-id service (for cross-service token verification)
-GRUDGE_BACKEND_URL=https://id.grudge-studio.com
-
-# Discord OAuth
-DISCORD_CLIENT_ID=
-DISCORD_CLIENT_SECRET=
-# Redirect URI: https://gdevelop-assistant.vercel.app/api/auth/discord/callback
-
-# GitHub OAuth
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-# Redirect URI: https://gdevelop-assistant.vercel.app/api/auth/github/callback
-
-# Google OAuth
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-# Redirect URI: https://gdevelop-assistant.vercel.app/api/auth/google/callback
+# SSO origin
+GRUDGE_AUTH_URL=https://id.grudge-studio.com
+# Game backend (for /api/grudge/* proxy + remote token verify fallback)
+GRUDGE_BACKEND_URL=https://api.grudge-studio.com
 ```
-
-`SESSION_SECRET` is the JWT signing key used by all Grudge apps sharing the same `accounts` table.  
-If it matches, `grudgeJwt.ts` verifies tokens locally (fast, no network).  
-If local verification fails, it falls back to the grudge-backend `POST /auth/verify` endpoint (5s timeout). This allows tokens issued by `grudge-id` (with a different `JWT_SECRET`) to also work in GGE.
-
-## JWT Verification Flow (server/middleware/grudgeJwt.ts)
-
+No OAuth client IDs are required on grudgeDot anymore — Google/Discord/GitHub/Puter/wallet/phone all live on the SSO.
+## JWT Verification Flow (`server/middleware/grudgeJwt.ts`)
 ```
 Request arrives with Authorization: Bearer <token>
     ↓
 1. Extract token from header
     ↓
-2. Try local verify: jwt.verify(token, SESSION_SECRET)
+2. Local verify: jwt.verify(token, SESSION_SECRET)
    ✔ Success → attach req.grudgeUser, done
    ✘ Fail → continue to step 3
     ↓
-3. Remote verify: POST GRUDGE_BACKEND_URL/auth/verify (5s timeout)
-   ✔ Success → attach req.grudgeUser (mapped from grudge-backend payload)
+3. Remote verify: GET GRUDGE_AUTH_URL/auth/verify (5s timeout)
+   ✔ Success → attach req.grudgeUser
    ✘ Fail → 401 Unauthorized
 ```
-
-This dual-verify approach means users authenticated via `grudgewarlords.com` or other
-Grudge Studio apps can seamlessly use GGE without re-authenticating.
-
 ## Dynamic OAuth Redirect Domains
-
-The `buildAuthRedirect()` function in `server/grudgeAuth.ts` dynamically constructs OAuth
-callback URLs from the incoming request's `Host` header. This eliminates hardcoded redirect
-domains and ensures OAuth works automatically on:
-
-- **Vercel production**: `gdevelop-assistant.vercel.app`
-- **Vercel preview branches**: `gdevelop-assistant-git-*.vercel.app`
-- **Grudge Studio subdomains**: `*.grudge-studio.com`
-- **Legacy domains**: `*.grudgestudio.com`
-- **Local development**: `localhost:5000`
-
-When registering OAuth apps with providers (Google, Discord, GitHub), add **all** expected
-callback URLs. For Vercel, the pattern is:
-- `https://gdevelop-assistant.vercel.app/api/auth/{provider}/callback`
-- `http://localhost:5000/api/auth/{provider}/callback` (for local dev)
-
-## Backend Connectivity
-
-Auth routes depend on the Grudge backend proxy being properly registered. See
-[docs/BACKEND_CONNECTION_GUIDE.md](docs/BACKEND_CONNECTION_GUIDE.md) for the full
-backend connection architecture, including the critical dual-registration pattern
-and domain convention.
-
+OAuth flows live entirely on `id.grudge-studio.com`, so grudgeDot does **not** need to register callback URLs per deployment. The SSO redirects back using the `redirect=` query param that grudgeDot passes in, so the launcher works identically on:
+- Vercel production (`grudgedot.vercel.app`)
+- Vercel preview branches (`grudgedot-git-*.vercel.app`)
+- Grudge Studio subdomains (`*.grudge-studio.com`)
+- Local development (`localhost:5000`)
 ## Troubleshooting
-
-- **Infinite redirect loop**: Token not being stored after login. Check browser console for storeAuth() call.
-- **401 Unauthorized**: `SESSION_SECRET` mismatch between GGE and auth-gateway. Check both deployments use the same value.
-- **Token not persisting**: Check localStorage isn't being cleared by other code.
-- **Slow API responses**: If every request takes 1-5s, `SESSION_SECRET` probably doesn't match the gateway and every request falls back to remote verification. Fix: sync the secret.
-- **Discord OAuth fails**: Ensure `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` are set and the redirect URI includes your deployment domain (dynamic — see above).
-- **GitHub OAuth fails**: Ensure `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` are set and the callback URL is registered for your deployment domain.
-- **Google OAuth fails**: Same pattern — check `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and callback URL.
-- **Phone auth returns 503**: Twilio credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`) are not configured.
-- **Cross-service tokens rejected**: Ensure `GRUDGE_BACKEND_URL` points to the grudge-id service and it's reachable. Check that your deployment domain is in the backend's `CORS_ORIGINS`.
-- **OAuth redirects to wrong domain**: The `buildAuthRedirect()` function reads the `Host` header. If behind a reverse proxy, ensure `X-Forwarded-Host` is passed through.
+- **Infinite redirect loop**: `captureAuthCallback()` isn't storing the token. Check that the SSO is sending a `#token=` hash or `?token=` param and that `AuthGuard` runs before any `window.location.replace`.
+- **401 Unauthorized on every API call**: `SESSION_SECRET` mismatch between grudgeDot and the SSO. Fix: sync the secret.
+- **Slow API responses (~1–5s per call)**: local JWT verify is failing, so every request falls back to remote verify. Fix: sync `SESSION_SECRET`.
+- **Logout doesn't invalidate the JWT**: the SSO's `POST /api/auth/logout` is unreachable. Check that `GRUDGE_AUTH_URL` points to the SSO origin and the SSO has a working logout endpoint.
+- **Token accepted by other Grudge apps but rejected by grudgeDot**: cross-service token. Ensure `GRUDGE_AUTH_URL` is reachable so remote verify works.

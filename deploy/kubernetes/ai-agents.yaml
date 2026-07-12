@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ai-agents
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   replicas: 2
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: ai-agents
-        image: gdevelop-assistant:latest
+        image: grudgedot:latest
         command: ["node", "src/ai-agents/index.js"]
         ports:
         - containerPort: 3001
@@ -23,22 +23,22 @@ spec:
         - name: AI_AGENT_PORT
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: AI_AGENT_PORT
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
-              name: gdevelop-secrets
+              name: grudgedot-secrets
               key: OPENAI_API_KEY
         - name: PUTER_DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: PUTER_DB_HOST
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: REDIS_HOST
         livenessProbe:
           httpGet:
@@ -57,7 +57,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ai-agents-service
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   selector:
     app: ai-agents

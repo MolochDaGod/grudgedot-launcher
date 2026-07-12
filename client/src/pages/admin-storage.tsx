@@ -115,156 +115,98 @@ function is3DFile(item: StorageItem): boolean {
 }
 
 function Model3DViewer({ url }: { url: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<any>(null);
-  const rendererRef = useRef<any>(null);
-  const animationIdRef = useRef<number | null>(null);
-  const modelRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const engineRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!canvasRef.current) return;
 
     setLoading(true);
     setError(null);
-    setProgress(0);
 
-    const container = containerRef.current;
-    let cleanup: (() => void) | null = null;
+    let engine: any;
+    try {
+      const { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, DirectionalLight, Color4, SceneLoader } = require("@babylonjs/core");
+      require("@babylonjs/loaders/glTF");
 
-    // Dynamic import for THREE.js to reduce bundle size (CRITICAL optimization)
-    (async () => {
-      try {
-        const [THREE, { GLTFLoader }, { OrbitControls }] = await Promise.all([
-          import("three"),
-          import("three/examples/jsm/loaders/GLTFLoader.js"),
-          import("three/examples/jsm/controls/OrbitControls.js")
-        ]);
+      engine = new Engine(canvasRef.current, true, { preserveDrawingBuffer: true, stencil: true });
+      engineRef.current = engine;
 
-        if (!containerRef.current) return;
+      const scene = new Scene(engine);
+      scene.clearColor = new Color4(0.1, 0.1, 0.1, 1);
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a1a);
-        sceneRef.current = scene;
-
-        const camera = new THREE.PerspectiveCamera(
-          45,
-          container.clientWidth / container.clientHeight,
-          0.1,
-          1000
-        );
-        camera.position.set(3, 3, 3);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-        rendererRef.current = renderer;
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 1;
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 10, 7.5);
-        scene.add(directionalLight);
-
-        const loader = new GLTFLoader();
-        loader.load(
-          url,
-          (gltf) => {
-            const model = gltf.scene;
-            modelRef.current = model;
-            
-            const box = new THREE.Box3().setFromObject(model);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 2 / maxDim;
-            model.scale.setScalar(scale);
-            model.position.sub(center.multiplyScalar(scale));
-            
-            scene.add(model);
-            setLoading(false);
-          },
-          (xhr) => {
-            if (xhr.lengthComputable) {
-              setProgress(Math.round((xhr.loaded / xhr.total) * 100));
-            }
-          },
-          (err) => {
-            console.error("Error loading model:", err);
-            setError("Failed to load 3D model");
-            setLoading(false);
-          }
-        );
-
-        const animate = () => {
-          animationIdRef.current = requestAnimationFrame(animate);
-          controls.update();
-          renderer.render(scene, camera);
-        };
-        animate();
-
-        const handleResize = () => {
-          if (!containerRef.current || !renderer) return;
-          camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-        };
-        window.addEventListener("resize", handleResize);
-
-        cleanup = () => {
-          window.removeEventListener("resize", handleResize);
-          if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
-          
-          if (modelRef.current) {
-            modelRef.current.traverse((child: any) => {
-              if (child.isMesh) {
-                child.geometry?.dispose();
-                if (Array.isArray(child.material)) {
-                  child.material.forEach((m: any) => m.dispose());
-                } else {
-                  child.material?.dispose();
-                }
-              }
-            });
-            scene.remove(modelRef.current);
-            modelRef.current = null;
-          }
-          
-          controls.dispose();
-          renderer.dispose();
-          if (containerRef.current?.contains(renderer.domElement)) {
-            containerRef.current.removeChild(renderer.domElement);
-          }
-        };
-      } catch (err) {
-        console.error("Error loading 3D viewer:", err);
-        setError("Failed to load 3D viewer");
-        setLoading(false);
+      const camera = new ArcRotateCamera("camera", Math.PI / 4, Math.PI / 3, 5, Vector3.Zero(), scene);
+      camera.attachControl(canvasRef.current, true);
+      camera.lowerRadiusLimit = 0.5;
+      camera.upperRadiusLimit = 50;
+      camera.wheelPrecision = 50;
+      camera.useAutoRotationBehavior = true;
+      if (camera.autoRotationBehavior) {
+        camera.autoRotationBehavior.idleRotationSpeed = 0.3;
       }
-    })();
+
+      const hemiLight = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
+      hemiLight.intensity = 0.5;
+
+      const dirLight = new DirectionalLight("dir", new Vector3(-1, -2, -1), scene);
+      dirLight.position = new Vector3(5, 10, 7.5);
+      dirLight.intensity = 1;
+
+      SceneLoader.ImportMesh("", "", url, scene,
+        (meshes: any[], _ps: any, _sk: any, animationGroups: any[]) => {
+          const worldExtends = scene.getWorldExtends();
+          const center = worldExtends.min.add(worldExtends.max).scale(0.5);
+          const size = worldExtends.max.subtract(worldExtends.min);
+          const maxDim = Math.max(size.x, size.y, size.z);
+          camera.target = center;
+          camera.radius = maxDim * 2;
+
+          meshes.forEach((m: any) => { m.receiveShadows = true; });
+          if (animationGroups.length > 0) animationGroups[0].start(true);
+          setLoading(false);
+        },
+        null,
+        (_scene: any, message: string) => {
+          console.error("Error loading model:", message);
+          setError("Failed to load 3D model");
+          setLoading(false);
+        }
+      );
+
+      engine.runRenderLoop(() => scene.render());
+
+      const handleResize = () => engine.resize();
+      window.addEventListener("resize", handleResize);
+
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        engine.dispose();
+        engineRef.current = null;
+      };
+    } catch (err) {
+      console.error("Error loading 3D viewer:", err);
+      setError("Failed to load 3D viewer");
+      setLoading(false);
+    }
 
     return () => {
-      if (cleanup) cleanup();
+      if (engineRef.current) {
+        engineRef.current.dispose();
+        engineRef.current = null;
+      }
     };
   }, [url]);
 
   return (
-    <div ref={containerRef} className="w-full h-full relative">
+    <div className="w-full h-full relative">
+      <canvas ref={canvasRef} className="w-full h-full" style={{ width: "100%", height: "100%" }} />
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="flex items-center gap-2 text-white">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading... {progress > 0 ? `${progress}%` : ""}</span>
+            <span>Loading...</span>
           </div>
         </div>
       )}

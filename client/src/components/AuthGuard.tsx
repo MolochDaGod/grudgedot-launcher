@@ -1,61 +1,73 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
-import { captureAuthCallback, getAuthData, type AuthData } from '@/lib/auth';
-import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
+import {
+  captureAuthCallback,
+  getAuthData,
+  verifyToken,
+  logoutSilent,
+} from '@/lib/auth';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 /**
- * AuthGuard component that checks for authentication before rendering children.
- * Redirects unauthenticated users to /auth (in-app login page).
- * Navigates to /onboarding on first visit (no grudge_onboarded in localStorage).
+ * AuthGuard — token capture & background validation for GrudgeDot.
+ *
+ * NO hard redirect to SSO. GrudgeDot is publicly accessible; auth is
+ * optional/progressive. If a token arrives via any source it is captured
+ * and validated silently. The app renders immediately regardless.
+ *
+ * Token sources (priority order):
+ *   1. URL hash fragment  #token=…  (cleanest — stays out of server logs)
+ *   2. URL query param    ?token=…  (grudge-studio launcher injects this)
+ *   3. localStorage grudge_auth_token (persisted from a prior session)
+ *   4. SSO cross-service  ?sso_token=… (id.grudge-studio.com hand-off)
+ *
+ * On token expiry or server-side invalidation the token is cleared and
+ * a 'grudge:auth:expired' event is dispatched so UI components can
+ * reflect the logged-out state without forcing a navigation.
  */
 export function AuthGuard({ children }: AuthGuardProps) {
-  const [auth, setAuth] = useState<AuthData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [, navigate] = useLocation();
-  
   useEffect(() => {
-    // Capture auth data from URL params (after OAuth callback)
+    // Capture any token present in the URL → persists to localStorage
     captureAuthCallback();
 
-    // Check if we have auth data (either from URL capture or prior session)
     const authData = getAuthData();
-    
-    if (!authData) {
-      // No auth — redirect to in-app auth page
-      const returnUrl = encodeURIComponent(window.location.pathname);
-      navigate(`/auth?return=${returnUrl}`, { replace: true });
-      setLoading(false);
-      return;
-    }
-    
-    setAuth(authData);
-    setLoading(false);
+    if (!authData) return; // No token — app runs in unauthenticated mode
 
-    // If user hasn't completed onboarding, navigate client-side
-    const onboarded = localStorage.getItem('grudge_onboarded');
-    if (!onboarded && !window.location.pathname.startsWith('/onboarding')) {
-      navigate('/onboarding');
-    }
-  }, [navigate]);
-  
-  if (loading || !auth) {
-    return (
-      <div className="flex items-center justify-center h-screen w-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <div className="text-center">
-            <p className="text-lg font-semibold">Grudge Warlords</p>
-            <p className="text-sm text-muted-foreground">Loading your battle station...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // User is authenticated, render the app
+    // Background server verification — revoke stale tokens silently
+    verifyToken()
+      .then((profile) => {
+        if (!profile) {
+          logoutSilent();
+          window.dispatchEvent(new CustomEvent('grudge:auth:expired'));
+        }
+      })
+      .catch(() => {
+        // Network error — keep user signed in (offline-friendly)
+      });
+  }, []);
+
+  // Re-validate on tab focus — clear state on failure, no redirect
+  useEffect(() => {
+    const onFocus = () => {
+      const current = getAuthData();
+      if (!current) return;
+      verifyToken()
+        .then((profile) => {
+          if (!profile) {
+            logoutSilent();
+            window.dispatchEvent(new CustomEvent('grudge:auth:expired'));
+          }
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  // Render immediately — no loading gate, no auth wall
   return <>{children}</>;
 }
+

@@ -64,7 +64,8 @@ class AssetLoader {
       if (this.debug) {
         console.warn("[AssetLoader] Failed to load manifest:", error);
       }
-      return {};
+      this.manifest = {};
+      return this.manifest;
     }
   }
 

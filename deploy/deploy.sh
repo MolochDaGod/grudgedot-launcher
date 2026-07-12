@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# GDevelop Assistant Deployment Script
+# grudgeDot Deployment Script
 # This script helps deploy the application to various environments
 
 set -e
@@ -103,8 +103,8 @@ deploy_kubernetes() {
     
     # Wait for databases to be ready
     print_info "Waiting for databases to be ready..."
-    kubectl wait --for=condition=ready pod -l app=mongodb -n gdevelop-assistant --timeout=300s
-    kubectl wait --for=condition=ready pod -l app=redis -n gdevelop-assistant --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=mongodb -n grudgedot --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=redis -n grudgedot --timeout=300s
     print_success "Databases are ready"
     
     # Deploy services
@@ -123,10 +123,10 @@ deploy_kubernetes() {
         deployment/ai-agents \
         deployment/game-server \
         deployment/cloud-storage \
-        -n gdevelop-assistant
+        -n grudgedot
     
     print_success "Kubernetes deployment complete!"
-    print_info "Get service URLs with: kubectl get services -n gdevelop-assistant"
+    print_info "Get service URLs with: kubectl get services -n grudgedot"
 }
 
 # Stop local deployment
@@ -147,18 +147,18 @@ show_status() {
     if command -v kubectl &> /dev/null; then
         echo ""
         echo "Kubernetes deployments:"
-        kubectl get deployments -n gdevelop-assistant 2>/dev/null || echo "  Not deployed to Kubernetes"
+        kubectl get deployments -n grudgedot 2>/dev/null || echo "  Not deployed to Kubernetes"
         
         echo ""
         echo "Kubernetes services:"
-        kubectl get services -n gdevelop-assistant 2>/dev/null || echo "  Not deployed to Kubernetes"
+        kubectl get services -n grudgedot 2>/dev/null || echo "  Not deployed to Kubernetes"
     fi
 }
 
 # Main script
 main() {
     echo "========================================"
-    echo "   GDevelop Assistant Deployment"
+    echo "   grudgeDot Deployment"
     echo "========================================"
     echo ""
     

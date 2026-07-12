@@ -1,0 +1,46 @@
+# Railway deployment configuration for GrudgeDot
+# https://docs.railway.app/guides/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[[deploy.environmentVariables]]
+# These are documented — set the actual values in the Railway dashboard
+# or via `railway variables set KEY=VALUE`
+
+# ── Core ──────────────────────────────────────────────────────────────
+# NODE_ENV is set to "production" automatically by Railway
+# PORT is injected by Railway at runtime — do NOT hardcode
+
+# Required:
+# SESSION_SECRET=<random 64-char string>
+# DATABASE_URL=<postgresql://...>   (Neon or Railway PostgreSQL plugin)
+
+# ── Grudge Studio Backend Services ───────────────────────────────────
+# GRUDGE_GAME_API=https://api.grudge-studio.com
+# GRUDGE_ACCOUNT_API=https://account.grudge-studio.com
+# GRUDGE_ID_API=https://id.grudge-studio.com
+# GRUDGE_LAUNCHER_API=https://launcher.grudge-studio.com
+
+# ── Cloudflare R2 / ObjectStore ───────────────────────────────────────
+# OBJECTSTORE_WORKER_URL=https://objectstore.grudge-studio.com
+# OBJECTSTORE_API_KEY=<internal-api-key>
+
+# ── AI Providers ─────────────────────────────────────────────────────
+# XAI_API_KEY=
+# OPENAI_API_KEY=
+
+# ── Puter (Node.js SDK — server-side AI fallback) ────────────────────
+# PUTER_AUTH_TOKEN=<token from getAuthToken() CLI>
+
+# ── Bridge / VPS ─────────────────────────────────────────────────────
+# BRIDGE_URL=https://bridge.grudge-studio.com
+# BRIDGE_API_KEY=<bearer-token>

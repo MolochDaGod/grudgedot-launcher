@@ -9,7 +9,7 @@ services:
   # AI Agents Service
   ai-agents:
     build: .
-    container_name: gdevelop-ai-agents
+    container_name: grudgedot-ai-agents
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -20,13 +20,13 @@ services:
     ports:
       - "3001:3001"
     networks:
-      - gdevelop-network
+      - grudgedot-network
     command: node src/ai-agents/index.js
 
   # Game Server Service (legacy Socket.IO)
   game-server:
     build: .
-    container_name: gdevelop-game-server
+    container_name: grudgedot-game-server
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -37,7 +37,7 @@ services:
     ports:
       - "3002:3002"
     networks:
-      - gdevelop-network
+      - grudgedot-network
     command: node src/game-server/index.js
 
   # Colyseus Game Server (WCS rooms: lobby, gruda-wars, rts-battle)
@@ -54,7 +54,7 @@ services:
     ports:
       - "2567:2567"
     networks:
-      - gdevelop-network
+      - grudgedot-network
     command: node dist/server/colyseus/index.js
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2567/colyseus/health"]
@@ -66,7 +66,7 @@ services:
   # Main Application
   app:
     build: .
-    container_name: gdevelop-assistant
+    container_name: grudgedot
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -76,10 +76,10 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - gdevelop-network
+      - grudgedot-network
     volumes:
       - ./src:/app/src
 
 networks:
-  gdevelop-network:
+  grudgedot-network:
     driver: bridge

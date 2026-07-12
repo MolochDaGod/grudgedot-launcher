@@ -31,25 +31,25 @@
     "models-3d": {
       "type": "3D Model",
       "extensions": ["glb", "gltf"],
-      "projects": ["GDevelopAssistant", "DiabloGrudge-Server", "Grudge-RPG-Sprite-Attack"],
+      "projects": ["grudgedot-launcher", "DiabloGrudge-Server", "Grudge-RPG-Sprite-Attack", "grudge-warlords-rts"],
       "description": "3D models in GLB format for rendering"
     },
     "sprites": {
       "type": "2D Sprite",
       "extensions": ["png", "webp"],
-      "projects": ["GDevelopAssistant", "Grudge-RPG-Sprite-Attack", "Warlord-Crafting-Suite"],
+      "projects": ["grudgedot-launcher", "Grudge-RPG-Sprite-Attack", "Warlord-Crafting-Suite", "grudge-warlords-rts"],
       "description": "2D pixel art sprites for units, UI, and effects"
     },
     "animations": {
       "type": "Animation Data",
       "extensions": ["json", "txt"],
-      "projects": ["GDevelopAssistant", "DiabloGrudge-Server"],
+      "projects": ["grudgedot-launcher", "DiabloGrudge-Server", "grudge-warlords-rts"],
       "description": "Animation metadata and configs"
     },
     "audio": {
       "type": "Audio",
       "extensions": ["mp3", "wav", "ogg"],
-      "projects": ["GDevelopAssistant", "Grudge-RPG-Sprite-Attack"],
+      "projects": ["grudgedot-launcher", "Grudge-RPG-Sprite-Attack", "grudge-warlords-rts"],
       "description": "Sound effects and music"
     }
   },
@@ -67,7 +67,7 @@
         "Skeleton.glb",
         "Pirate Captain.glb"
       ],
-      "projects": ["GDevelopAssistant", "DiabloGrudge-Server"],
+      "projects": ["grudgedot-launcher", "DiabloGrudge-Server"],
       "version": "1.0.0",
       "description": "Animated 3D character models for game entities",
       "compressed": false
@@ -84,7 +84,7 @@
         "Dock.glb",
         "Forge Parts.glb"
       ],
-      "projects": ["GDevelopAssistant"],
+      "projects": ["grudgedot-launcher"],
       "version": "1.0.0",
       "description": "Building and structure models for map features",
       "compressed": false
@@ -94,7 +94,7 @@
       "name": "Hero Unit Sprites",
       "category": "sprites",
       "source": "GrudgeStudio/Assets/sprites/hero-units",
-      "projects": ["GDevelopAssistant", "Grudge-RPG-Sprite-Attack"],
+      "projects": ["grudgedot-launcher", "Grudge-RPG-Sprite-Attack"],
       "version": "1.0.0",
       "description": "Procedurally generated 2D sprites for 20 hero units across 3 factions",
       "animationStates": ["Idle", "Walk", "Attack01", "Attack02", "Death", "Hurt"],
@@ -116,7 +116,7 @@
         "fabled-emblem.png",
         "legion-emblem.png"
       ],
-      "projects": ["GDevelopAssistant", "Warlord-Crafting-Suite"],
+      "projects": ["grudgedot-launcher", "Warlord-Crafting-Suite"],
       "version": "1.0.0",
       "description": "UI emblems for faction identification",
       "compressed": false

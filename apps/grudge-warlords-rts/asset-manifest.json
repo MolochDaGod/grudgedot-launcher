@@ -1,0 +1,79 @@
+{
+  "version": "1.0.0",
+  "cdnBase": "https://molochdagod.github.io/ObjectStore",
+  "localSpriteBase": "/sprites/tiny-swords",
+  "description": "Maps RTS game types to shared ObjectStore CDN sprite paths and model-registry 3D models for future 3D mode upgrade.",
+
+  "heroes": {
+    "arthax":    { "sprite": "/sprites/characters/fantasy-warrior", "model": "Animated Human", "weapon": "Sword", "class": "warrior" },
+    "kanji":     { "sprite": "/sprites/characters/human-mage",      "model": "Animated Wizard", "weapon": null,   "class": "mage" },
+    "katan":     { "sprite": "/sprites/characters/archer",          "model": "Elf Ranger",      "weapon": "Wooden Bow", "class": "ranger" },
+    "grum":      { "sprite": "/sprites/characters/knight",          "model": "crusaders knight","weapon": "Shield Round", "class": "tank" },
+    "gangblanc": { "sprite": "/sprites/characters/shadow-warrior",  "model": "humandeathgiver", "weapon": "Dagger", "class": "assassin" },
+    "okomo":     { "sprite": "/sprites/characters/spirit_boxer",    "model": "Animated Character Base", "weapon": null, "class": "monk" },
+    "zhinja":    { "sprite": "/sprites/characters/wind-hashashin",  "model": "elf enforcer",    "weapon": "Dagger", "class": "ninja" },
+    "borg":      { "sprite": "/sprites/characters/barbarian-warrior","model": "dwarf enforcer", "weapon": "Axe Double", "class": "berserker" }
+  },
+
+  "units": {
+    "pawn":         { "sprite": "/sprites/characters/soldier",       "model": "Animated Human",           "role": "worker" },
+    "orcPawn":      { "sprite": "/sprites/characters/orc",           "model": "orcpeon",                  "role": "worker" },
+    "swordsman":    { "sprite": "/sprites/characters/swordsman",     "model": "crusaders knight",         "role": "melee", "weapon": "Sword" },
+    "spearman":     { "sprite": "/sprites/characters/lancer",        "model": "BRB spearman 07 attack",   "role": "melee", "weapon": "Spear" },
+    "axeman":       { "sprite": "/sprites/characters/barbarian-warrior","model": "dwarf enforcer",        "role": "melee", "weapon": "Axe Double" },
+    "knight":       { "sprite": "/sprites/characters/knight",        "model": "BRB Cavalry customizable", "role": "melee", "weapon": "Sword" },
+    "assasin":      { "sprite": "/sprites/characters/dark-knight",   "model": "humandeathgiver",          "role": "melee", "weapon": "Dagger" },
+    "bowman":       { "sprite": "/sprites/characters/archer",        "model": "Elf Ranger",               "role": "ranged", "weapon": "Wooden Bow" },
+    "musketeer":    { "sprite": "/sprites/enemies/crossbowman",      "model": "Frank RPG Gunslinger 8Way Run F", "role": "ranged" },
+    "mage":         { "sprite": "/sprites/characters/human-mage",    "model": "Animated Wizard",          "role": "caster" },
+    "necromancer":  { "sprite": "/sprites/characters/necromancer",   "model": "BRB mage 11 cast B",       "role": "caster" },
+    "ballista":     { "sprite": "/sprites/characters/soldier",       "model": "Gun Cannon Turret",        "role": "siege" },
+    "orcWarrior":   { "sprite": "/sprites/enemies/armored-orc",      "model": "graatorc",                 "role": "melee", "weapon": "Axe Double" },
+    "orcArcher":    { "sprite": "/sprites/enemies/skeleton-archer",  "model": "Goblin Cr3w",              "role": "ranged", "weapon": "Wooden Bow" },
+    "orcHealer":    { "sprite": "/sprites/enemies/evil-wizard-2",    "model": "Animated Zombie",          "role": "caster" },
+    "minotaur":     { "sprite": "/sprites/characters/barbarian-warrior","model": "graatorc",              "role": "melee" },
+    "demon":        { "sprite": "/sprites/enemies/demon-minion1",    "model": "Animated Zombie",          "role": "melee" },
+    "mammoth":      { "sprite": "/sprites/characters/frost-guardian", "model": "Red Dragon",              "role": "siege" },
+    "dragon":       { "sprite": "/sprites/dragon-red",               "model": "Red Dragon",               "role": "ranged" }
+  },
+
+  "buildings": {
+    "castle":     { "sprite": "tiny-swords/buildings/{faction}/Castle.png",   "model": "Castle Tower" },
+    "barracks":   { "sprite": "tiny-swords/buildings/{faction}/Barracks.png", "model": "Storage House" },
+    "tower":      { "sprite": "tiny-swords/buildings/{faction}/Tower.png",    "model": "Tower3" },
+    "house":      { "sprite": "tiny-swords/buildings/{faction}/House1.png",   "model": "House" },
+    "altar":      { "sprite": "tiny-swords/buildings/{faction}/Barracks.png", "model": "Necropolis walls V2" },
+    "docks":      { "sprite": "tiny-swords/buildings/{faction}/Barracks.png", "model": "Dock" },
+    "blacksmith": { "sprite": "tiny-swords/buildings/{faction}/Barracks.png", "model": "Forge" },
+    "market":     { "sprite": "tiny-swords/buildings/{faction}/House1.png",   "model": "Shipping Port" }
+  },
+
+  "weapons": {
+    "sword":       { "model": "Sword",            "unitTypes": ["swordsman", "knight", "arthax"] },
+    "axe":         { "model": "Axe Double",        "unitTypes": ["axeman", "orcWarrior", "borg"] },
+    "axeSmall":    { "model": "Axe Small",         "unitTypes": [] },
+    "dagger":      { "model": "Dagger",            "unitTypes": ["assasin", "gangblanc", "zhinja"] },
+    "spear":       { "model": "Spear",             "unitTypes": ["spearman", "orcSpearman"] },
+    "bow":         { "model": "Wooden Bow",        "unitTypes": ["bowman", "orcArcher", "katan"] },
+    "shield":      { "model": "Shield Round",      "unitTypes": ["grum", "knight"] },
+    "shieldCeltic":{ "model": "Shield Celtic Golden","unitTypes": [] },
+    "hammer":      { "model": "Doublesided Hammer","unitTypes": [] }
+  },
+
+  "vfx": {
+    "cdnPath": "/sprites/effects",
+    "categories": ["holy_vfx", "thunder_projectile", "fire_breath", "firebolt", "energy_projectile", "bullet_impact", "slash", "retro_impact", "pixel"]
+  },
+
+  "audio": {
+    "localPath": "/audio/fx",
+    "cdnPath": "/audio/fx",
+    "files": ["sword_clash", "arrow_fire", "arrow_hit", "magic_cast", "fire_impact", "thunder", "heal", "cannon_fire", "death", "levelup", "build_start", "build_complete", "victory", "defeat"]
+  },
+
+  "animations": {
+    "states": ["idle", "run", "attack", "interact", "cast", "death"],
+    "spriteFormat": "horizontal-strip",
+    "note": "Each animation state is a single horizontal PNG strip. Frame dimensions vary by unit type (44x44 to 250x250). See constants.ts SPRITE_MAP for exact frame counts."
+  }
+}

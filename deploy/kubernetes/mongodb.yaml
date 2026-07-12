@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mongodb-pvc
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   accessModes:
     - ReadWriteOnce
@@ -14,7 +14,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mongodb
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   replicas: 1
   selector:
@@ -34,17 +34,17 @@ spec:
         - name: MONGO_INITDB_ROOT_USERNAME
           valueFrom:
             secretKeyRef:
-              name: gdevelop-secrets
+              name: grudgedot-secrets
               key: PUTER_DB_USER
         - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: gdevelop-secrets
+              name: grudgedot-secrets
               key: PUTER_DB_PASSWORD
         - name: MONGO_INITDB_DATABASE
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: PUTER_DB_NAME
         volumeMounts:
         - name: mongodb-storage
@@ -58,7 +58,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mongodb-service
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   selector:
     app: mongodb

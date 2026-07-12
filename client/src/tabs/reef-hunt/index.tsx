@@ -1,6 +1,8 @@
 import React from 'react';
 
-const GAME_URL = 'https://standalone-grudge.vercel.app/play';
+import { GAME_URLS } from '@shared/gameUrls';
+
+const GAME_URL = `${GAME_URLS.play}`;
 
 export default function ReefHuntTab() {
   return (

@@ -233,6 +233,55 @@ class SpriteLoader {
   }
 
   /**
+   * Load numbered animation frames for effect/projectile sprites.
+   * Uses literal spaces in paths — loadImage() applies encodeURI once.
+   */
+  private async loadSplitAnimationFrames(
+    basePath: string,
+    animName: string,
+    frameCount: number,
+  ): Promise<HTMLImageElement[]> {
+    const frames: HTMLImageElement[] = [];
+    const count = Math.max(1, frameCount);
+
+    if (count === 1) {
+      for (const candidate of [`${basePath}-${animName}.png`, `${basePath}.png`]) {
+        try {
+          frames.push(await this.loadImage(candidate));
+          return frames;
+        } catch { /* try next */ }
+      }
+      return frames;
+    }
+
+    for (let i = 1; i <= count; i++) {
+      const padded = String(i).padStart(2, '0');
+      const candidates = [
+        `${basePath}-${animName}-${i}.png`,
+        `${basePath}-${animName}-${padded}.png`,
+      ];
+      let loaded: HTMLImageElement | null = null;
+      for (const candidate of candidates) {
+        try {
+          loaded = await this.loadImage(candidate);
+          break;
+        } catch { /* try next */ }
+      }
+      if (loaded) {
+        frames.push(loaded);
+      } else if (i === 1) {
+        // Fall back to a single combined sheet for this animation
+        try {
+          frames.push(await this.loadImage(`${basePath}-${animName}.png`));
+        } catch { /* no frames */ }
+        break;
+      }
+    }
+
+    return frames;
+  }
+
+  /**
    * Load effect sprite from (Split Effects) subfolder
    */
   async loadEffectSprite(effectId: string, characterPath: string, animationFrames: Record<string, number>): Promise<SpriteLoadResult> {
@@ -245,31 +294,17 @@ class SpriteLoader {
         animationTime: 0,
       };
 
-      // Map character path to effect folder: 
-      // e.g., sprites/characters/Archer -> sprites/characters/Archer/(Split Effects)/
-      const effectBase = `${characterPath}/(Split%20Effects)/${effectId}`;
+      // Map character path to effect folder (literal space — encodeURI runs in loadImage)
+      // e.g., sprites/characters/Archer -> sprites/characters/Archer/(Split Effects)/attack-aura
+      const effectBase = `${characterPath}/(Split Effects)/${effectId}`;
 
-      // Load each animation from effect frames
       for (const [animName, frameCount] of Object.entries(animationFrames)) {
-        const candidates = [
-          `${effectBase}-${animName}.png`,
-          `${effectBase}.png`,
-        ];
+        const frames = await this.loadSplitAnimationFrames(effectBase, animName, frameCount);
 
-        let loadedImg: HTMLImageElement | null = null;
-        for (const candidate of candidates) {
-          try {
-            loadedImg = await this.loadImage(candidate);
-            break;
-          } catch (err) {
-            // Continue to next candidate
-          }
-        }
-
-        if (loadedImg) {
+        if (frames.length > 0) {
           effectSprite.animations.set(animName, {
-            frames: [loadedImg],
-            frameDuration: 0.05, // Effects typically animate faster
+            frames,
+            frameDuration: 0.05,
             loop: false,
           });
         } else {
@@ -314,24 +349,11 @@ class SpriteLoader {
       const projectileBase = `${characterPath}/(projectile)/${projectileId}`;
 
       for (const [animName, frameCount] of Object.entries(animationFrames)) {
-        const candidates = [
-          `${projectileBase}-${animName}.png`,
-          `${projectileBase}.png`,
-        ];
+        const frames = await this.loadSplitAnimationFrames(projectileBase, animName, frameCount);
 
-        let loadedImg: HTMLImageElement | null = null;
-        for (const candidate of candidates) {
-          try {
-            loadedImg = await this.loadImage(candidate);
-            break;
-          } catch (err) {
-            // Continue to next candidate
-          }
-        }
-
-        if (loadedImg) {
+        if (frames.length > 0) {
           projectileSprite.animations.set(animName, {
-            frames: [loadedImg],
+            frames,
             frameDuration: 0.05,
             loop: true,
           });

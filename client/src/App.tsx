@@ -52,7 +52,6 @@ const SettingsPage = lazy(() => import("@/pages/settings"));
 const GrudgeWarlords = lazy(() => import("@/pages/grudge-warlords"));
 const MapEditor = lazy(() => import("@/pages/map-editor"));
 const CharacterEditor = lazy(() => import("@/pages/character-editor"));
-const GrudgeDrive = lazy(() => import("@/pages/grudge-drive"));
 const GrudgeDrift = lazy(() => import("@/pages/grudge-drift"));
 const Decay = lazy(() => import("@/pages/decay"));
 const AdminStorage = lazy(() => import("@/pages/admin-storage"));
@@ -74,8 +73,21 @@ const NexusNemesis = lazy(() => import("@/pages/nexus-nemesis"));
 const AssetLibrary = lazy(() => import("@/pages/asset-library"));
 const DungeonCrawler = lazy(() => import("@/pages/dungeon-crawler"));
 const SpriteCharEditor = lazy(() => import("@/pages/sprite-char-editor"));
-const ReefHunt = lazy(() => import("@/tabs/reef-hunt/index"));
-const GrudgeFactory = lazy(() => import("@/tabs/grudge-factory/index"));
+
+const CardForge = lazy(() => import("@/pages/card-forge"));
+const ForgeEditor = lazy(() => import("@/pages/forge-editor"));
+const GrudgeEngine = lazy(() => import("@/pages/grudge-engine"));
+const GrudgeThreeEngine = lazy(() => import("@/pages/grudge-three-engine"));
+const GrudgeFlatEngine = lazy(() => import("@/pages/grudge-flat-engine"));
+const Shooter3D = lazy(() => import("@/pages/shooter-3d"));
+const BabyGrudge = lazy(() => import("@/pages/babygrudge"));
+const ArmadaSaga = lazy(() => import("@/tabs/armada-saga"));
+const GrudgeCrafting = lazy(() => import("@/tabs/grudge-crafting"));
+const GrudgeWarlordsRts = lazy(() => import("@/tabs/grudge-warlords-rts"));
+const GrudgeDriveRedirect = lazy(() => import("@/pages/grudge-drive-redirect"));
+
+const ReefHunt = lazy(() => import("@/tabs/reef-hunt"));
+const GrudgeFactory = lazy(() => import("@/tabs/grudge-factory"));
 
 function PageLoader() {
   return (
@@ -119,7 +131,7 @@ function Router() {
         <Route path="/warlords" component={GrudgeWarlords} />
         <Route path="/map-editor" component={MapEditor} />
         <Route path="/character-editor" component={CharacterEditor} />
-        <Route path="/grudge-drive" component={GrudgeDrive} />
+        <Route path="/grudge-drive" component={GrudgeDriveRedirect} />
         <Route path="/drift" component={GrudgeDrift} />
         <Route path="/decay" component={Decay} />
         <Route path="/admin-storage" component={AdminStorage} />
@@ -142,6 +154,18 @@ function Router() {
         <Route path="/sprite-editor" component={SpriteCharEditor} />
         <Route path="/reef-hunt" component={ReefHunt} />
         <Route path="/grudge-factory" component={GrudgeFactory} />
+        <Route path="/grudge-arena" component={GrudgeArena} />
+        <Route path="/armada-saga" component={ArmadaSaga} />
+        <Route path="/grudge-crafting" component={GrudgeCrafting} />
+        <Route path="/grudge-warlords-rts" component={GrudgeWarlordsRts} />
+        <Route path="/swarm-rts-enhanced" component={GrudgeSwarm} />
+        <Route path="/card-forge" component={CardForge} />
+        <Route path="/forge" component={ForgeEditor} />
+        <Route path="/engine" component={GrudgeEngine} />
+        <Route path="/three-engine" component={GrudgeThreeEngine} />
+        <Route path="/flat-engine" component={GrudgeFlatEngine} />
+        <Route path="/shooter-3d" component={Shooter3D} />
+        <Route path="/babygrudge" component={BabyGrudge} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -199,11 +223,20 @@ function Header() {
     if (location === "/sprite-editor") return "2D Sprite Editor";
     if (location === "/reef-hunt") return "Reef Hunt";
     if (location === "/grudge-factory") return "Grudge Factory";
+    if (location === "/card-forge") return "Card Forge";
+    if (location === "/forge" || location === "/engine" || location === "/three-engine") return "Studio Forge";
+    if (location === "/flat-engine") return "Grudge Flat Engine";
+    if (location === "/shooter-3d") return "Grudge Assault";
+    if (location === "/babygrudge") return "Studio Forge Hub";
+    if (location === "/armada-saga") return "Armada Saga";
+    if (location === "/grudge-crafting") return "Grudge Crafting";
+    if (location === "/grudge-warlords-rts") return "Grudge Warlords RTS";
+    if (location === "/grudge-arena") return "Grudge Arena";
     return "Grudge Brawl";
   };
 
-  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/dungeon-crawler", "/reef-hunt", "/grudge-factory"].some(
-    path => location === path
+  const isGamePage = ["/crown-clash", "/platformer", "/puzzle", "/runner", "/shooter", "/flight", "/realm", "/moba", "/arena", "/grudge-arena", "/grudge-drive", "/drift", "/decay", "/swarm-rts", "/swarm-rts-enhanced", "/swarm-galactic", "/grudge-swarm", "/gruda-wars", "/mmo", "/betta-warlords", "/grudge-box", "/crypt-crawlers", "/warlord-suite", "/nexus-nemesis", "/flat-engine", "/shooter-3d", "/armada-saga", "/reef-hunt", "/grudge-factory", "/grudge-crafting", "/grudge-warlords-rts", "/dungeon-crawler"].some(
+    path => location === path || location.startsWith(`${path}/`)
   );
 
   return (

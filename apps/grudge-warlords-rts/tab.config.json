@@ -1,0 +1,39 @@
+{
+  "slug": "grudge-warlords-rts",
+  "title": "Grudge Warlords RTS",
+  "version": "1.0.0",
+  "description": "WC3-style real-time strategy with 80+ unit types, 8 heroes, creep camps, tech tree, hero abilities, ship combat, and island maps. Canvas2D engine with ObjectStore CDN sprites.",
+  "routes": [{ "path": "/grudge-warlords-rts", "entry": "tabs/grudge-warlords-rts/index.tsx" }],
+  "assets": {
+    "sprites": "assets/grudge-warlords-rts/sprites/",
+    "buildings": "assets/grudge-warlords-rts/buildings/",
+    "vfx": "assets/grudge-warlords-rts/vfx/",
+    "audio": "assets/grudge-warlords-rts/audio/",
+    "models": "assets/grudge-warlords-rts/models/"
+  },
+  "features": [
+    "sprite-loader",
+    "rts-engine",
+    "hero-abilities",
+    "tech-tree",
+    "creep-camps",
+    "ship-combat",
+    "minimap",
+    "control-groups",
+    "day-night-cycle",
+    "objectstore-cdn"
+  ],
+  "externalUrl": "https://grudge-warlords-rts.vercel.app/play",
+  "cdnBase": "https://molochdagod.github.io/ObjectStore",
+  "postMessageApi": {
+    "supported": true,
+    "origin": "https://grudge-warlords-rts.vercel.app",
+    "commands": [
+      "asset:override-sprite",
+      "asset:override-model",
+      "game:set-faction",
+      "game:set-map",
+      "game:start"
+    ]
+  }
+}

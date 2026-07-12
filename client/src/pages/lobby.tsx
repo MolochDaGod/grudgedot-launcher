@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'wouter';
 import { io, Socket } from 'socket.io-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getLoginHref } from '@/lib/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { grudgeGameApi, type GrudgeCharacter } from '@/lib/grudgeBackendApi';
 // Colyseus lobby hook — enable by setting VITE_USE_COLYSEUS=true
@@ -488,7 +489,7 @@ export default function LobbyPage() {
           <p className="text-muted-foreground">Sign in to create or join multiplayer game lobbies</p>
         </div>
         <Button asChild data-testid="button-login">
-          <a href="/auth">
+          <a href={getLoginHref()}>
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
           </a>

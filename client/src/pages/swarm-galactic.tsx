@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Rocket, Ship, Home, Target, Crosshair } from "lucide-react";
 import { Link } from "wouter";
+import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
+import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
 
 const GALAXY_WIDTH = 1200;
 const GALAXY_HEIGHT = 800;
@@ -150,6 +152,14 @@ function distance(x1: number, y1: number, x2: number, y2: number): number {
 }
 
 export default function SwarmGalactic() {
+  return (
+    <GrudgeGameWrapper gameSlug="swarm-galactic" gameName="Galactic Conquest" xpPerThousand={15} goldPerGame={10}>
+      {(session) => <SwarmGalacticInner session={session} />}
+    </GrudgeGameWrapper>
+  );
+}
+
+function SwarmGalacticInner({ session }: { session: GrudgeGameSession }) {
   const galaxyCanvasRef = useRef<HTMLCanvasElement>(null);
   const surfaceCanvasRef = useRef<HTMLCanvasElement>(null);
   const gameStateRef = useRef<GameState>({

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 310">
+  <defs>
+    <linearGradient id="bbg" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#0d1929"/>
+      <stop offset="100%" stop-color="#061020"/>
+    </linearGradient>
+    <pattern id="dia" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M8,0 L16,8 L8,16 L0,8 Z" fill="none" stroke="#4a90d9" stroke-width="0.5" opacity="0.15"/>
+    </pattern>
+    <radialGradient id="cg" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#4a90d9" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#4a90d9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="220" height="310" rx="12" fill="url(#bbg)"/>
+  <rect width="220" height="310" rx="12" fill="url(#dia)"/>
+  <rect x="6" y="6" width="208" height="298" rx="9" fill="none" stroke="#4a90d9" stroke-width="2" opacity="0.4"/>
+  <rect x="12" y="12" width="196" height="286" rx="7" fill="none" stroke="#4a90d9" stroke-width="0.8" opacity="0.2"/>
+  <!-- Center emblem glow -->
+  <ellipse cx="110" cy="155" rx="50" ry="50" fill="url(#cg)"/>
+  <!-- Center emblem: stylized N -->
+  <g transform="translate(110,155)" fill="none" stroke="#4a90d9" stroke-width="2" opacity="0.6">
+    <polygon points="-20,-25 -20,25 -12,25 8,-15 8,25 20,25 20,-25 12,-25 -8,15 -8,-25" fill="#4a90d9" fill-opacity="0.15"/>
+    <circle r="35" stroke-width="1.5"/>
+    <circle r="30" stroke-width="0.5" opacity="0.4"/>
+    <line x1="-40" y1="0" x2="40" y2="0" opacity="0.2"/><line x1="0" y1="-40" x2="0" y2="40" opacity="0.2"/>
+  </g>
+  <!-- Corner stars -->
+  <g fill="#4a90d9" opacity="0.3">
+    <polygon points="20,20 22,26 28,26 23,30 25,36 20,32 15,36 17,30 12,26 18,26" transform="scale(0.6) translate(12,12)"/>
+    <polygon points="20,20 22,26 28,26 23,30 25,36 20,32 15,36 17,30 12,26 18,26" transform="scale(0.6) translate(338,12)"/>
+    <polygon points="20,20 22,26 28,26 23,30 25,36 20,32 15,36 17,30 12,26 18,26" transform="scale(0.6) translate(12,488)"/>
+    <polygon points="20,20 22,26 28,26 23,30 25,36 20,32 15,36 17,30 12,26 18,26" transform="scale(0.6) translate(338,488)"/>
+  </g>
+</svg>

@@ -28,7 +28,7 @@ interface LauncherItem {
 }
 
 const launchers: LauncherItem[] = [
-  // GDevelop Tools
+  // grudgeDot Tools
   { title: "Chat Assistant", url: "/", icon: MessageSquare, description: "AI-powered game dev assistant", category: "tools" },
   { title: "RTS Builder", url: "/rts-builder", icon: Sword, description: "Build real-time strategy levels", badge: "Builder", category: "tools" },
   { title: "Map Editor", url: "/map-editor", icon: Grid3X3, description: "2D/3D tile-based map editor", badge: "2D/3D", category: "tools" },
@@ -43,7 +43,7 @@ const launchers: LauncherItem[] = [
   { title: "Crown Clash", url: "/crown-clash", icon: Crown, description: "PvE battle royale arena", badge: "PvE", category: "games" },
   { title: "Grudge Arena", url: "/arena", icon: Crosshair, description: "3D combat arena", badge: "3D", category: "games" },
   { title: "Grudge Gangs", url: "/moba", icon: Target, description: "Team-based MOBA gameplay", badge: "MOBA", category: "games" },
-  { title: "Overdrive", url: "/grudge-drive", icon: Car, description: "High-speed racing action", badge: "Racing", category: "games" },
+  { title: "Grudge Velocity", url: "/drift", icon: Car, description: "Voxel garage, drift racing, and Overdrive", badge: "Racing", category: "games" },
   { title: "Decay", url: "/decay", icon: Bug, description: "Survival FPS", badge: "FPS", category: "games" },
   { title: "Swarm RTS", url: "/swarm-rts", icon: Hexagon, description: "Real-time swarm strategy", badge: "RTS", category: "games" },
   { title: "MMO World", url: "/mmo", icon: Users, description: "Massively multiplayer RPG world", badge: "MMO", category: "games" },
@@ -149,7 +149,7 @@ export default function OnboardingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="text-center p-4 rounded-lg bg-accent/30">
                   <Hammer className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                  <p className="font-semibold text-sm">GDevelop Tools</p>
+                  <p className="font-semibold text-sm">grudgeDot Tools</p>
                   <p className="text-xs text-muted-foreground mt-1">Map editors, character builders, AI assistants</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-accent/30">
@@ -279,15 +279,15 @@ export default function OnboardingPage() {
               </div>
               <CardTitle className="text-2xl">Your Launchers</CardTitle>
               <CardDescription className="text-base mt-2">
-                Build games with GDevelop tools and play them in GGE
+                Build games with grudgeDot tools and play them in GGE
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* GDevelop Tools */}
+              {/* grudgeDot Tools */}
               <div>
                 <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-yellow-400">
                   <Hammer className="w-4 h-4" />
-                  GDevelop Builder Tools
+                  grudgeDot Builder Tools
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {launchers

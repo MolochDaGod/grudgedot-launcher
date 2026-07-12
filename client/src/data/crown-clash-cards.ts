@@ -1,5 +1,7 @@
-import type { BuildingType } from '@/lib/crown-clash/BuildingSystem';
-import type { UnitRole, FactionId } from '@/lib/crown-clash/UnitFactory';
+// Types previously from crown-clash (being rebuilt on BabylonJS)
+type BuildingType = 'barracks' | 'archery_range' | 'mage_tower' | 'healing_shrine' | 'siege_workshop' | 'fortification' | 'spawner_hut' | 'bomb_tower';
+type UnitRole = 'melee' | 'ranged' | 'elite_melee' | 'elite_ranged' | 'hero_king' | 'hero_queen';
+type FactionId = 'elves' | 'orcs';
 
 export type CardType = 'building' | 'hero' | 'spell' | 'unit';
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';

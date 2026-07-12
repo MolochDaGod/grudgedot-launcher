@@ -26,7 +26,7 @@
 
   const ID_API = 'https://id.grudge-studio.com';
   const GAME_API = 'https://api.grudge-studio.com';
-  const ACCOUNT_API = 'https://account.grudge-studio.com';
+  const ACCOUNT_API = 'https://api.grudge-studio.com';
   const WS_URL = 'wss://ws.grudge-studio.com';
   const ASSETS_URL = 'https://assets.grudge-studio.com';
   const TOKEN_KEY = 'grudge_token';

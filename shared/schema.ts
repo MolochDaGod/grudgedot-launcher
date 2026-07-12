@@ -248,7 +248,9 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const gdevelopAssets = pgTable("gdevelop_assets", {
+// grudgeDot asset library — SQL table name kept as `gdevelop_assets` for
+// migration compatibility; see GRUDGEDOT_BACKEND_PREFIX in vercelApp.ts.
+export const grudgedotAssets = pgTable("gdevelop_assets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   type: text("type").notNull(),
@@ -266,16 +268,16 @@ export const gdevelopAssets = pgTable("gdevelop_assets", {
   uploadedAt: timestamp("uploaded_at"),
 });
 
-export const insertGdevelopAssetSchema = createInsertSchema(gdevelopAssets).omit({
+export const insertGrudgedotAssetSchema = createInsertSchema(grudgedotAssets).omit({
   id: true,
   uploadedAt: true,
 });
 
-export type InsertGdevelopAsset = z.infer<typeof insertGdevelopAssetSchema>;
-export type GDevelopAsset = typeof gdevelopAssets.$inferSelect;
+export type InsertGrudgedotAsset = z.infer<typeof insertGrudgedotAssetSchema>;
+export type GrudgedotAsset = typeof grudgedotAssets.$inferSelect;
 
-// GDevelop Tools Schema
-export const gdevelopToolsSchema = z.object({
+// grudgeDot Tools Schema — game-tools metadata blob stored on rts projects
+export const grudgedotToolsSchema = z.object({
   behaviors: z.array(z.object({
     name: z.string(),
     description: z.string(),
@@ -295,7 +297,7 @@ export const gdevelopToolsSchema = z.object({
   })).default([]),
 });
 
-export type GDevelopTools = z.infer<typeof gdevelopToolsSchema>;
+export type GrudgedotTools = z.infer<typeof grudgedotToolsSchema>;
 
 export const rtsProjects = pgTable("rts_projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -306,7 +308,7 @@ export const rtsProjects = pgTable("rts_projects", {
   mapData: jsonb("map_data").notNull(),
   gameSettings: jsonb("game_settings").notNull(),
   campaignData: jsonb("campaign_data"),
-  gdevelopTools: jsonb("gdevelop_tools").notNull().default(sql`'{"behaviors":[],"extensions":[],"templates":[]}'::jsonb`),
+  grudgedotTools: jsonb("gdevelop_tools").notNull().default(sql`'{"behaviors":[],"extensions":[],"templates":[]}'::jsonb`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -511,7 +513,7 @@ export const insertRtsProjectSchema = z.object({
   mapData: z.any().default({ size: 64, terrain: "grass" }),
   gameSettings: z.any().default({ startingGold: 1000, maxPopulation: 50 }),
   campaignData: z.any().optional().nullable(),
-  gdevelopTools: gdevelopToolsSchema.optional().default({ behaviors: [], extensions: [], templates: [] }),
+  grudgedotTools: grudgedotToolsSchema.optional().default({ behaviors: [], extensions: [], templates: [] }),
 });
 
 export const insertRtsAssetSchema = createInsertSchema(rtsAssets).omit({
@@ -746,6 +748,8 @@ export const grudgeCharacters = pgTable("grudge_characters", {
   currentMana: integer("current_mana"),
   currentStamina: integer("current_stamina"),
   avatarUrl: text("avatar_url"),
+  // Body customization (height, skin color, proportions, armor tint)
+  customization: jsonb("customization").default(sql`'{}'::jsonb`),
   // NFT fields
   isNft: boolean("is_nft").default(false),
   nftMintAddress: varchar("nft_mint_address", { length: 255 }),
@@ -935,7 +939,7 @@ export type AssetMetadata = typeof assetMetadata.$inferSelect;
 
 // ============================================
 // UNIFIED ASSET LIBRARY
-// Consolidates gdevelopAssets, rtsAssets, viewportAssets into one system
+// Consolidates grudgedotAssets, rtsAssets, viewportAssets into one system
 // ============================================
 
 export const unifiedAssets = pgTable("unified_assets", {

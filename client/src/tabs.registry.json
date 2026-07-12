@@ -1,17 +1,21 @@
 [
-  { "slug": "grudge-swarm", "title": "Grudge Warlords RTS", "entry": "tabs/grudge-swarm/index.tsx", "category": "pvp", "icon": "⚔️" },
-  { "slug": "grudge-arena", "title": "Grudge Arena", "entry": "tabs/grudge-arena/index.tsx", "category": "pvp", "icon": "🏟️" },
-  { "slug": "grudge-box", "title": "GrudgeBox", "entry": "tabs/grudge-box/index.tsx", "category": "pvp", "icon": "🥊" },
-  { "slug": "nexus-nemesis", "title": "Nexus Nemesis", "entry": "tabs/nexus-nemesis/index.tsx", "category": "pvp", "icon": "💀" },
-  { "slug": "betta-warlords", "title": "Betta Warlords", "entry": "tabs/betta-warlords/index.tsx", "category": "pvp", "icon": "🐟" },
-
-  { "slug": "crypt-crawlers", "title": "Crypt Crawlers", "entry": "tabs/crypt-crawlers/index.tsx", "category": "pve", "icon": "🏴‍☠️" },
+  { "slug": "armada-saga", "title": "Armada Saga", "entry": "tabs/armada-saga/index.tsx", "category": "pvp", "icon": "⚔️" },
+  { "slug": "grudge-swarm", "title": "Grudge Swarm RTS", "entry": "tabs/grudge-swarm/index.tsx", "category": "pvp", "icon": "🛡️" },
   { "slug": "mmo", "title": "MMO World", "entry": "tabs/mmo/index.tsx", "category": "pve", "icon": "🌍" },
+  { "slug": "grudge-velocity", "title": "Grudge Velocity", "entry": "tabs/grudge-drive/index.tsx", "category": "pvp", "icon": "🏎️" },
+  { "slug": "betta-warlords", "title": "Betta Warlords", "entry": "tabs/betta-warlords/index.tsx", "category": "pve", "icon": "🐟" },
+  { "slug": "grudge-box", "title": "GrudgeBox", "entry": "tabs/grudge-box/index.tsx", "category": "pve", "icon": "📦" },
+  { "slug": "crypt-crawlers", "title": "Crypt Crawlers", "entry": "tabs/crypt-crawlers/index.tsx", "category": "pve", "icon": "💀" },
   { "slug": "reef-hunt", "title": "Reef Hunt", "entry": "tabs/reef-hunt/index.tsx", "category": "pve", "icon": "🐠" },
-
-  { "slug": "grudge-crafting", "title": "Grudge Crafting", "entry": "tabs/grudge-crafting/index.tsx", "category": "grudge", "icon": "🔨" },
+  { "slug": "grudge-arena", "title": "Grudge Arena", "entry": "tabs/grudge-arena/index.tsx", "category": "pvp", "icon": "🏟️" },
   { "slug": "grudge-factory", "title": "Grudge Factory", "entry": "tabs/grudge-factory/index.tsx", "category": "grudge", "icon": "🏭" },
-
-  { "slug": "grudge-drive", "title": "Grudge Drive", "entry": "tabs/grudge-drive/index.tsx", "category": "tools", "icon": "💾" },
-  { "slug": "warlord-suite", "title": "Warlord Suite", "entry": "pages/warlord-suite.tsx", "category": "tools", "icon": "🛡️" }
+  { "slug": "grudge-crafting", "title": "Grudge Crafting", "entry": "tabs/grudge-crafting/index.tsx", "category": "grudge", "icon": "🔨" },
+  { "slug": "nexus-nemesis", "title": "Nexus Nemesis", "entry": "tabs/nexus-nemesis/index.tsx", "category": "pvp", "icon": "🔮" },
+  { "slug": "grudge-engine", "title": "Studio Forge", "entry": "tabs/grudge-engine/index.tsx", "engine": "forge", "category": "tools", "icon": "🛠️" },
+  { "slug": "grudge-warlords-rts", "title": "Grudge Warlords RTS", "entry": "tabs/grudge-warlords-rts/index.tsx", "category": "pvp", "icon": "⚔️" },
+  { "slug": "shooter-3d", "title": "Grudge Assault", "entry": "tabs/shooter-3d/index.tsx", "engine": "game", "hubTab": "babygrudge", "category": "pve", "icon": "🔫" },
+  { "slug": "babygrudge", "title": "Studio Forge Hub", "entry": "tabs/babygrudge/index.tsx", "engine": "forge", "group": "engines", "category": "tools", "icon": "👶" },
+  { "slug": "warlord-suite", "title": "Warlord Suite", "entry": "pages/warlord-suite.tsx", "category": "tools", "icon": "📜" },
+  { "slug": "dungeon-crawler", "title": "Dungeon Crawler", "entry": "pages/dungeon-crawler.tsx", "category": "pve", "icon": "🏰" },
+  { "slug": "rts-builder", "title": "Hero Commander RTS", "entry": "pages/rts-builder.tsx", "category": "tools", "icon": "🗺️" }
 ]

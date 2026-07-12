@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ViewportAssetViewer, ImageViewport } from "@/components/viewport-asset-viewer";
+// ViewportAssetViewer removed (Three.js) — will rebuild on BabylonJS
+const ViewportAssetViewer = ({ asset, ...props }: any) => (
+  <div className="flex items-center justify-center h-full bg-muted text-muted-foreground text-sm">3D Preview (BabylonJS rebuild pending)</div>
+);
+const ImageViewport = ({ src, ...props }: any) => (
+  <img src={src} className="max-w-full max-h-full object-contain" alt="" />
+);
 import { 
   Search, 
   RefreshCw, 

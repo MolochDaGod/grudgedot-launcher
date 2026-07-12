@@ -1,3 +1,7 @@
+---
+title: Sprite Effects Usage
+nav_order: 4
+---
 # Sprite Effects & Projectile Usage Guide
 
 This document explains how to use the enhanced sprite loader system to render units with effect and projectile overlays.

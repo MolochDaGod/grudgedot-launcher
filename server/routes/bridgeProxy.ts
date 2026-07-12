@@ -1,7 +1,7 @@
 /**
  * Grudge Bridge Proxy Routes
  *
- * Proxies /api/bridge/* from the GDevelop frontend to the
+ * Proxies /api/bridge/* from the grudgeDot frontend to the
  * Grudge Bridge service (grudge-bridge:4000 on VPS, or local).
  *
  * Follows the same pattern as coolifyProxy.ts.

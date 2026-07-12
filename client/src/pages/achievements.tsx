@@ -1,3 +1,4 @@
+import { getLoginHref } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
@@ -53,7 +54,7 @@ export default function AchievementsPage() {
           <p className="text-muted-foreground">Sign in to view your progress</p>
         </div>
         <Button asChild data-testid="button-login">
-          <a href="/auth">
+          <a href={getLoginHref()}>
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
           </a>

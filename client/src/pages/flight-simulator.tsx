@@ -1,428 +1,286 @@
-import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Gamepad2 } from "lucide-react";
-import { Link } from "wouter";
-import * as THREE from "three";
+/**
+ * Sky Command — Three.js Flight Simulator
+ *
+ * - Gradient sky + fog atmosphere
+ * - Terrain with mountains
+ * - Player aircraft (box composite) with pitch/yaw/roll
+ * - Engine trail particles
+ * - Altitude / Speed / Heading HUD
+ */
 
-export default function FlightSimulatorPage() {
+import { useRef, useEffect, useState } from 'react';
+import * as THREE from 'three';
+import { Badge } from '@/components/ui/badge';
+import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
+import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
+
+export default function FlightSimulator() {
+  return (
+    <GrudgeGameWrapper gameSlug="flight-sim" gameName="Sky Command" xpPerThousand={10} goldPerGame={8}>
+      {(session) => <FlightSimulatorInner session={session} />}
+    </GrudgeGameWrapper>
+  );
+}
+
+function FlightSimulatorInner({ session }: { session: GrudgeGameSession }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [webglSupported, setWebglSupported] = useState(true);
-  const [altitude, setAltitude] = useState(0);
-  const [speed, setSpeed] = useState(0);
+  const [hud, setHud] = useState({ alt: 50, speed: 60, heading: 0 });
 
   useEffect(() => {
-    if (!isPlaying || !containerRef.current) return;
-
-    const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) {
-      setWebglSupported(false);
-      return;
-    }
-
+    if (!containerRef.current) return;
     const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const w = container.clientWidth, h = container.clientHeight;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(width, height);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb);
-    scene.fog = new THREE.FogExp2(0x87ceeb, 0.002);
+    scene.fog = new THREE.Fog(0x88bbee, 200, 800);
+    scene.background = new THREE.Color(0x88bbee);
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 2000);
-    camera.position.set(0, 50, 100);
+    const camera = new THREE.PerspectiveCamera(70, w / h, 0.1, 2000);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
+    // Lighting
+    scene.add(new THREE.AmbientLight(0x99bbdd, 0.6));
+    const sun = new THREE.DirectionalLight(0xffeedd, 1.2);
+    sun.position.set(100, 200, 50);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -200; sun.shadow.camera.right = 200;
+    sun.shadow.camera.top = 200; sun.shadow.camera.bottom = -200;
+    sun.shadow.camera.far = 500;
+    scene.add(sun);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    directionalLight.position.set(100, 100, 50);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 500;
-    directionalLight.shadow.camera.left = -100;
-    directionalLight.shadow.camera.right = 100;
-    directionalLight.shadow.camera.top = 100;
-    directionalLight.shadow.camera.bottom = -100;
-    scene.add(directionalLight);
+    // Hemisphere light for sky color
+    scene.add(new THREE.HemisphereLight(0x88bbee, 0x446633, 0.4));
 
-    const waterGeometry = new THREE.PlaneGeometry(2000, 2000, 100, 100);
-    const waterMaterial = new THREE.MeshStandardMaterial({
-      color: 0x001e0f,
-      roughness: 0.1,
-      metalness: 0.8,
-      transparent: true,
-      opacity: 0.9,
-    });
-    const water = new THREE.Mesh(waterGeometry, waterMaterial);
+    // Terrain
+    const terrainSize = 1000;
+    const terrainSeg = 128;
+    const terrainGeo = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainSeg, terrainSeg);
+    const posAttr = terrainGeo.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i), y = posAttr.getY(i);
+      const height = Math.sin(x * 0.01) * 8 + Math.cos(y * 0.015) * 6 + Math.sin(x * 0.005 + y * 0.005) * 15;
+      posAttr.setZ(i, Math.max(0, height));
+    }
+    terrainGeo.computeVertexNormals();
+    const terrain = new THREE.Mesh(
+      terrainGeo,
+      new THREE.MeshStandardMaterial({ color: 0x3d6b3d, roughness: 0.95, flatShading: true }),
+    );
+    terrain.rotation.x = -Math.PI / 2;
+    terrain.receiveShadow = true;
+    scene.add(terrain);
+
+    // Water plane
+    const water = new THREE.Mesh(
+      new THREE.PlaneGeometry(terrainSize, terrainSize),
+      new THREE.MeshStandardMaterial({ color: 0x2266aa, transparent: true, opacity: 0.7, roughness: 0.1, metalness: 0.3 }),
+    );
     water.rotation.x = -Math.PI / 2;
-    water.position.y = 0;
-    water.receiveShadow = true;
+    water.position.y = -0.5;
     scene.add(water);
 
-    const helipadGeometry = new THREE.BoxGeometry(10, 1, 10);
-    const helipadMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
-    const helipads: THREE.Mesh[] = [];
-    
-    for (let i = 0; i < 8; i++) {
-      const helipad = new THREE.Mesh(helipadGeometry, helipadMaterial);
-      helipad.position.set(
-        (Math.random() - 0.5) * 400,
-        Math.random() * 2 + 0.5,
-        (Math.random() - 0.5) * 400
-      );
-      helipad.receiveShadow = true;
-      helipad.castShadow = true;
-      scene.add(helipad);
-      helipads.push(helipad);
+    // Aircraft
+    const aircraft = new THREE.Group();
+    // Fuselage
+    const fuselage = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.6, 3),
+      new THREE.MeshStandardMaterial({ color: 0xccccdd, roughness: 0.3, metalness: 0.6 }),
+    );
+    fuselage.castShadow = true;
+    aircraft.add(fuselage);
+    // Wings
+    const wing = new THREE.Mesh(
+      new THREE.BoxGeometry(6, 0.08, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0xaaaacc, roughness: 0.4, metalness: 0.4 }),
+    );
+    wing.position.z = 0.3;
+    wing.castShadow = true;
+    aircraft.add(wing);
+    // Tail
+    const tail = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 0.06, 0.6),
+      new THREE.MeshStandardMaterial({ color: 0xaaaacc, roughness: 0.4, metalness: 0.4 }),
+    );
+    tail.position.z = 1.5;
+    aircraft.add(tail);
+    // Vertical stabilizer
+    const vStab = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 1, 0.6),
+      new THREE.MeshStandardMaterial({ color: 0xaaaacc }),
+    );
+    vStab.position.set(0, 0.5, 1.5);
+    aircraft.add(vStab);
+    // Nose cone
+    const nose = new THREE.Mesh(
+      new THREE.ConeGeometry(0.35, 0.8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.3 }),
+    );
+    nose.rotation.x = Math.PI / 2;
+    nose.position.z = -1.8;
+    aircraft.add(nose);
 
-      const markerGeometry = new THREE.RingGeometry(2, 3, 32);
-      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-      const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-      marker.rotation.x = -Math.PI / 2;
-      marker.position.y = 0.51;
-      helipad.add(marker);
-    }
+    aircraft.position.set(0, 50, 0);
+    scene.add(aircraft);
 
-    const heliGroup = new THREE.Group();
-    heliGroup.position.set(0, 20, 0);
-    scene.add(heliGroup);
+    // Engine trail particles
+    const trailCount = 100;
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPositions = new Float32Array(trailCount * 3);
+    const trailAlphas = new Float32Array(trailCount);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+    const trailMat = new THREE.PointsMaterial({ color: 0xffaa44, size: 0.3, transparent: true, opacity: 0.6 });
+    const trail = new THREE.Points(trailGeo, trailMat);
+    scene.add(trail);
+    let trailIdx = 0;
 
-    const bodyGeometry = new THREE.SphereGeometry(1.5, 16, 16);
-    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xdc2626 });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.castShadow = true;
-    heliGroup.add(body);
+    // Flight state
+    const flightState = { pitch: 0, yaw: 0, roll: 0, speed: 60, altitude: 50 };
 
-    const tailGeometry = new THREE.BoxGeometry(0.3, 0.3, 4);
-    const tailMesh = new THREE.Mesh(tailGeometry, bodyMaterial);
-    tailMesh.position.z = 2.5;
-    tailMesh.castShadow = true;
-    heliGroup.add(tailMesh);
+    // Input
+    const keys = new Set<string>();
+    const onKeyDown = (e: KeyboardEvent) => keys.add(e.code);
+    const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
 
-    const tailFinGeometry = new THREE.BoxGeometry(1, 0.8, 0.1);
-    const tailFin = new THREE.Mesh(tailFinGeometry, bodyMaterial);
-    tailFin.position.z = 4.5;
-    tailFin.castShadow = true;
-    heliGroup.add(tailFin);
+    // Game loop
+    let lastTime = performance.now();
+    let frame = 0;
 
-    const skidGeometry = new THREE.BoxGeometry(0.15, 0.1, 2.5);
-    const skidMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
-    const leftSkid = new THREE.Mesh(skidGeometry, skidMaterial);
-    leftSkid.position.set(-1, -1.2, 0);
-    leftSkid.castShadow = true;
-    heliGroup.add(leftSkid);
-
-    const rightSkid = new THREE.Mesh(skidGeometry, skidMaterial);
-    rightSkid.position.set(1, -1.2, 0);
-    rightSkid.castShadow = true;
-    heliGroup.add(rightSkid);
-
-    const rotorGeometry = new THREE.BoxGeometry(8, 0.05, 0.3);
-    const rotorMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
-    const mainRotor = new THREE.Mesh(rotorGeometry, rotorMaterial);
-    mainRotor.position.y = 1.6;
-    mainRotor.castShadow = true;
-    heliGroup.add(mainRotor);
-
-    const rotor2 = new THREE.Mesh(rotorGeometry, rotorMaterial);
-    rotor2.rotation.y = Math.PI / 2;
-    mainRotor.add(rotor2);
-
-    const tailRotorGeometry = new THREE.BoxGeometry(1.5, 0.05, 0.15);
-    const tailRotor = new THREE.Mesh(tailRotorGeometry, rotorMaterial);
-    tailRotor.position.set(0.5, 0.4, 4.5);
-    tailRotor.rotation.z = Math.PI / 2;
-    tailRotor.castShadow = true;
-    heliGroup.add(tailRotor);
-
-    const cockpitGeometry = new THREE.SphereGeometry(0.8, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    const cockpitMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x88ccff, 
-      transparent: true, 
-      opacity: 0.6,
-      metalness: 0.9,
-      roughness: 0.1
-    });
-    const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
-    cockpit.position.set(0, 0.3, -0.8);
-    cockpit.rotation.x = Math.PI / 4;
-    heliGroup.add(cockpit);
-
-    const velocity = new THREE.Vector3(0, 0, 0);
-    const angularVelocity = new THREE.Vector3(0, 0, 0);
-    let thrust = 0;
-    const gravity = -9.8;
-    const liftFactor = 2.0;
-    const dragFactor = 0.98;
-    const angularDrag = 0.95;
-
-    const keyState: Record<string, boolean> = {};
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keyState[e.code] = true;
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      keyState[e.code] = false;
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    const chaseCamOffset = new THREE.Vector3(0, 8, 25);
-    const chaseCamLookOffset = new THREE.Vector3(0, 0, -10);
-
-    const clock = new THREE.Clock();
-    let animationId: number;
+    const forward = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
 
     const animate = () => {
-      animationId = requestAnimationFrame(animate);
-      const delta = Math.min(clock.getDelta(), 0.05);
+      frame = requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
 
-      if (keyState["KeyW"] || keyState["ArrowUp"]) {
-        thrust = Math.min(thrust + 15 * delta, 25);
-      } else if (keyState["KeyS"] || keyState["ArrowDown"]) {
-        thrust = Math.max(thrust - 15 * delta, 0);
-      } else {
-        thrust *= 0.99;
+      // Controls
+      const pitchRate = 1.2 * dt;
+      const rollRate = 2.0 * dt;
+      const yawRate = 0.8 * dt;
+
+      if (keys.has('KeyW') || keys.has('ArrowUp')) flightState.pitch -= pitchRate;
+      if (keys.has('KeyS') || keys.has('ArrowDown')) flightState.pitch += pitchRate;
+      if (keys.has('KeyA') || keys.has('ArrowLeft')) flightState.roll -= rollRate;
+      if (keys.has('KeyD') || keys.has('ArrowRight')) flightState.roll += rollRate;
+      if (keys.has('KeyQ')) flightState.yaw += yawRate;
+      if (keys.has('KeyE')) flightState.yaw -= yawRate;
+      if (keys.has('ShiftLeft')) flightState.speed = Math.min(120, flightState.speed + 20 * dt);
+      if (keys.has('ControlLeft')) flightState.speed = Math.max(20, flightState.speed - 20 * dt);
+
+      // Damping
+      flightState.roll *= 0.97;
+      flightState.pitch *= 0.98;
+
+      // Apply rotation
+      euler.set(flightState.pitch, flightState.yaw, flightState.roll);
+      quat.setFromEuler(euler);
+      aircraft.quaternion.copy(quat);
+
+      // Move forward
+      forward.set(0, 0, -1).applyQuaternion(quat);
+      aircraft.position.addScaledVector(forward, flightState.speed * dt);
+
+      // Prevent ground crash
+      if (aircraft.position.y < 3) {
+        aircraft.position.y = 3;
+        flightState.pitch = Math.max(flightState.pitch, 0);
       }
 
-      if (keyState["KeyA"]) {
-        angularVelocity.y += 2 * delta;
-      }
-      if (keyState["KeyD"]) {
-        angularVelocity.y -= 2 * delta;
-      }
+      flightState.altitude = aircraft.position.y;
 
-      if (keyState["Numpad8"] || keyState["KeyI"]) {
-        angularVelocity.x -= 1.5 * delta;
-      }
-      if (keyState["Numpad5"] || keyState["KeyK"]) {
-        angularVelocity.x += 1.5 * delta;
-      }
+      // Camera chase
+      const camOffset = new THREE.Vector3(0, 3, 10).applyQuaternion(quat);
+      camera.position.lerp(aircraft.position.clone().add(camOffset), 0.08);
+      camera.lookAt(aircraft.position);
 
-      if (keyState["Numpad4"] || keyState["KeyJ"]) {
-        angularVelocity.z += 1.5 * delta;
-      }
-      if (keyState["Numpad6"] || keyState["KeyL"]) {
-        angularVelocity.z -= 1.5 * delta;
-      }
+      // Trail
+      const trailPos = trail.geometry.attributes.position as THREE.BufferAttribute;
+      const worldPos = new THREE.Vector3(0, 0, 1.5).applyQuaternion(quat).add(aircraft.position);
+      trailPos.setXYZ(trailIdx % trailCount, worldPos.x, worldPos.y, worldPos.z);
+      trailPos.needsUpdate = true;
+      trailIdx++;
 
-      angularVelocity.multiplyScalar(angularDrag);
-      heliGroup.rotation.x += angularVelocity.x * delta;
-      heliGroup.rotation.y += angularVelocity.y * delta;
-      heliGroup.rotation.z += angularVelocity.z * delta;
+      // Water animation
+      water.position.y = -0.5 + Math.sin(now * 0.001) * 0.2;
 
-      heliGroup.rotation.x = Math.max(-0.5, Math.min(0.5, heliGroup.rotation.x));
-      heliGroup.rotation.z = Math.max(-0.5, Math.min(0.5, heliGroup.rotation.z));
+      // Update sun to follow aircraft loosely
+      sun.position.set(aircraft.position.x + 100, 200, aircraft.position.z + 50);
+      sun.target.position.copy(aircraft.position);
 
-      const lift = thrust * liftFactor;
-      const liftForce = new THREE.Vector3(0, lift, 0);
-      liftForce.applyQuaternion(heliGroup.quaternion);
-
-      const forward = new THREE.Vector3(0, 0, -1);
-      forward.applyQuaternion(heliGroup.quaternion);
-      const tiltForce = forward.multiplyScalar(-heliGroup.rotation.x * thrust * 0.5);
-
-      const right = new THREE.Vector3(1, 0, 0);
-      right.applyQuaternion(heliGroup.quaternion);
-      const bankForce = right.multiplyScalar(heliGroup.rotation.z * thrust * 0.5);
-
-      velocity.add(liftForce.multiplyScalar(delta));
-      velocity.add(tiltForce.multiplyScalar(delta));
-      velocity.add(bankForce.multiplyScalar(delta));
-      velocity.y += gravity * delta;
-
-      velocity.multiplyScalar(dragFactor);
-
-      heliGroup.position.add(velocity.clone().multiplyScalar(delta * 10));
-
-      if (heliGroup.position.y < 2) {
-        heliGroup.position.y = 2;
-        velocity.y = Math.max(0, velocity.y);
-        velocity.multiplyScalar(0.8);
-      }
-
-      if (heliGroup.position.y > 300) {
-        heliGroup.position.y = 300;
-        velocity.y = Math.min(0, velocity.y);
-      }
-
-      mainRotor.rotation.y += (thrust * 2 + 5) * delta;
-      tailRotor.rotation.x += (thrust * 3 + 8) * delta;
-
-      const idealOffset = chaseCamOffset.clone();
-      idealOffset.applyQuaternion(heliGroup.quaternion);
-      idealOffset.add(heliGroup.position);
-
-      camera.position.lerp(idealOffset, 0.05);
-
-      const lookTarget = heliGroup.position.clone();
-      const lookOffset = chaseCamLookOffset.clone();
-      lookOffset.applyQuaternion(heliGroup.quaternion);
-      lookTarget.add(lookOffset);
-      camera.lookAt(lookTarget);
-
-      directionalLight.position.copy(heliGroup.position).add(new THREE.Vector3(50, 50, 25));
-      directionalLight.target.position.copy(heliGroup.position);
-
-      const time = clock.elapsedTime;
-      const positions = waterGeometry.attributes.position;
-      for (let i = 0; i < positions.count; i++) {
-        const x = positions.getX(i);
-        const z = positions.getZ(i);
-        const y = Math.sin(x * 0.05 + time) * 0.5 + 
-                  Math.sin(z * 0.05 + time * 0.8) * 0.5 +
-                  Math.sin((x + z) * 0.03 + time * 1.2) * 0.3;
-        positions.setY(i, y);
-      }
-      positions.needsUpdate = true;
-      waterGeometry.computeVertexNormals();
-
-      setAltitude(Math.round(heliGroup.position.y));
-      setSpeed(Math.round(velocity.length() * 10));
+      // HUD
+      const headingDeg = ((THREE.MathUtils.radToDeg(flightState.yaw) % 360) + 360) % 360;
+      setHud({ alt: Math.round(flightState.altitude), speed: Math.round(flightState.speed), heading: Math.round(headingDeg) });
 
       renderer.render(scene, camera);
     };
-
     animate();
 
-    const handleResize = () => {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-
-    window.addEventListener("resize", handleResize);
+    const ro = new ResizeObserver(() => {
+      const cw = container.clientWidth, ch = container.clientHeight;
+      camera.aspect = cw / ch; camera.updateProjectionMatrix(); renderer.setSize(cw, ch);
+    });
+    ro.observe(container);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      cancelAnimationFrame(animationId);
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
       renderer.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
+      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
     };
-  }, [isPlaying]);
-
-  if (!webglSupported) {
-    return (
-      <div className="flex h-full items-center justify-center p-8">
-        <Card className="p-8 text-center max-w-md">
-          <Gamepad2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-bold mb-2">WebGL Not Supported</h2>
-          <p className="text-muted-foreground mb-4">
-            Your browser doesn't support WebGL which is required for 3D graphics.
-          </p>
-          <Button asChild>
-            <Link href="/">Go Back</Link>
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  }, []);
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b p-4 bg-[#171312]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Helicopter Flight Simulator
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                3D helicopter physics with water simulation
-              </p>
-            </div>
-          </div>
-          {isPlaying && (
-            <div className="flex items-center gap-4">
-              <Badge variant="outline" className="game-hud">
-                ALT: {altitude}m
-              </Badge>
-              <Badge variant="outline" className="game-hud">
-                SPD: {speed} km/h
-              </Badge>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="h-full flex flex-col bg-black relative overflow-hidden">
+      <div ref={containerRef} className="flex-1 min-h-0" />
 
-      <div className="flex-1 relative" ref={containerRef}>
-        {!isPlaying ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a]">
-            <Card className="p-8 text-center max-w-lg bg-background/90 backdrop-blur">
-              <Gamepad2 className="h-16 w-16 mx-auto mb-4 text-primary" />
-              <h2 className="text-2xl font-bold mb-2">Helicopter Flight Simulator</h2>
-              <p className="text-muted-foreground mb-6">
-                Fly a helicopter over the ocean! Land on the floating helipads to score points.
-              </p>
-              <div className="grid grid-cols-2 gap-4 text-left mb-6 text-sm">
-                <div>
-                  <p className="font-semibold mb-1">Throttle</p>
-                  <p className="text-muted-foreground">W/S or Arrow Up/Down</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1">Yaw (Turn)</p>
-                  <p className="text-muted-foreground">A/D keys</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1">Pitch</p>
-                  <p className="text-muted-foreground">I/K or Numpad 8/5</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1">Bank (Roll)</p>
-                  <p className="text-muted-foreground">J/L or Numpad 4/6</p>
-                </div>
-              </div>
-              <Button 
-                size="lg" 
-                onClick={() => setIsPlaying(true)}
-                data-testid="button-start-flight"
-              >
-                Start Flying
-              </Button>
-            </Card>
+      {/* HUD */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="flex items-center justify-between px-4 py-2">
+          <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-0 text-xs font-mono">Three.js</Badge>
+          <span className="text-xs font-mono text-white/60">SKY COMMAND</span>
+        </div>
+
+        {/* Flight instruments */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 bg-black/70 backdrop-blur-sm px-8 py-4 rounded-xl border border-white/10">
+          <div className="text-center">
+            <div className="text-[10px] text-cyan-400 font-bold mb-1">ALT</div>
+            <div className="text-lg font-mono text-cyan-300">{hud.alt}<span className="text-[10px] text-cyan-400/60"> m</span></div>
           </div>
-        ) : (
-          <div className="absolute bottom-4 left-4 z-10 pointer-events-none">
-            <Card className="p-3 game-container backdrop-blur text-xs">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 game-text">
-                <span className="text-muted-foreground">Throttle:</span>
-                <span>W/S</span>
-                <span className="text-muted-foreground">Yaw:</span>
-                <span>A/D</span>
-                <span className="text-muted-foreground">Pitch:</span>
-                <span>I/K</span>
-                <span className="text-muted-foreground">Bank:</span>
-                <span>J/L</span>
-              </div>
-            </Card>
+          <div className="w-px h-10 bg-white/10" />
+          <div className="text-center">
+            <div className="text-[10px] text-green-400 font-bold mb-1">SPEED</div>
+            <div className="text-lg font-mono text-green-300">{hud.speed}<span className="text-[10px] text-green-400/60"> kts</span></div>
           </div>
-        )}
+          <div className="w-px h-10 bg-white/10" />
+          <div className="text-center">
+            <div className="text-[10px] text-amber-400 font-bold mb-1">HDG</div>
+            <div className="text-lg font-mono text-amber-300">{hud.heading}°</div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-4 right-4 text-[9px] text-muted-foreground bg-black/50 rounded px-2 py-1">
+          W/S — Pitch · A/D — Roll · Q/E — Yaw · Shift/Ctrl — Throttle
+        </div>
+
+        {/* Crosshair */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="w-6 h-6 border border-white/30 rounded-full" />
+          <div className="absolute top-1/2 left-1/2 w-1 h-1 bg-white/60 rounded-full -translate-x-1/2 -translate-y-1/2" />
+        </div>
       </div>
     </div>
   );

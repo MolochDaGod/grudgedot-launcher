@@ -1,0 +1,21 @@
+{
+  "slug": "grudge-engine",
+  "title": "Studio Forge",
+  "version": "2.0.0",
+  "description": "Embeds forge.grudge-studio.com — the canonical Grudge Studio editor (scenes, maps, effects, play mode). Replaces the legacy in-launcher Babylon studio.",
+  "routes": [
+    { "path": "/forge", "entry": "tabs/grudge-engine/index.tsx" },
+    { "path": "/engine", "entry": "tabs/grudge-engine/index.tsx" }
+  ],
+  "assets": {
+    "models": "assets/grudge-engine/models/"
+  },
+  "features": [
+    "forge-embed",
+    "scene-editor",
+    "map-editor",
+    "effects-lab",
+    "play-mode",
+    "asset-browser"
+  ]
+}

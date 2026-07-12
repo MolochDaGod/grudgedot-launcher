@@ -3,10 +3,12 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Play, 
-  Pause, 
-  Home, 
+import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
+import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
+import {
+  Play,
+  Pause,
+  Home,
   RotateCcw,
   Trophy,
   Zap,
@@ -39,6 +41,14 @@ interface Player {
 }
 
 export default function RunnerGame() {
+  return (
+    <GrudgeGameWrapper gameSlug="runner" gameName="Sprint Master" xpPerThousand={8} goldPerGame={5}>
+      {(session) => <RunnerGameInner session={session} />}
+    </GrudgeGameWrapper>
+  );
+}
+
+function RunnerGameInner({ session }: { session: GrudgeGameSession }) {
   const [, navigate] = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);

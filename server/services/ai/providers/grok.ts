@@ -1,5 +1,6 @@
 import type { AIProvider, GenerateOptions } from './provider.interface';
-import { aiLogger } from '../../../lib/logger';
+import createLogger from '../../../lib/logger';
+const aiLogger = createLogger('Grok');
 
 interface GrokConfig {
   apiKey: string;

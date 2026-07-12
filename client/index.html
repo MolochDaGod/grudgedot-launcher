@@ -1,27 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html translate="no" lang="en" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <meta name="google" content="notranslate" />
+    <script src="https://client.grudge-studio.com/grudge-game-bootstrap.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="GRUDGE Warlords - AI-Powered Game Development Assistant & Crafting Platform" />
+    <meta name="description" content="grudgeDot — the Grudge Studio launcher for games, crafting, and creator tools." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="GRUDGE" />
+    <meta name="apple-mobile-web-app-title" content="grudgeDot" />
     <meta name="theme-color" content="#d4af37" />
-    <meta name="application-name" content="GDevelop Assistant" />
+    <meta name="application-name" content="grudgeDot" />
     <meta name="msapplication-TileColor" content="#0a0a0f" />
 
-    <meta property="og:title" content="GDevelop Assistant - Grudge Warlords" />
-    <meta property="og:description" content="AI-powered game development assistant with crafting, progression, sprite generation, and multiplayer tools." />
+    <meta property="og:title" content="grudgeDot — Grudge Studio Launcher" />
+    <meta property="og:description" content="The grudgeDot launcher for Grudge Studio: games, crafting, progression, sprite generation, and multiplayer tools." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://gdevelop-assistant-grudgenexus.vercel.app" />
+    <meta property="og:url" content="https://grudgedot-launcher.vercel.app" />
     <meta property="og:site_name" content="Grudge Studio" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@grudgewarlords" />
-    <meta name="twitter:title" content="GDevelop Assistant - Grudge Warlords" />
+    <meta name="twitter:title" content="grudgeDot — Grudge Studio Launcher" />
 
-    <title>GDevelop Assistant - Grudge Warlords</title>
+    <title>grudgeDot — Grudge Studio Launcher</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -36,16 +38,26 @@
     <!-- Vite Entry Point -->
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Puter SDK -->
+    <!-- Grudge SSO + Fleet Connect (characters, islands, saves across apps) -->
+    <script src="https://grudachain.grudge-studio.com/grudge-sso.js"></script>
+    <script src="https://grudachain-rho.vercel.app/grudge-fleet-connect.js"></script>
+
+    <!-- Puter SDK (client cloud storage — not used for auth) -->
     <script src="https://js.puter.com/v2/"></script>
 
     <!-- App Config -->
     <script>
       window.GRUDGE_APP_CONFIG = {
-        appId: 'GDEVELOP_ASSISTANT',
-        version: '1.1.0',
-        buildDate: new Date().toISOString()
+        appId: 'GRUDGEDOT',
+        appName: 'GrudgeDot',
+        version: '2.0.0',
+        buildDate: new Date().toISOString(),
+        fleetConnect: 'https://grudachain-rho.vercel.app/grudge-fleet-connect.js',
+        nexus: 'https://grudachain.grudge-studio.com'
       };
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.GrudgeFleetConnect) GrudgeFleetConnect.autoMount({ mode: 'pill' });
+      });
     </script>
   </body>
 </html>

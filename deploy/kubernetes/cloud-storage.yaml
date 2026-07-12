@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloud-storage
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   replicas: 2
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: cloud-storage
-        image: gdevelop-assistant:latest
+        image: grudgedot:latest
         command: ["node", "src/cloud-storage/index.js"]
         ports:
         - containerPort: 3003
@@ -23,27 +23,27 @@ spec:
         - name: CLOUD_STORAGE_PORT
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: CLOUD_STORAGE_PORT
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
-              name: gdevelop-secrets
+              name: grudgedot-secrets
               key: AWS_ACCESS_KEY_ID
         - name: AWS_SECRET_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              name: gdevelop-secrets
+              name: grudgedot-secrets
               key: AWS_SECRET_ACCESS_KEY
         - name: AWS_S3_BUCKET
           valueFrom:
             secretKeyRef:
-              name: gdevelop-secrets
+              name: grudgedot-secrets
               key: AWS_S3_BUCKET
         - name: AWS_REGION
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: AWS_REGION
         livenessProbe:
           httpGet:
@@ -62,7 +62,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cloud-storage-service
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   selector:
     app: cloud-storage

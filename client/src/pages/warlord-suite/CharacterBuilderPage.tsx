@@ -15,18 +15,20 @@ import {
   LEVEL_SCALING, type ClassId, type RaceId,
 } from "../../../../shared/wcs/gameConstants";
 
-const RACE_META: Record<string, { icon: string; name: string; bonus: string; bonuses: Partial<CharacterAttributes> }> = {
-  orc:    { icon: "👹", name: "Orc",    bonus: "+3 STR, +2 VIT",           bonuses: { strength: 3, vitality: 2 } },
-  elf:    { icon: "🧝", name: "Elf",    bonus: "+3 INT, +2 AGI",           bonuses: { intellect: 3, agility: 2 } },
-  human:  { icon: "🧑", name: "Human",  bonus: "+1 all stats",             bonuses: { strength: 1, vitality: 1, endurance: 1, intellect: 1, wisdom: 1, dexterity: 1, agility: 1, tactics: 1 } },
-  undead: { icon: "💀", name: "Undead",  bonus: "+3 WIS, +2 INT",           bonuses: { wisdom: 3, intellect: 2 } },
+const RACE_META: Record<string, { icon: string; name: string; bonus: string; faction: string; bonuses: Partial<CharacterAttributes> }> = {
+  human:     { icon: "🧑", name: "Human",     faction: "Crusade", bonus: "+1 all stats",             bonuses: { strength: 1, vitality: 1, endurance: 1, intellect: 1, wisdom: 1, dexterity: 1, agility: 1, tactics: 1 } },
+  orc:       { icon: "👹", name: "Orc",       faction: "Legion",  bonus: "+3 STR, +2 VIT",           bonuses: { strength: 3, vitality: 2 } },
+  elf:       { icon: "🧝", name: "Elf",       faction: "Fabled",  bonus: "+3 INT, +2 AGI",           bonuses: { intellect: 3, agility: 2 } },
+  undead:    { icon: "💀", name: "Undead",    faction: "Legion",  bonus: "+3 WIS, +2 INT",           bonuses: { wisdom: 3, intellect: 2 } },
+  barbarian: { icon: "🪓", name: "Barbarian", faction: "Crusade", bonus: "+3 STR, +2 END",           bonuses: { strength: 3, endurance: 2 } },
+  dwarf:     { icon: "⛏️", name: "Dwarf",     faction: "Fabled",  bonus: "+3 VIT, +2 WIS",           bonuses: { vitality: 3, wisdom: 2 } },
 };
 
 const CLASS_META: Record<string, { icon: string; name: string; playstyle: string }> = {
-  warrior: { icon: "⚔️", name: "Warrior",           playstyle: "Tank / Melee DPS" },
-  mage:    { icon: "🪄", name: "Mage Priest",        playstyle: "Ranged Magic DPS" },
-  ranger:  { icon: "🏹", name: "Ranger Scout",       playstyle: "Ranged Physical DPS" },
-  worg:    { icon: "🐻", name: "Worg Shapeshifter",   playstyle: "Hybrid / Shape-shifter" },
+  warrior: { icon: "⚔️", name: "Warrior",            playstyle: "Tank / Melee DPS" },
+  mage:    { icon: "🪄", name: "Mage Priest",         playstyle: "Ranged Magic DPS" },
+  ranger:  { icon: "🏹", name: "Ranger Scout",        playstyle: "Ranged Physical DPS" },
+  worge:   { icon: "🐻", name: "Worge Shapeshifter",  playstyle: "Hybrid / Shape-shifter" },
 };
 
 const BASE_POINTS = 5;
@@ -108,7 +110,7 @@ export default function CharacterBuilderPage() {
           {/* Race Selector */}
           <div className="fantasy-panel p-4">
             <h4 className="font-[var(--font-heading)] text-xs gold-text tracking-widest uppercase mb-3">Race</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {RACE_IDS.map(rId => {
                 const r = RACE_META[rId];
                 const active = race === rId;
@@ -125,6 +127,7 @@ export default function CharacterBuilderPage() {
                       {r?.name}
                     </div>
                     <div className="text-[9px] text-[hsl(45_15%_55%)] mt-0.5">{r?.bonus}</div>
+                    <div className="text-[8px] text-[hsl(43_50%_45%)] mt-0.5 italic">{r?.faction}</div>
                   </button>
                 );
               })}

@@ -66,10 +66,10 @@ jobs:
         context: .
         push: true
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/gdevelop-assistant:latest
-          ${{ secrets.DOCKER_USERNAME }}/gdevelop-assistant:${{ github.sha }}
-        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/gdevelop-assistant:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/gdevelop-assistant:buildcache,mode=max
+          ${{ secrets.DOCKER_USERNAME }}/grudgedot:latest
+          ${{ secrets.DOCKER_USERNAME }}/grudgedot:${{ github.sha }}
+        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/grudgedot:buildcache
+        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/grudgedot:buildcache,mode=max
 
   deploy-kubernetes:
     needs: build-docker
@@ -87,14 +87,14 @@ jobs:
     
     - name: Create secrets
       run: |
-        kubectl create secret generic gdevelop-secrets \
+        kubectl create secret generic grudgedot-secrets \
           --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
           --from-literal=PUTER_DB_USER=${{ secrets.PUTER_DB_USER }} \
           --from-literal=PUTER_DB_PASSWORD=${{ secrets.PUTER_DB_PASSWORD }} \
           --from-literal=AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
           --from-literal=AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
           --from-literal=AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }} \
-          --namespace=gdevelop-assistant \
+          --namespace=grudgedot \
           --dry-run=client -o yaml | kubectl apply -f -
     
     - name: Deploy to Kubernetes
@@ -112,8 +112,8 @@ jobs:
           deployment/ai-agents \
           deployment/game-server \
           deployment/cloud-storage \
-          -n gdevelop-assistant
+          -n grudgedot
     
     - name: Get service URLs
       run: |
-        kubectl get services -n gdevelop-assistant
+        kubectl get services -n grudgedot

@@ -1,29 +1,247 @@
 {
-  "buildCommand": "npm run build:vercel",
+  "version": 2,
+  "name": "grudgedot-launcher",
+  "framework": "vite",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist/public",
-  "framework": null,
-  "functions": {
-    "api/**/*.ts": {
-      "maxDuration": 30
+  "installCommand": "npm install",
+  "redirects": [
+    {
+      "source": "/warlords",
+      "destination": "https://grudgewarlords.com?from=grudge.studio",
+      "permanent": false
+    },
+    {
+      "source": "/warlords/:path*",
+      "destination": "https://grudgewarlords.com/:path*?from=grudge.studio",
+      "permanent": false
+    },
+    {
+      "source": "/engine",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=scene",
+      "permanent": false
+    },
+    {
+      "source": "/three-engine",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=scene",
+      "permanent": false
+    },
+    {
+      "source": "/open-forge",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio",
+      "permanent": false
+    },
+    {
+      "source": "/crafting",
+      "destination": "https://grudge-crafting.puter.site/?from=grudge.studio",
+      "permanent": false
+    },
+    {
+      "source": "/character",
+      "destination": "https://character.grudge-studio.com?era=warlords&from=grudge.studio",
+      "permanent": false
+    },
+    {
+      "source": "/characters",
+      "destination": "https://character.grudge-studio.com?era=warlords&from=grudge.studio",
+      "permanent": false
+    },
+    {
+      "source": "/babygrudge",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=scene",
+      "permanent": false
+    },
+    {
+      "source": "/map-editor",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=map",
+      "permanent": false
+    },
+    {
+      "source": "/effects",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=effects",
+      "permanent": false
     }
-  },
+  ],
+  "rewrites": [
+    {
+      "source": "/auth/callback",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/api/auth/discord",
+      "destination": "https://grudgewarlords.com/discord"
+    },
+    {
+      "source": "/api/auth/discord/:path*",
+      "destination": "https://grudgewarlords.com/api/discord/:path*"
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/auth/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "https://id.grudge-studio.com/auth/:path*"
+    },
+    {
+      "source": "/login",
+      "destination": "https://id.grudge-studio.com/login"
+    },
+    {
+      "source": "/api/characters",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/characters"
+    },
+    {
+      "source": "/api/characters/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/characters/:path*"
+    },
+    {
+      "source": "/api/account",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/account"
+    },
+    {
+      "source": "/api/account/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/account/:path*"
+    },
+    {
+      "source": "/api/inventory",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/inventory"
+    },
+    {
+      "source": "/api/inventory/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/inventory/:path*"
+    },
+    {
+      "source": "/api/wallet",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/wallet"
+    },
+    {
+      "source": "/api/wallet/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/wallet/:path*"
+    },
+    {
+      "source": "/api/treaty",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/treaty"
+    },
+    {
+      "source": "/api/treaty/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/treaty/:path*"
+    },
+    {
+      "source": "/api/island",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/island"
+    },
+    {
+      "source": "/api/island/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/island/:path*"
+    },
+    {
+      "source": "/api/islands/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/islands/:path*"
+    },
+    {
+      "source": "/api/professions/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/professions/:path*"
+    },
+    {
+      "source": "/api/nfts/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/nfts/:path*"
+    },
+    {
+      "source": "/api/health",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/health"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://grudge-api-production-0d46.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/portal",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/launcher",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/hub",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/treaty-embed.html",
+      "destination": "/treaty-embed.html"
+    },
+    {
+      "source": "/treaty",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/wallet",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/account",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/accounts",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/forge",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/forge-hub",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/deploy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/deployments",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/hub",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/launcher",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/app",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/app.html"
+    }
+  ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.puter.com https://*.grudge-studio.com https://assets.grudge-studio.com https://client.grudge-studio.com https://*.vercel.app https://vercel.live https://grudge.studio; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' https: wss:; frame-src 'self' https://*.puter.com https://*.puter.site https://grudge.studio https://grudge-studio.com https://grudgewarlords.com https://*.grudge-studio.com https://*.vercel.app https://vercel.live; media-src 'self' https://assets.grudge-studio.com blob:; worker-src 'self' blob:"
+        }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
-    },
-    {
-      "source": "/index.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache" }
-      ]
     }
-  ],
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index.ts" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/((?!assets|admin).*)", "destination": "/index.html" }
   ]
 }

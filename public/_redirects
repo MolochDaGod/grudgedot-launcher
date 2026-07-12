@@ -1,0 +1,12 @@
+# Cloudflare Pages redirects for the grudgeDot launcher.
+# All /api/* proxies to api.grudge-studio.com — the in-repo api/index.ts Express
+# app does NOT run on Pages. Auth goes through id.grudge-studio.com.
+
+/api/auth/*   https://id.grudge-studio.com/api/auth/:splat     200
+/api/*        https://api.grudge-studio.com/api/:splat     200
+
+# Admin is a separate HTML page; preserve direct hit.
+/admin        /admin.html                                  200
+
+# SPA fallback — last.
+/*            /index.html                                  200

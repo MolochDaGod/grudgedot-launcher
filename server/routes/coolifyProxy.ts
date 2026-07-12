@@ -1,7 +1,7 @@
 /**
  * Coolify API Proxy Routes
  *
- * Proxies requests from the GDevelop Assistant frontend to the Coolify API
+ * Proxies requests from the grudgeDot frontend to the Coolify API
  * running on the Grudge VPS. Provides server overview, log viewing, and
  * restart/deploy management for all Coolify-managed services.
  *

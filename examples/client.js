@@ -1,5 +1,5 @@
 /**
- * Example client demonstrating how to use GDevelop Assistant services
+ * Example client demonstrating how to use grudgeDot services
  */
 
 const io = require('socket.io-client');
@@ -10,7 +10,7 @@ const AI_AGENT_URL = 'http://localhost:3001';
 const GAME_SERVER_URL = 'http://localhost:3002';
 const CLOUD_STORAGE_URL = 'http://localhost:3003';
 
-class GDevelopClient {
+class GrudgedotClient {
   constructor() {
     this.aiSocket = null;
     this.gameSocket = null;
@@ -240,7 +240,7 @@ class GDevelopClient {
 
 // Run example
 async function runExample() {
-  const client = new GDevelopClient();
+  const client = new GrudgedotClient();
 
   // Check if services are running
   const servicesHealthy = await client.checkServices();
@@ -250,7 +250,7 @@ async function runExample() {
     process.exit(1);
   }
 
-  console.log('\n=== Running GDevelop Assistant Examples ===\n');
+  console.log('\n=== Running grudgeDot Examples ===\n');
 
   // AI Agent examples
   console.log('--- AI Agent Examples ---');
@@ -297,4 +297,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = GDevelopClient;
+module.exports = GrudgedotClient;

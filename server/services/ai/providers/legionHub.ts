@@ -1,5 +1,6 @@
 import type { AIProvider, GenerateOptions } from './provider.interface';
-import { aiLogger } from '../../../lib/logger';
+import createLogger from '../../../lib/logger';
+const aiLogger = createLogger('LegionHub');
 
 interface LegionHubConfig {
   apiKey: string;

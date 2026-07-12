@@ -1,3 +1,4 @@
+import { getLoginHref } from "@/lib/auth";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
@@ -5,9 +6,9 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 text-stone-200">
       <div className="max-w-3xl mx-auto px-6 py-12">
-        <Link href="/auth" className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 mb-8">
+        <Link href="/" className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 mb-8">
           <ArrowLeft className="h-4 w-4" />
-          Back to Login
+          Back to grudgeDot
         </Link>
 
         <h1
@@ -21,10 +22,10 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-stone-100 mb-2">1. Introduction</h2>
             <p>
-              Grudge Studio ("we", "us", "our") operates the GDevelop Assistant platform and
-              Grudge Warlords game ecosystem at gdevelop-assistant.vercel.app and related
-              services. This Privacy Policy explains how we collect, use, and protect your
-              information when you use our services.
+              Grudge Studio ("we", "us", "our") operates the grudgeDot platform and
+              the Grudge Warlords game ecosystem, alongside related Grudge Studio services.
+              This Privacy Policy explains how we collect, use, and protect your information
+              when you use our services.
             </p>
           </section>
 
@@ -149,7 +150,7 @@ export default function PrivacyPage() {
         <div className="mt-10 pt-6 border-t border-stone-800 text-stone-600 text-xs text-center">
           <Link href="/tos" className="hover:text-stone-400">Terms of Service</Link>
           <span className="mx-2">·</span>
-          <Link href="/auth" className="hover:text-stone-400">Sign In</Link>
+          <a href={getLoginHref()} className="hover:text-stone-400">Sign In</a>
         </div>
       </div>
     </div>

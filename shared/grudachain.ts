@@ -1,20 +1,26 @@
 // ============================================================
 // GRUDACHAIN Integration Config
-// Connects GDevelopAssistant (GGE) to GRUDACHAIN AI nodes
+// Connects grudgeDot (GGE) to Grudge Studio VPS backend
 // and Warlord-Crafting-Suite (WCS) game systems
 // ============================================================
 
 // Deployment URLs (overridable via env)
+// Game API runs on VPS via Coolify/Docker + Traefik
 // GRUDA Legion production runs on the Grudge Studio VPS via Coolify/Traefik.
-// grudachain.grudgestudio.com is the GrudaChain *frontend* (Cloudflare Pages) — NOT the backend.
+// grudachain.grudge-studio.com is the GrudaChain *frontend* (Cloudflare Pages) — NOT the backend.
+// (The legacy grudachain.grudgestudio.com host — no-hyphen zone — is retired; redirect to the hyphenated canonical domain.)
 export const GRUDACHAIN_URL = process.env.GRUDACHAIN_URL || "https://api.grudge-studio.com";
 export const WCS_URL = process.env.WCS_URL || "https://warlord-crafting-suite.vercel.app";
 
-// GAME_API_GRUDA is the canonical Grudge Studio API endpoint
+// GAME_API_GRUDA is the canonical Grudge Studio API endpoint (same as GRUDACHAIN_URL by default)
 export const GAME_API_GRUDA = process.env.GAME_API_GRUDA || GRUDACHAIN_URL;
 
-// Vercel deployment (static landing page + serverless functions)
-export const GRUDACHAIN_VERCEL_URL = "https://grudachain.vercel.app";
+// Nexus frontend (Vercel) — canonical custom domain returns 522 until DNS CNAME is repaired
+export const GRUDACHAIN_CANONICAL_URL = "https://grudachain.grudge-studio.com";
+export const GRUDACHAIN_NEXUS_URL =
+  process.env.GRUDACHAIN_NEXUS_URL || "https://grudachain-rho.vercel.app";
+export const GRUDACHAIN_VERCEL_URL = GRUDACHAIN_NEXUS_URL;
+export const FLEET_CONNECT_SCRIPT = `${GRUDACHAIN_NEXUS_URL}/grudge-fleet-connect.js`;
 
 // WCS pages available for iframe embedding
 export const WCS_PAGES = {
@@ -42,22 +48,23 @@ export const GRUDACHAIN_API = {
   vibeProviders: `${GRUDACHAIN_URL}/api/vibe/providers`,
   vibeChat: `${GRUDACHAIN_URL}/api/vibe/chat`,
   // SDK & Storage
-  sdkInfo: `${GRUDACHAIN_URL}/api/sdk/info`,
-  storageInfo: `${GRUDACHAIN_URL}/api/storage/info`,
-  storageList: `${GRUDACHAIN_URL}/api/storage/list`,
+  sdkInfo: `${GRUDACHAIN_URL}/sdk/info`,
+  storageInfo: `${GRUDACHAIN_URL}/storage/info`,
+  storageList: `${GRUDACHAIN_URL}/health`,
   // Grudge Studio integration
-  grudgeStudioConfig: `${GRUDACHAIN_URL}/api/grudge-studio/config`,
-  grudgeStudioLinks: `${GRUDACHAIN_URL}/api/grudge-studio/links`,
+  grudgeStudioConfig: `${GRUDACHAIN_URL}/health`,
+  grudgeStudioLinks: `${GRUDACHAIN_URL}/health`,
   // Admin
-  adminStats: `${GRUDACHAIN_URL}/api/admin/stats`,
-  adminEcosystem: `${GRUDACHAIN_URL}/api/admin/ecosystem`,
-  // WebSocket: connect via Socket.IO at GRUDACHAIN_URL root for real-time AI chat
+  adminStats: `${GRUDACHAIN_URL}/health`,
+  adminEcosystem: `${GRUDACHAIN_URL}/health`,
+  // WebSocket: connect via Socket.IO at ws.grudge-studio.com
 } as const;
 
 // Source repository for the VPS deployment
 export const GRUDACHAIN_SOURCE = {
   repo: "MolochDaGod/grudge-studio-backend",
   branch: "main",
+  deployment: "VPS Coolify/Docker",
   service: "game-api",
   github: "https://github.com/MolochDaGod/grudge-studio-backend",
 } as const;
@@ -165,6 +172,27 @@ export const GRD17_API = {
   blockchainAirdrop: `${GRUDACHAIN_URL}/api/blockchain/airdrop`,
   blockchainMintGbux: `${GRUDACHAIN_URL}/api/blockchain/mint-gbux`,
   blockchainTransfer: `${GRUDACHAIN_URL}/api/blockchain/transfer`,
+} as const;
+
+// ============================================================
+// Babylon AI Workers (Cloudflare Workers — BabylonJS 9 + Havok specialists)
+// Source: D:\GrudgeStudio\babylon-ai-workers
+// ============================================================
+
+export const BABYLON_AI_URL = process.env.BABYLON_AI_URL || "https://babylon-ai-workers.grudge.workers.dev";
+
+/** Babylon AI Workers endpoints — domain-specialist RAG over BabylonJS 9 API docs */
+export const BABYLON_AI_API = {
+  /** Havok Scholar — physics, character controllers, collision, constraints */
+  havok: `${BABYLON_AI_URL}/havok`,
+  /** Babylon Sage — rendering, materials, animations, terrain, VFX */
+  sage: `${BABYLON_AI_URL}/sage`,
+  /** Semantic search across all ingested BabylonJS docs */
+  search: `${BABYLON_AI_URL}/search`,
+  /** Ingest new API docs into the knowledge base */
+  learn: `${BABYLON_AI_URL}/learn`,
+  /** Health check */
+  health: `${BABYLON_AI_URL}/health`,
 } as const;
 
 /** Puter.js KV prefixes for GRD-17 data (Grudge account linked) */

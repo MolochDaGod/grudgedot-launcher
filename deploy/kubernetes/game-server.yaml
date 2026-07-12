@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: game-server
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   replicas: 3
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: game-server
-        image: gdevelop-assistant:latest
+        image: grudgedot:latest
         command: ["node", "src/game-server/index.js"]
         ports:
         - containerPort: 3002
@@ -23,27 +23,27 @@ spec:
         - name: GAME_SERVER_PORT
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: GAME_SERVER_PORT
         - name: GAME_SERVER_MAX_PLAYERS
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: GAME_SERVER_MAX_PLAYERS
         - name: GAME_SERVER_TICK_RATE
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: GAME_SERVER_TICK_RATE
         - name: PUTER_DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: PUTER_DB_HOST
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
-              name: gdevelop-config
+              name: grudgedot-config
               key: REDIS_HOST
         livenessProbe:
           httpGet:
@@ -62,7 +62,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: game-server-service
-  namespace: gdevelop-assistant
+  namespace: grudgedot
 spec:
   selector:
     app: game-server

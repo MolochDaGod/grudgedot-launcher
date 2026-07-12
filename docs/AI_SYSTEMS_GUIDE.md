@@ -1,4 +1,8 @@
-# AI Systems Guide — GDevelop Assistant (GGE)
+---
+title: AI Systems Guide
+nav_order: 2
+---
+# AI Systems Guide — grudgeDot (GGE)
 
 > How AI agents should understand, monitor, and contribute to the Grudge Studio game ecosystem.
 

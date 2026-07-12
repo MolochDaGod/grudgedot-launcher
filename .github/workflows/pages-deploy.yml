@@ -1,0 +1,51 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        run: npm run vercel-build
+        env:
+          # Fleet ONE TRUTH — Railway Postgres SSOT (not api.grudge-studio.com)
+          VITE_AUTH_GATEWAY_URL: https://id.grudge-studio.com
+          VITE_API_URL: ""
+          VITE_GAME_DATA_URL: https://grudge-api-production-0d46.up.railway.app
+          VITE_WS_URL: wss://grudge-api-production-0d46.up.railway.app
+          VITE_ASSETS_URL: https://assets.grudge-studio.com
+          VITE_OBJECTSTORE_URL: https://objectstore.grudge-studio.com/api/v1
+          VITE_AI_URL: https://ai.grudge-studio.com
+          VITE_BADGE_READER_URL: https://edge.grudge-studio.com
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: grudgedot
+          directory: dist/public
+          branch: main
+          wranglerVersion: "3"

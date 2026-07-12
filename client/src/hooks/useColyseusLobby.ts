@@ -15,6 +15,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+// @ts-ignore — colyseus.js is optional, only installed when VITE_USE_COLYSEUS=true
 import { Client, Room } from "colyseus.js";
 
 // Default to WCS Colyseus server; override via env

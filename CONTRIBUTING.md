@@ -1,6 +1,6 @@
-# Contributing to GDevelop Assistant
+# Contributing to grudgeDot
 
-Thank you for your interest in contributing to GDevelop Assistant! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to grudgeDot! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -48,8 +48,8 @@ Thank you for your interest in contributing to GDevelop Assistant! This document
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/GDevelopAssistant.git
-cd GDevelopAssistant
+git clone https://github.com/YOUR_USERNAME/grudgeDot.git
+cd grudgeDot
 
 # Install dependencies
 npm install
@@ -73,7 +73,7 @@ architecture, service map, domain conventions, and checklist.
 ## Project Structure
 
 ```
-GDevelopAssistant/
+grudgeDot/
 ├── src/
 │   ├── ai-agents/        # AI agents service
 │   ├── game-server/      # Game server service
@@ -204,4 +204,4 @@ Contributors will be recognized in:
 - Release notes
 - Project documentation
 
-Thank you for contributing to GDevelop Assistant! 🎮
+Thank you for contributing to grudgeDot! 🎮

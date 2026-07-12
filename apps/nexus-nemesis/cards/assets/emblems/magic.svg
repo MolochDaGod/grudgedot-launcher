@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <defs><radialGradient id="mg" cx="0.5" cy="0.5" r="0.5"><stop offset="0%" stop-color="#cc88ff"/><stop offset="100%" stop-color="#6622aa"/></radialGradient></defs>
+  <circle cx="14" cy="14" r="10" fill="url(#mg)" opacity="0.3"/>
+  <polygon points="14,3 16.5,10.5 24,10.5 18,15.5 20.5,23 14,18.5 7.5,23 10,15.5 4,10.5 11.5,10.5" fill="none" stroke="#bb77ff" stroke-width="1"/>
+  <polygon points="14,6 15.8,11.5 21,11.5 17,14.8 18.8,20.5 14,17 9.2,20.5 11,14.8 7,11.5 12.2,11.5" fill="#bb77ff" opacity="0.4"/>
+  <circle cx="14" cy="14" r="2" fill="#eeccff"/>
+</svg>
