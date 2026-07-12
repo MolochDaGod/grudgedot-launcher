@@ -1,7 +1,7 @@
 name: CI/CD Pipeline
 
-# Required: install on Node 22.
-# Optional: Docker Hub + Kubernetes only when secrets exist — missing secrets skip, not fail.
+# Required: install + verify on Node 22.
+# Optional Docker/K8s: skip cleanly when secrets are missing (no red X).
 
 on:
   push:
@@ -37,21 +37,21 @@ jobs:
       - name: Create .env file
         run: |
           cp .env.example .env
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          {
+            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}"
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}"
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          } >> .env
 
       - name: Verify critical exports
         run: node scripts/ci-verify.mjs
 
       - name: Lint code
-        run: |
-          echo "Linting would run here if configured"
-          # npm run lint
+        run: echo "Linting placeholder — enable npm run lint when configured"
 
       - name: Run tests
         run: |
-          if npm run | grep -qE '^\s+test\b'; then
+          if npm run 2>/dev/null | grep -qE '^\s+test\b'; then
             npm test
           else
             echo "No test script configured — skipping"
@@ -61,25 +61,36 @@ jobs:
     name: build-docker
     needs: build-and-test
     runs-on: ubuntu-latest
-    # Only on main pushes, and only when Docker Hub credentials are present
-    if: >
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      secrets.DOCKER_USERNAME != '' &&
-      secrets.DOCKER_PASSWORD != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
+      - name: Detect Docker Hub credentials
+        id: docker
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          if [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Docker Hub secrets not configured — skipping image push"
+          fi
+
       - name: Set up Docker Buildx
+        if: steps.docker.outputs.enabled == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
+        if: steps.docker.outputs.enabled == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
+        if: steps.docker.outputs.enabled == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -94,20 +105,31 @@ jobs:
     name: deploy-kubernetes
     needs: build-docker
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      secrets.KUBE_CONFIG != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
+      - name: Detect kubeconfig
+        id: k8s
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          if [ -n "$KUBE_CONFIG" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "KUBE_CONFIG not configured — skipping k8s deploy"
+          fi
+
       - name: Configure kubectl
+        if: steps.k8s.outputs.enabled == 'true'
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
       - name: Create secrets
+        if: steps.k8s.outputs.enabled == 'true'
         run: |
           kubectl create secret generic grudgedot-secrets \
             --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
@@ -120,14 +142,15 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy to Kubernetes
+        if: steps.k8s.outputs.enabled == 'true'
         run: |
+          shopt -s nullglob
           for f in deploy/kubernetes/*.yaml; do
-            if [ -f "$f" ]; then
-              kubectl apply -f "$f" || echo "warn: apply failed for $f"
-            fi
+            kubectl apply -f "$f" || echo "warn: apply failed for $f"
           done
 
       - name: Wait for deployment
+        if: steps.k8s.outputs.enabled == 'true'
         run: |
           kubectl wait --for=condition=available --timeout=300s \
             deployment/ai-agents \
@@ -136,4 +159,5 @@ jobs:
             -n grudgedot || echo "warn: some deployments not ready"
 
       - name: Get service URLs
+        if: steps.k8s.outputs.enabled == 'true'
         run: kubectl get services -n grudgedot || true
