@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
@@ -26,7 +26,11 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
         run: |
-          npm run asset:drive:sync
+          if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ] && [ -n "$DRIVE_FOLDER_ID" ]; then
+            npm run asset:drive:sync
+          else
+            echo "Skipping Drive sync (secrets not configured)"
+          fi
 
       - name: Build
         run: npm run build
