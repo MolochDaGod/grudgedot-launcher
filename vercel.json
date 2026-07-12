@@ -8,57 +8,57 @@
   "redirects": [
     {
       "source": "/warlords",
-      "destination": "https://grudgewarlords.com?from=launcher",
+      "destination": "https://grudgewarlords.com?from=grudge.studio",
       "permanent": false
     },
     {
       "source": "/warlords/:path*",
-      "destination": "https://grudgewarlords.com/:path*?from=launcher",
+      "destination": "https://grudgewarlords.com/:path*?from=grudge.studio",
       "permanent": false
     },
     {
       "source": "/engine",
-      "destination": "https://forge.grudge-studio.com?from=launcher-engine&mode=scene",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=scene",
       "permanent": false
     },
     {
       "source": "/three-engine",
-      "destination": "https://forge.grudge-studio.com?from=launcher-three&mode=scene",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=scene",
       "permanent": false
     },
     {
-      "source": "/forge",
-      "destination": "https://forge.grudge-studio.com?from=launcher",
+      "source": "/open-forge",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio",
       "permanent": false
     },
     {
       "source": "/crafting",
-      "destination": "https://grudge-crafting.puter.site/?from=launcher",
+      "destination": "https://grudge-crafting.puter.site/?from=grudge.studio",
       "permanent": false
     },
     {
       "source": "/character",
-      "destination": "https://character.grudge-studio.com?era=warlords&from=launcher",
+      "destination": "https://character.grudge-studio.com?era=warlords&from=grudge.studio",
       "permanent": false
     },
     {
       "source": "/characters",
-      "destination": "https://character.grudge-studio.com?era=warlords&from=launcher",
+      "destination": "https://character.grudge-studio.com?era=warlords&from=grudge.studio",
       "permanent": false
     },
     {
       "source": "/babygrudge",
-      "destination": "https://forge.grudge-studio.com?from=launcher-hub",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=scene",
       "permanent": false
     },
     {
       "source": "/map-editor",
-      "destination": "https://forge.grudge-studio.com?from=launcher-map&mode=map",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=map",
       "permanent": false
     },
     {
       "source": "/effects",
-      "destination": "https://forge.grudge-studio.com?from=launcher-effects&mode=effects",
+      "destination": "https://forge.grudge-studio.com?from=grudge.studio&mode=effects",
       "permanent": false
     }
   ],
@@ -189,6 +189,22 @@
     },
     {
       "source": "/accounts",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/forge",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/forge-hub",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/deploy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/deployments",
       "destination": "/index.html"
     },
     {

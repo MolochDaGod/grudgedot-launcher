@@ -5,8 +5,8 @@
     <meta name="google" content="notranslate" />
     <script src="https://client.grudge-studio.com/grudge-game-bootstrap.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grudge Studio — Command Hub · Wallet · Accounts · Treaty</title>
-<meta name="description" content="Canonical Grudge Studio hub: Grudge ID accounts, Railway wallet, Treaty social, and fleet game launcher. One truth — Railway Postgres SSOT." />
+<title>Grudge Studio — Command Hub · Wallet · Accounts · Treaty · Forge</title>
+<meta name="description" content="Canonical Grudge Studio hub (grudgeDot): accounts, wallet, Treaty, Forge editor, and fleet deployments. Railway Postgres SSOT." />
 <meta property="og:title" content="Grudge Studio — Command Hub" />
 <meta property="og:description" content="Accounts · Wallet · Treaty · Fleet games. Canonical launcher for grudge.studio and launcher.grudge-studio.com." />
 <meta property="og:url" content="https://grudge.studio/" />
@@ -683,20 +683,21 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 <!-- ===== MAIN APP ===== -->
 <div id="app">
   <header>
-    <a class="logo" href="#">GRUDGE STUDIO<span>// CANONICAL HUB · WALLET · TREATY</span></a>
+    <a class="logo" href="/" onclick="goPanel('overview');return false;">GRUDGE STUDIO<span>// grudgeDot HUB · FORGE · FLEET</span></a>
     <nav>
-      <button class="nav-btn active" onclick="switchPanel('overview', this)">HOME</button>
-      <button class="nav-btn" onclick="switchPanel('account', this)">ACCOUNTS</button>
-      <button class="nav-btn" onclick="switchPanel('wallet', this)">WALLET</button>
-      <button class="nav-btn" onclick="switchPanel('treaty', this)">TREATY</button>
-      <button class="nav-btn" onclick="switchPanel('apps', this)">APPS</button>
-      <button class="nav-btn" onclick="switchPanel('deployments', this)">SITES</button>
-      <button class="nav-btn" onclick="switchPanel('dns', this)">FLEET</button>
-      <button class="nav-btn" onclick="switchPanel('stack', this)">STACK</button>
-      <button class="nav-btn" onclick="switchPanel('ai', this)">AI</button>
+      <button type="button" class="nav-btn active" data-panel="overview" onclick="goPanel('overview', this)">HOME</button>
+      <button type="button" class="nav-btn" data-panel="account" onclick="goPanel('account', this)">ACCOUNTS</button>
+      <button type="button" class="nav-btn" data-panel="wallet" onclick="goPanel('wallet', this)">WALLET</button>
+      <button type="button" class="nav-btn" data-panel="treaty" onclick="goPanel('treaty', this)">TREATY</button>
+      <button type="button" class="nav-btn" data-panel="forge" onclick="goPanel('forge', this)">FORGE</button>
+      <button type="button" class="nav-btn" data-panel="apps" onclick="goPanel('apps', this)">APPS</button>
+      <button type="button" class="nav-btn" data-panel="deployments" onclick="goPanel('deployments', this)">DEPLOY</button>
+      <button type="button" class="nav-btn" data-panel="dns" onclick="goPanel('dns', this)">FLEET</button>
+      <button type="button" class="nav-btn" data-panel="stack" onclick="goPanel('stack', this)">STACK</button>
+      <button type="button" class="nav-btn" data-panel="ai" onclick="goPanel('ai', this)">AI</button>
     </nav>
     <div id="user-area">
-      <div id="user-pill" onclick="switchPanel('account', document.querySelector('.nav-btn:nth-child(2)'))">
+      <div id="user-pill" onclick="goPanel('account')">
         <div id="user-avatar">?</div>
         <div id="user-name">LOADING...</div>
       </div>
@@ -720,17 +721,18 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
       <div class="hero-banner">
         <div class="hero-text">
           <h2>Grudge Studio Command Hub</h2>
-          <p>Canonical entry for <strong>grudge.studio</strong> &amp; <strong>launcher.grudge-studio.com</strong> —
-          Grudge ID accounts · Railway wallet · Treaty social · fleet games.
+          <p><strong>grudge.studio</strong> is the canonical hub — grudgeDot launcher merged here for deploy.
+          Accounts · Wallet · Treaty · <strong>Forge</strong> · fleet games.
           One truth: Railway Postgres characters/account · ObjectStore definitions · R2 assets.</p>
           <div class="hero-actions">
-            <a class="hero-cta" href="https://grudgewarlords.com" target="_blank">⚔ WARLORDS LIVE</a>
-            <a class="hero-cta secondary" href="javascript:void(0)" onclick="switchPanel('wallet', document.querySelectorAll('.nav-btn')[2])">💰 WALLET</a>
-            <a class="hero-cta secondary" href="javascript:void(0)" onclick="switchPanel('account', document.querySelectorAll('.nav-btn')[1])">👤 ACCOUNT</a>
-            <a class="hero-cta secondary" href="javascript:void(0)" onclick="switchPanel('treaty', document.querySelectorAll('.nav-btn')[3])">💬 TREATY</a>
-            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/" target="_blank">⚒ CRAFTING</a>
-            <a class="hero-cta secondary" href="https://forge.grudge-studio.com" target="_blank">⚙ FORGE</a>
-            <a class="hero-cta secondary" href="https://character.grudge-studio.com?era=warlords" target="_blank">🎭 CHARACTERS</a>
+            <a class="hero-cta" href="https://grudgewarlords.com" target="_blank" rel="noopener">WARLORDS LIVE</a>
+            <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio" target="_blank" rel="noopener">OPEN FORGE</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('wallet')">WALLET</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('account')">ACCOUNT</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('treaty')">TREATY</a>
+            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/?from=grudge.studio" target="_blank" rel="noopener">CRAFTING</a>
+            <a class="hero-cta secondary" href="https://character.grudge-studio.com?era=warlords&amp;from=grudge.studio" target="_blank" rel="noopener">CHARACTERS</a>
+            <a class="hero-cta secondary" href="javascript:void(0)" onclick="goPanel('deployments')">DEPLOYMENTS</a>
           </div>
         </div>
       </div>
@@ -757,19 +759,22 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 
       <div class="sh"><div class="sh-title">QUICK ACCESS</div><div class="sh-line"></div></div>
       <div class="qlinks">
-        <a class="qlink" href="https://grudgewarlords.com" target="_blank"><span class="qlink-icon">⚔</span>WARLORDS</a>
-        <a class="qlink" href="javascript:void(0)" onclick="switchPanel('wallet', document.querySelectorAll('.nav-btn')[2])"><span class="qlink-icon">💰</span>WALLET</a>
-        <a class="qlink" href="javascript:void(0)" onclick="switchPanel('account', document.querySelectorAll('.nav-btn')[1])"><span class="qlink-icon">👤</span>ACCOUNT</a>
-        <a class="qlink" href="javascript:void(0)" onclick="switchPanel('treaty', document.querySelectorAll('.nav-btn')[3])"><span class="qlink-icon">💬</span>TREATY</a>
-        <a class="qlink" href="https://grudge-crafting.puter.site/" target="_blank"><span class="qlink-icon">⚒</span>CRAFTING</a>
-        <a class="qlink" href="https://character.grudge-studio.com?era=warlords" target="_blank"><span class="qlink-icon">🎭</span>GCS</a>
-        <a class="qlink" href="https://forge.grudge-studio.com" target="_blank"><span class="qlink-icon">⚙</span>FORGE</a>
-        <a class="qlink" href="https://id.grudge-studio.com/login" target="_blank"><span class="qlink-icon">🔑</span>GRUDGE ID</a>
-        <a class="qlink" href="https://launcher.grudge-studio.com" target="_blank"><span class="qlink-icon">🚀</span>LAUNCHER</a>
-        <a class="qlink" href="https://fleet.grudge-studio.com" target="_blank"><span class="qlink-icon">🗺</span>FLEET MAP</a>
-        <a class="qlink" href="https://objectstore.grudge-studio.com/api/v1/" target="_blank"><span class="qlink-icon">📦</span>OBJECTSTORE</a>
-        <a class="qlink" href="https://assets.grudge-studio.com" target="_blank"><span class="qlink-icon">🖼</span>ASSETS CDN</a>
-        <a class="qlink" href="https://grudge-engine-psi.vercel.app" target="_blank"><span class="qlink-icon">🕹</span>ENGINE GALLERY</a>
+        <a class="qlink" href="https://grudgewarlords.com" target="_blank" rel="noopener"><span class="qlink-icon">W</span>WARLORDS</a>
+        <a class="qlink" href="https://forge.grudge-studio.com?from=grudge.studio" target="_blank" rel="noopener"><span class="qlink-icon">F</span>FORGE</a>
+        <a class="qlink" href="javascript:void(0)" onclick="goPanel('wallet')"><span class="qlink-icon">$</span>WALLET</a>
+        <a class="qlink" href="javascript:void(0)" onclick="goPanel('account')"><span class="qlink-icon">A</span>ACCOUNT</a>
+        <a class="qlink" href="javascript:void(0)" onclick="goPanel('treaty')"><span class="qlink-icon">T</span>TREATY</a>
+        <a class="qlink" href="https://grudge-crafting.puter.site/?from=grudge.studio" target="_blank" rel="noopener"><span class="qlink-icon">C</span>CRAFTING</a>
+        <a class="qlink" href="https://character.grudge-studio.com?era=warlords&amp;from=grudge.studio" target="_blank" rel="noopener"><span class="qlink-icon">G</span>GCS</a>
+        <a class="qlink" id="qlink-id" href="https://id.grudge-studio.com/login" target="_blank" rel="noopener"><span class="qlink-icon">ID</span>GRUDGE ID</a>
+        <a class="qlink" href="https://client.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">CL</span>CLIENT</a>
+        <a class="qlink" href="https://fleet.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">MAP</span>FLEET MAP</a>
+        <a class="qlink" href="https://objectstore.grudge-studio.com/api/v1/master-recipes.json" target="_blank" rel="noopener"><span class="qlink-icon">OS</span>OBJECTSTORE</a>
+        <a class="qlink" href="https://assets.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">R2</span>ASSETS CDN</a>
+        <a class="qlink" href="https://browse.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">BR</span>BROWSE</a>
+        <a class="qlink" href="https://ui.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">UI</span>UI EDITOR</a>
+        <a class="qlink" href="https://grudox.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">GX</span>GRUDOX</a>
+        <a class="qlink" href="https://gameopen.vercel.app" target="_blank" rel="noopener"><span class="qlink-icon">GO</span>GAMEOPEN</a>
       </div>
     </div>
 
@@ -898,8 +903,9 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
           <div class="sh" style="margin-bottom:12px"><div class="sh-title">ACCOUNT INVENTORY PREVIEW</div><div class="sh-line"></div></div>
           <div id="wallet-inv-preview" style="font-size:13px;color:rgba(201,168,76,0.55);line-height:1.6">—</div>
           <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
-            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/" target="_blank" style="text-decoration:none">Crafting bag</a>
-            <a class="hero-cta secondary" href="/app/wallet" style="text-decoration:none">Full War Chest app</a>
+            <a class="hero-cta secondary" href="https://grudge-crafting.puter.site/?from=grudge.studio" target="_blank" rel="noopener" style="text-decoration:none">Crafting bag</a>
+            <a class="hero-cta secondary" href="/app/wallet" style="text-decoration:none">grudgeDot War Chest</a>
+            <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio-wallet" target="_blank" rel="noopener" style="text-decoration:none">Open Forge</a>
           </div>
         </div>
       </div>
@@ -942,6 +948,47 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
       </div>
     </div>
 
+    
+    <!-- FORGE PANEL -->
+    <div class="panel" id="panel-forge">
+      <div class="sh"><div class="sh-title">FORGE · STUDIO EDITOR</div><div class="sh-line"></div><div class="sh-badge">forge.grudge-studio.com</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 18px;line-height:1.5">
+        Canonical 3D scene / map / effects editor. Loads ObjectStore definitions + R2 assets.
+        Open Forge with SSO-friendly return to this hub via <code style="color:var(--gold)">?from=grudge.studio</code>.
+      </p>
+      <div class="hero-actions" style="margin-bottom:20px;flex-wrap:wrap">
+        <a class="hero-cta" href="https://forge.grudge-studio.com?from=grudge.studio" target="_blank" rel="noopener">LAUNCH FORGE</a>
+        <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio&amp;mode=scene" target="_blank" rel="noopener">SCENE MODE</a>
+        <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio&amp;mode=map" target="_blank" rel="noopener">MAP MODE</a>
+        <a class="hero-cta secondary" href="https://forge.grudge-studio.com?from=grudge.studio&amp;mode=effects" target="_blank" rel="noopener">EFFECTS</a>
+        <a class="hero-cta secondary" href="https://objectstore.grudge-studio.com/" target="_blank" rel="noopener">OBJECTSTORE</a>
+        <a class="hero-cta secondary" href="https://assets.grudge-studio.com" target="_blank" rel="noopener">ASSETS CDN</a>
+        <a class="hero-cta secondary" href="https://browse.grudge-studio.com" target="_blank" rel="noopener">BROWSE MESHES</a>
+      </div>
+      <div class="account-grid">
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">FORGE CONNECTS TO</div><div class="sh-line"></div></div>
+          <div style="font-size:13px;line-height:1.7;color:rgba(201,168,76,0.7)">
+            <div><span style="color:var(--gold)">Auth</span> — id.grudge-studio.com (Grudge ID JWT)</div>
+            <div><span style="color:var(--gold)">Player state</span> — Railway /api/characters · /api/account</div>
+            <div><span style="color:var(--gold)">Definitions</span> — objectstore.grudge-studio.com/api/v1/*.json</div>
+            <div><span style="color:var(--gold)">Binaries</span> — assets.grudge-studio.com (R2)</div>
+            <div><span style="color:var(--gold)">Hub return</span> — grudge.studio (this page)</div>
+          </div>
+        </div>
+        <div class="account-card">
+          <div class="sh" style="margin-bottom:12px"><div class="sh-title">RELATED STUDIO TOOLS</div><div class="sh-line"></div></div>
+          <div class="qlinks" style="margin:0">
+            <a class="qlink" href="https://character.grudge-studio.com?era=warlords" target="_blank" rel="noopener"><span class="qlink-icon">G</span>GCS</a>
+            <a class="qlink" href="https://ui.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">UI</span>UI EDITOR</a>
+            <a class="qlink" href="https://client.grudge-studio.com" target="_blank" rel="noopener"><span class="qlink-icon">CL</span>CLIENT</a>
+            <a class="qlink" href="https://grudge-studio-editor.vercel.app" target="_blank" rel="noopener"><span class="qlink-icon">ME</span>MAP EDITOR</a>
+            <a class="qlink" href="/app" target="_blank" rel="noopener"><span class="qlink-icon">DOT</span>grudgeDot APP</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- APPS PANEL -->
     <div class="panel" id="panel-apps">
       <div class="sh"><div class="sh-title">PUTER APPS</div><div class="sh-line"></div><div class="sh-badge" id="app-count-badge">61 APPS</div></div>
@@ -959,42 +1006,67 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
 
     <!-- DEPLOYMENTS -->
     <div class="panel" id="panel-deployments">
-      <div class="sh"><div class="sh-title">LIVE DEPLOYMENTS</div><div class="sh-line"></div><div class="sh-badge">PUTER.SITE</div></div>
+      <div class="sh"><div class="sh-title">LIVE DEPLOYMENTS</div><div class="sh-line"></div><div class="sh-badge">PRODUCTION FLEET + PUTER</div></div>
+      <p style="font-size:13px;color:rgba(201,168,76,0.5);margin:-4px 0 14px;line-height:1.5">
+        Canonical production origins (not Vercel deploy-hash URLs). Forge + games + studio tools first; Puter apps secondary.
+      </p>
+      <div class="filter-bar" id="deploy-filters">
+        <button type="button" class="filter-tag active" data-deploy-tag="all" onclick="filterDeploys('all', this)">ALL</button>
+        <button type="button" class="filter-tag" data-deploy-tag="core" onclick="filterDeploys('core', this)">CORE</button>
+        <button type="button" class="filter-tag" data-deploy-tag="studio" onclick="filterDeploys('studio', this)">STUDIO</button>
+        <button type="button" class="filter-tag" data-deploy-tag="games" onclick="filterDeploys('game', this)">GAMES</button>
+        <button type="button" class="filter-tag" data-deploy-tag="data" onclick="filterDeploys('data', this)">DATA</button>
+        <button type="button" class="filter-tag" data-deploy-tag="puter" onclick="filterDeploys('puter', this)">PUTER</button>
+      </div>
       <div class="deploy-grid" id="deploy-grid"></div>
     </div>
 
     <!-- FLEET TRUTH / OPS -->
     <div class="panel" id="panel-dns">
-      <div class="sh"><div class="sh-title">FLEET ONE TRUTH</div><div class="sh-line"></div><div class="sh-badge">PRODUCTION</div></div>
+      <div class="sh"><div class="sh-title">FLEET ONE TRUTH</div><div class="sh-line"></div><div class="sh-badge">PRODUCTION 2026</div></div>
 
       <div class="dns-card">
-        <h3>? Production endpoints (do not invent parallel SSOT)</h3>
-        <p style="font-size:13px;color:rgba(201,168,76,0.5);margin-bottom:14px">Launcher same-origin <code>/api/*</code> rewrites to these hosts.</p>
+        <h3>Production endpoints (do not invent parallel SSOT)</h3>
+        <p style="font-size:13px;color:rgba(201,168,76,0.5);margin-bottom:14px">
+          This hub (<code style="color:var(--gold)">grudge.studio</code>) same-origin <code>/api/*</code> rewrites to Railway + ID.
+        </p>
         <table class="dns-table">
           <tr><th>ROLE</th><th>HOST</th><th>SSOT</th><th>NOTE</th></tr>
+          <tr>
+            <td>Hub (grudgeDot)</td>
+            <td class="value">grudge.studio</td>
+            <td>Portal</td>
+            <td class="note">Accounts · wallet · Treaty · Forge entry · deploy map</td>
+          </tr>
           <tr>
             <td>Auth</td>
             <td class="value">id.grudge-studio.com</td>
             <td>JWT / SSO</td>
-            <td class="note">/login?redirect_uri= ? Railway auth impl</td>
+            <td class="note">/login?redirect_uri= → Railway auth impl</td>
           </tr>
           <tr>
             <td>Game data</td>
             <td class="value">grudge-api-production-0d46.up.railway.app</td>
             <td>Postgres</td>
-            <td class="note">characters � account bag � island � wallet</td>
+            <td class="note">characters · account bag · island · wallet · treaty</td>
+          </tr>
+          <tr>
+            <td>Forge editor</td>
+            <td class="value">forge.grudge-studio.com</td>
+            <td>Studio</td>
+            <td class="note">3D scene/map/effects · ObjectStore + R2</td>
           </tr>
           <tr>
             <td>Definitions</td>
             <td class="value">objectstore.grudge-studio.com/api/v1</td>
             <td>JSON</td>
-            <td class="note">recipes, items, races � not player state</td>
+            <td class="note">recipes, items, races — not player state</td>
           </tr>
           <tr>
             <td>Binaries</td>
             <td class="value">assets.grudge-studio.com</td>
             <td>R2</td>
-            <td class="note">icons, GLB, audio</td>
+            <td class="note">icons, GLB, audio, grudge-fleet.js</td>
           </tr>
           <tr>
             <td>AI</td>
@@ -1006,13 +1078,13 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
       </div>
 
       <div class="dns-card">
-        <h3>?? Retired / never use as player SSOT</h3>
+        <h3>Retired / never use as player SSOT</h3>
         <table class="dns-table">
           <tr><th>BAD</th><th>WHY</th><th>USE INSTEAD</th></tr>
           <tr>
             <td class="value">api.grudge-studio.com</td>
-            <td class="note">Split-brain � not Railway characters</td>
-            <td class="value">Railway /api/characters</td>
+            <td class="note">Split-brain — not Railway characters</td>
+            <td class="value">same-origin /api/* → Railway</td>
           </tr>
           <tr>
             <td class="value">MySQL 8 on VPS</td>
@@ -1029,120 +1101,73 @@ main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24
             <td class="note">Cache only</td>
             <td class="value">Railway + optional KV mirror</td>
           </tr>
+          <tr>
+            <td class="value">*.vercel.app deploy hashes</td>
+            <td class="note">Per-deploy instances</td>
+            <td class="value">stable *.grudge-studio.com aliases</td>
+          </tr>
         </table>
       </div>
 
       <div class="dns-card">
-        <h3>?? Scope matrix (account vs character)</h3>
+        <h3>Scope matrix (account vs character)</h3>
         <div class="code-block">
-<span class="comment"># Account scope � shared bag across all characters</span>
+<span class="comment"># Account scope — shared bag across all characters</span>
 GET  <span class="key">/api/account</span>
 GET  <span class="key">/api/account/resources</span>
 GET  <span class="key">/api/account/inventory</span>
 GET  <span class="key">/api/wallet</span>
+GET  <span class="key">/api/treaty/*</span>  <span class="comment"># friends · DMs · groups · servers</span>
 
-<span class="comment"># Character scope � UUID primary key, profession XP, equipment</span>
+<span class="comment"># Character scope — UUID primary key, profession XP, equipment</span>
 GET  <span class="key">/api/characters?era=warlords</span>
 GET  <span class="key">/api/characters/:id</span>
 POST <span class="key">/api/characters/:id/progress</span>  <span class="comment"># expectedRevision</span>
 
 <span class="comment"># Auth handoff from id.grudge-studio.com</span>
-?grudge_token=� ? POST <span class="key">/api/auth/grudge-bridge</span> { token, audience }
-?sso_token=� or ?token=� ? store as grudge_auth_token
+?grudge_token=… → POST <span class="key">/api/auth/grudge-bridge</span> { token, audience }
+?sso_token=… or ?token=… → store as grudge_auth_token
         </div>
       </div>
 
       <div class="dns-card">
-        <h3>?? Live product links</h3>
+        <h3>Live product links</h3>
         <div class="code-block">
+<span class="key">Hub</span>          <span class="val">https://grudge.studio</span>
 <span class="key">Warlords</span>     <span class="val">https://grudgewarlords.com</span>
+<span class="key">Forge</span>        <span class="val">https://forge.grudge-studio.com</span>
 <span class="key">Crafting</span>     <span class="val">https://grudge-crafting.puter.site</span>
 <span class="key">GCS</span>          <span class="val">https://character.grudge-studio.com</span>
-<span class="key">Forge</span>        <span class="val">https://forge.grudge-studio.com</span>
+<span class="key">Client</span>       <span class="val">https://client.grudge-studio.com</span>
 <span class="key">Fleet map</span>    <span class="val">https://fleet.grudge-studio.com</span>
-<span class="key">Launcher</span>     <span class="val">https://launcher.grudge-studio.com</span>
+<span class="key">GRUDOX</span>       <span class="val">https://grudox.grudge-studio.com</span>
+<span class="key">GameOpen</span>     <span class="val">https://gameopen.vercel.app</span>
 
 <span class="comment"># Probe health</span>
-curl <span class="val">https://launcher.grudge-studio.com/api/health</span>
+curl <span class="val">https://grudge.studio/api/health</span>
 curl <span class="val">https://grudge-api-production-0d46.up.railway.app/api/health</span>
         </div>
       </div>
 
       <div class="dns-card">
-        <h3>??? Player state lives in Railway Postgres (not this MySQL sketch)</h3>
+        <h3>Deploy this hub (grudgeDot → grudge.studio)</h3>
         <div class="code-block">
-<span class="comment">-- Conceptual only � real schema is Drizzle on Railway (GrudgeBuilder)</span>
-<span class="comment">-- users.grudge_id � accounts � characters (UUID) � home_islands � inventory</span>
+<span class="comment"># Repo: MolochDaGod/grudgedot-launcher</span>
+<span class="comment"># Vercel project: grudgedot-launcher (team grudgenexus)</span>
+<span class="comment"># Production aliases: grudge.studio · www.grudge.studio · dev.grudge-studio.com</span>
 
-CREATE TABLE IF NOT EXISTS <span class="key">users</span> (
-  id          CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  grudge_id   VARCHAR(255) UNIQUE NOT NULL,
-  puter_id    VARCHAR(255) UNIQUE,
-  username    VARCHAR(255) UNIQUE NOT NULL,
-  display_name TEXT,
-  email       VARCHAR(255) UNIQUE,
-  phone       TEXT,
-  password_hash TEXT,
-  <span class="comment">-- OAuth providers</span>
-  discord_id  VARCHAR(255) UNIQUE,
-  google_id   VARCHAR(255) UNIQUE,
-  github_id   VARCHAR(255) UNIQUE,
-  <span class="comment">-- Web3</span>
-  solana_wallet VARCHAR(255) UNIQUE,
-  crossmint_wallet TEXT,
-  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-  last_login  DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+npm run vercel-build   <span class="comment"># vite build + promote portal → index.html</span>
+vercel deploy --prod --scope grudgenexus
 
-CREATE TABLE IF NOT EXISTS <span class="key">characters</span> (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  user_id CHAR(36) REFERENCES users(id),
-  name TEXT, race TEXT, class TEXT,
-  level INT DEFAULT 1,
-  stats JSON DEFAULT (JSON_OBJECT()),
-  gear JSON DEFAULT (JSON_OBJECT()),
-  faction TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS <span class="key">game_sessions</span> (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  user_id CHAR(36) REFERENCES users(id),
-  game TEXT, data JSON DEFAULT (JSON_OBJECT()),
-  started_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  owner_id CHAR(36) REFERENCES users(id),
-  type TEXT, name TEXT, url TEXT,
-  metadata JSON DEFAULT (JSON_OBJECT()),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-        </div>
-      </div>
-
-      <div class="dns-card">
-        <h3>?? Deploy This Hub to gruda.grudgewarlords.com</h3>
-        <div class="code-block">
-<span class="comment"># 1. Upload grudge-hub-v2.html to Puter as index.html</span>
-<span class="comment">#    in the folder mapped to grudgestudio.puter.site</span>
-<span class="comment">#    (or any puter.site you add the CNAME for)</span>
-
-<span class="comment"># 2. In Puter File Manager:</span>
-<span class="comment">#    ? Navigate to your site folder</span>
-<span class="comment">#    ? Upload this file as index.html</span>
-<span class="comment">#    ? Done � changes are instant</span>
-
-<span class="comment"># 3. DNS CNAME added? Wait 5-30 min for propagation</span>
-<span class="comment">#    then visit: https://gruda.grudgewarlords.com</span>
+<span class="comment"># SPA (React grudgeDot) remains at /app → app.html</span>
+<span class="comment"># Forge stays external: forge.grudge-studio.com</span>
         </div>
       </div>
     </div>
 
     <!-- TECH STACK & DEPENDENCIES -->
     <div class="panel" id="panel-stack">
-      <div class="sh"><div class="sh-title">TECH STACK & DEPENDENCIES</div><div class="sh-line"></div><div class="sh-badge">VPS 74.208.155.229</div></div>
+      <div class="sh"><div class="sh-title">TECH STACK & DEPENDENCIES</div><div class="sh-line"></div><div class="sh-badge">RAILWAY · VERCEL · CF</div></div>
 
       <div class="dns-card">
         <h3>??? Backend Services (Docker Compose)</h3>
@@ -1153,7 +1178,8 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
           <tr><td>Game API</td><td class="value">Railway</td><td>—</td><td class="value">grudge-api-production-0d46</td></tr>
           <tr><td>AI Gateway</td><td class="value">CF Worker</td><td>—</td><td class="value">ai.grudge-studio.com</td></tr>
           <tr><td>Account / chars</td><td class="value">Railway</td><td>—</td><td class="value">/api/account · /api/characters</td></tr>
-          <tr><td>Launcher</td><td class="value">Vercel</td><td>—</td><td class="value">launcher.grudge-studio.com</td></tr>
+          <tr><td>Command Hub</td><td class="value">Vercel</td><td>—</td><td class="value">grudge.studio (grudgeDot)</td></tr>
+          <tr><td>Forge</td><td class="value">Vercel</td><td>—</td><td class="value">forge.grudge-studio.com</td></tr>
           <tr><td>Colyseus WS</td><td class="value">Railway</td><td>—</td><td class="value">wss://grudge-api-production-0d46…</td></tr>
           <tr><td>Postgres</td><td class="value">Railway</td><td>—</td><td class="note">characters · account · islands SSOT</td></tr>
           <tr><td>ObjectStore</td><td class="value">Worker</td><td>—</td><td class="value">objectstore.grudge-studio.com</td></tr>
@@ -1221,7 +1247,7 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
           <tr><td>Socket.IO /global</td><td>Server-wide broadcasts (kills, claims, events)</td><td class="value">ws.grudge-studio.com</td></tr>
           <tr><td>Socket.IO /pvp</td><td>PvP matchmaking + arena state</td><td class="value">ws.grudge-studio.com</td></tr>
           <tr><td>Redis Pub/Sub</td><td>Cross-process event bridge for WS namespaces</td><td class="value">6379 (internal)</td></tr>
-          <tr><td>ObjectStore API</td><td>Static game data (weapons, armor, recipes, races)</td><td class="value"><a href="https://molochdagod.github.io/ObjectStore" target="_blank" style="color:var(--gold)">GitHub Pages</a></td></tr>
+          <tr><td>ObjectStore API</td><td>Static game data (weapons, armor, recipes, races)</td><td class="value"><a href="https://objectstore.grudge-studio.com/" target="_blank" style="color:var(--gold)">GitHub Pages</a></td></tr>
         </table>
       </div>
 
@@ -1247,8 +1273,8 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
       <div class="sh"><div class="sh-title">AI COMMAND CONSOLE</div><div class="sh-line"></div><div class="sh-badge">GRUDGE AI</div></div>
 
       <div class="ai-shortcuts">
-        <button class="ai-sc" onclick="aiPrompt('Explain Grudge fleet ONE TRUTH: id.grudge-studio.com auth and Railway Postgres characters')">? FLEET TRUTH</button>
-        <button class="ai-sc" onclick="aiPrompt('How does launcher.grudge-studio.com proxy /api/characters to Railway?')">?? API PROXY</button>
+        <button class="ai-sc" onclick="aiPrompt('Explain Grudge fleet ONE TRUTH for grudge.studio hub: auth, Railway, Forge, ObjectStore')">? FLEET TRUTH</button>
+        <button class="ai-sc" onclick="aiPrompt('How does grudge.studio proxy /api/characters and /api/treaty to Railway?')">?? API PROXY</button>
         <button class="ai-sc" onclick="aiPrompt('Write a Solana wallet auth middleware for Express')">? SOLANA AUTH</button>
         <button class="ai-sc" onclick="aiPrompt('How do I set up Crossmint server-side wallet creation for game users?')">?? CROSSMINT SETUP</button>
         <button class="ai-sc" onclick="aiPrompt('Write a Discord OAuth2 callback route for Express')">?? DISCORD OAUTH</button>
@@ -1282,23 +1308,40 @@ CREATE TABLE IF NOT EXISTS <span class="key">assets</span> (
 </div>
 
 <script>
-// ===== GRUDGE STUDIO LAUNCHER � FLEET ONE TRUTH (2026-07) =====
-// Same-origin /api/* rewrites:
-//   /api/auth/*  ? id.grudge-studio.com  (Grudge ID)
-//   /api/*       ? Railway Postgres SSOT (characters, account, island, wallet)
+// ===== GRUDGE STUDIO HUB — grudgeDot merged (grudge.studio) =====
+// Same-origin /api/* → Railway Postgres SSOT (characters, account, island, wallet, treaty)
+// Auth → id.grudge-studio.com · Forge → forge.grudge-studio.com
 // Never use api.grudge-studio.com or MySQL as player-state SSOT.
 const FLEET = {
+  hub: 'https://grudge.studio',
   auth: 'https://id.grudge-studio.com',
   gameData: 'https://grudge-api-production-0d46.up.railway.app',
   assets: 'https://assets.grudge-studio.com',
   objectStore: 'https://objectstore.grudge-studio.com/api/v1',
+  objectStoreHome: 'https://objectstore.grudge-studio.com/',
   ai: 'https://ai.grudge-studio.com',
   warlords: 'https://grudgewarlords.com',
   crafting: 'https://grudge-crafting.puter.site',
   characters: 'https://character.grudge-studio.com',
   forge: 'https://forge.grudge-studio.com',
   fleetMap: 'https://fleet.grudge-studio.com',
+  client: 'https://client.grudge-studio.com',
+  browse: 'https://browse.grudge-studio.com',
+  ui: 'https://ui.grudge-studio.com',
+  grudox: 'https://grudox.grudge-studio.com',
+  gameopen: 'https://gameopen.vercel.app',
+  carrier: 'https://carrier.grudge-studio.com',
+  grudge6: 'https://grudge6.grudge-studio.com/game',
+  water: 'https://water.grudge-studio.com',
+  drive: 'https://drive.grudge-studio.com',
+  arena: 'https://grudge-arena.grudge-studio.com',
+  survival: 'https://survival.grudge-studio.com',
+  dcq: 'https://dcq.grudge-studio.com',
+  studioEditor: 'https://grudge-studio-editor.vercel.app',
+  engineGallery: 'https://grudge-engine-psi.vercel.app',
+  identityPortal: 'https://grudge-studio.com',
 };
+
 const ID_API   = '/api/auth';
 const WARLORDS = '/api/auth/discord';
 const GAME_API = '/api'; // same-origin ? Railway
@@ -1946,20 +1989,24 @@ renderApps(APPS);
 
 // ===== FLEET SERVICES � live Grudge Studio tools (consolidated truth) =====
 const SERVICES = [
-  { id:'warlords',   icon:'\u2694',       title:'Grudge Warlords',   desc:'Main game client — islands, combat, professions. Railway character SSOT.', path:'https://grudgewarlords.com', badge:'LIVE' },
-  { id:'characters', icon:'\ud83c\udfa8', title:'Character Studio',  desc:'Create/edit heroes (GCS). Saves to Railway /api/characters.', path:'https://character.grudge-studio.com?era=warlords', badge:'GCS' },
-  { id:'crafting',   icon:'\u2692\ufe0f', title:'Crafting Suite',    desc:'Shared account bag + per-character XP. Puter UI → Railway.', path:'https://grudge-crafting.puter.site/', badge:'CRAFT' },
-  { id:'forge',      icon:'\u2699\ufe0f', title:'Studio Forge',      desc:'3D scene / map editor (Three.js + ObjectStore assets).', path:'https://forge.grudge-studio.com', badge:'EDITOR' },
-  { id:'id',         icon:'\ud83d\udd11', title:'Grudge ID',         desc:'Unified auth gateway — login, SSO, Puter bridge.', path:'https://id.grudge-studio.com/login?redirect_uri=' + encodeURIComponent(CLIENT_URL + '/'), badge:'AUTH' },
-  { id:'account',    icon:'\ud83d\udc64', title:'Accounts',          desc:'Grudge ID profile, linked providers, display settings.', path:'#panel:account', badge:'ID' },
-  { id:'wallet',     icon:'\ud83d\udcb0', title:'Wallet / War Chest', desc:'Solana · Crossmint · GBUX (Railway /api/wallet).', path:'#panel:wallet', badge:'WEB3' },
-  { id:'treaty',     icon:'\ud83d\udcac', title:'Treaty',            desc:'Account-level friends, DMs, groups, fleet server chat.', path:'#panel:treaty', badge:'SOCIAL' },
-  { id:'fleet',      icon:'\ud83d\uddfa\ufe0f', title:'Fleet Map',   desc:'Live infrastructure topology of Workers, Railway, R2, Vercel.', path:'https://fleet.grudge-studio.com', badge:'OPS' },
-  { id:'objectstore',icon:'\ud83d\uddc4\ufe0f', title:'ObjectStore', desc:'Definitions JSON — recipes, items, races, biomes.', path:'https://objectstore.grudge-studio.com/api/v1/', badge:'DATA' },
-  { id:'assets',     icon:'\ud83c\udfa8', title:'Assets CDN',        desc:'R2 binaries — icons, GLB, audio at assets.grudge-studio.com.', path:'https://assets.grudge-studio.com', badge:'CDN' },
-  { id:'ai',         icon:'\u2728',       title:'AI Gateway',        desc:'ai.grudge-studio.com + Puter AI console (user-pays).', path:'https://ai.grudge-studio.com', badge:'AI' },
-  { id:'engine',     icon:'\ud83c\udfae', title:'Engine Gallery',    desc:'Babylon component demos (moved off grudge.studio root).', path:'https://grudge-engine-psi.vercel.app', badge:'DEV' },
+  { id:'warlords',   icon:'\u2694', title:'Grudge Warlords', desc:'Main game — islands, combat, professions. Railway character SSOT.', path:FLEET.warlords, badge:'LIVE', tag:'game' },
+  { id:'forge',      icon:'\u2699', title:'Studio Forge', desc:'3D scene / map / effects editor. ObjectStore + R2 assets.', path:FLEET.forge + '?from=grudge.studio', badge:'EDITOR', tag:'studio' },
+  { id:'characters', icon:'\uD83C\uDFA8', title:'Character Studio', desc:'Create/edit heroes (GCS). Saves to Railway /api/characters.', path:FLEET.characters + '?era=warlords&from=grudge.studio', badge:'GCS', tag:'studio' },
+  { id:'crafting',   icon:'\u2692', title:'Crafting Suite', desc:'Shared account bag + per-character XP. Puter UI → Railway.', path:FLEET.crafting + '/?from=grudge.studio', badge:'CRAFT', tag:'game' },
+  { id:'id',         icon:'\uD83D\uDD11', title:'Grudge ID', desc:'Unified auth — login, SSO, Puter bridge.', path:FLEET.auth + '/login?redirect_uri=' + encodeURIComponent(CLIENT_URL + '/'), badge:'AUTH', tag:'core' },
+  { id:'account',    icon:'\uD83D\uDC64', title:'Accounts', desc:'Grudge ID profile, linked providers, settings.', path:'#panel:account', badge:'ID', tag:'core' },
+  { id:'wallet',     icon:'\uD83D\uDCB0', title:'Wallet / War Chest', desc:'Solana · Crossmint · GBUX (Railway /api/wallet).', path:'#panel:wallet', badge:'WEB3', tag:'core' },
+  { id:'treaty',     icon:'\uD83D\uDCAC', title:'Treaty', desc:'Account friends, DMs, groups, fleet server chat.', path:'#panel:treaty', badge:'SOCIAL', tag:'core' },
+  { id:'client',     icon:'\uD83D\uDDA5', title:'Client', desc:'Fleet client shell (client.grudge-studio.com).', path:FLEET.client, badge:'CLIENT', tag:'studio' },
+  { id:'grudox',     icon:'\uD83C\uDFAE', title:'GRUDOX', desc:'Arcade / studio hub on grudox.grudge-studio.com.', path:FLEET.grudox, badge:'HUB', tag:'game' },
+  { id:'gameopen',   icon:'\u26A1', title:'GameOpen', desc:'Open combat/studio platform (SSO).', path:FLEET.gameopen, badge:'OPEN', tag:'game' },
+  { id:'fleet',      icon:'\uD83D\uDDFA', title:'Fleet Map', desc:'Live topology — Workers, Railway, R2, Vercel.', path:FLEET.fleetMap, badge:'OPS', tag:'data' },
+  { id:'objectstore',icon:'\uD83D\uDDC4', title:'ObjectStore', desc:'Definitions JSON — recipes, items, races.', path:FLEET.objectStore + '/master-recipes.json', badge:'DATA', tag:'data' },
+  { id:'assets',     icon:'\uD83D\uDDBC', title:'Assets CDN', desc:'R2 binaries — icons, GLB, audio.', path:FLEET.assets, badge:'CDN', tag:'data' },
+  { id:'browse',     icon:'\uD83D\uDD0D', title:'Browse', desc:'Mesh / equipment browser (browse.grudge-studio.com).', path:FLEET.browse, badge:'MESH', tag:'studio' },
+  { id:'ai',         icon:'\u2728', title:'AI Gateway', desc:'ai.grudge-studio.com + Puter AI console.', path:FLEET.ai, badge:'AI', tag:'data' },
 ];
+
 
 function renderServices() {
   const grid = document.getElementById('services-grid');
@@ -2011,44 +2058,102 @@ function unlockGatedServices() { renderServices(); }
 
 renderServices();
 
-// ===== DEPLOYMENTS DATA =====
-const DEPLOYS = [
-  'gruda-code-builder-character.puter.site','grudgestudio-2-v3n1.puter.site','grudgestudio.puter.site',
-  'bold-street-8528.puter.site','grudachain-command-center.puter.site','grudge-heros.puter.site',
-  'grudgewarlords.puter.site','grudge-angler-8e6afud0suk.puter.site','betaxgruda.puter.site',
-  'betagamegruda-e9r69.puter.site','grudge_login.puter.site','colorful-plane-531.puter.site',
-  'gruda-code.puter.site','grudaputer-nkkza.puter.site','generated-islands-l731yi.puter.site',
-  'grudgesozne-uvtggj.puter.site','grudgegruda-5b72ol.puter.site','grudgestudio-1-m3p7.puter.site',
-  'grudge-ai-cloud-mm636.puter.site','app-connection-26p04.puter.site','grudge-warlords-7dp9c.puter.site',
-  'authgrudge.puter.site','grudge-attack-system.puter.site','grudge-client-exi57.puter.site',
-  'grudgeweb-vh3c.puter.site','gruda-search-k7ilxk5jdxn.puter.site','grudge-network-zk1qm.puter.site',
-  'chatgrudge.puter.site','grudge-server-ambkk.puter.site','grudge.puter.site',
-  'grudge-cloud.puter.site','grudge-auth.puter.site','grudgecloud-85c9p.puter.site',
-  'meta-build-jb36g.puter.site','grudgegameengine-1-ln4hp.puter.site','grudaailegion-s9kqf.puter.site',
-  'tge.puter.site','grudachain-ve8e8.puter.site','grudge-launcher-xu9q5.puter.site',
-  'dapp-nft-grudge-sjnq4.puter.site','ga-ale.puter.site','ga-grdsprint.puter.site',
-  'pvpgn-gateway-bold-k.puter.site','server-status.puter.site','setup-guide.puter.site',
-  'downloads.puter.site','gateway-installer.puter.site','3dputer.puter.site',
-  'diligent-rain-7944.puter.site','gruda-code.puter.site',
+// ===== DEPLOYMENTS (production fleet first, Puter secondary) =====
+const PRODUCTION_DEPLOYS = [
+  { name: 'grudge.studio (this hub)', url: 'https://grudge.studio', tag: 'core', badge: 'HUB' },
+  { name: 'id.grudge-studio.com', url: 'https://id.grudge-studio.com/login', tag: 'core', badge: 'AUTH' },
+  { name: 'forge.grudge-studio.com', url: 'https://forge.grudge-studio.com?from=grudge.studio', tag: 'studio', badge: 'FORGE' },
+  { name: 'grudgewarlords.com', url: 'https://grudgewarlords.com', tag: 'game', badge: 'LIVE' },
+  { name: 'character.grudge-studio.com', url: 'https://character.grudge-studio.com?era=warlords', tag: 'studio', badge: 'GCS' },
+  { name: 'client.grudge-studio.com', url: 'https://client.grudge-studio.com', tag: 'studio', badge: 'CLIENT' },
+  { name: 'grudge-crafting.puter.site', url: 'https://grudge-crafting.puter.site/', tag: 'game', badge: 'CRAFT' },
+  { name: 'fleet.grudge-studio.com', url: 'https://fleet.grudge-studio.com', tag: 'data', badge: 'MAP' },
+  { name: 'objectstore.grudge-studio.com', url: 'https://objectstore.grudge-studio.com/', tag: 'data', badge: 'JSON' },
+  { name: 'assets.grudge-studio.com', url: 'https://assets.grudge-studio.com', tag: 'data', badge: 'R2' },
+  { name: 'browse.grudge-studio.com', url: 'https://browse.grudge-studio.com', tag: 'studio', badge: 'MESH' },
+  { name: 'ui.grudge-studio.com', url: 'https://ui.grudge-studio.com', tag: 'studio', badge: 'UI' },
+  { name: 'grudox.grudge-studio.com', url: 'https://grudox.grudge-studio.com', tag: 'game', badge: 'GX' },
+  { name: 'gameopen.vercel.app', url: 'https://gameopen.vercel.app', tag: 'game', badge: 'OPEN' },
+  { name: 'carrier.grudge-studio.com', url: 'https://carrier.grudge-studio.com', tag: 'game', badge: 'PVP' },
+  { name: 'water.grudge-studio.com', url: 'https://water.grudge-studio.com', tag: 'game', badge: 'TI' },
+  { name: 'drive.grudge-studio.com', url: 'https://drive.grudge-studio.com', tag: 'game', badge: 'DRIVE' },
+  { name: 'grudge-arena.grudge-studio.com', url: 'https://grudge-arena.grudge-studio.com', tag: 'game', badge: 'ARENA' },
+  { name: 'survival.grudge-studio.com', url: 'https://survival.grudge-studio.com', tag: 'game', badge: 'SURV' },
+  { name: 'dcq.grudge-studio.com', url: 'https://dcq.grudge-studio.com', tag: 'game', badge: 'DCQ' },
+  { name: 'grudge6.grudge-studio.com', url: 'https://grudge6.grudge-studio.com/game', tag: 'game', badge: 'G6' },
+  { name: 'ai.grudge-studio.com', url: 'https://ai.grudge-studio.com', tag: 'data', badge: 'AI' },
+  { name: 'dev.grudge-studio.com', url: 'https://dev.grudge-studio.com', tag: 'core', badge: 'DEV' },
+  { name: 'grudge-studio.com (portal)', url: 'https://grudge-studio.com', tag: 'core', badge: 'PORTAL' },
+  { name: 'grudgeDot /app SPA', url: '/app', tag: 'core', badge: 'APP' },
 ];
 
-document.getElementById('deploy-grid').innerHTML = DEPLOYS.map(d => `
-  <a class="deploy-row" href="https://${d}" target="_blank">
-    <div class="deploy-dot"></div>
-    <div class="deploy-name">${d}</div>
-  </a>`).join('');
+const PUTER_DEPLOYS = [
+  'grudgestudio.puter.site','grudge-crafting.puter.site','puter.com/app/warlords',
+  'puter.com/app/grudge-angler','puter.com/app/grudge-launcher','puter.com/app/GrudgeStudio',
+  'grudachain-command-center.puter.site','grudge-heros.puter.site','meta-build-jb36g.puter.site',
+].map((d) => ({
+  name: d,
+  url: d.startsWith('puter.com') ? 'https://' + d : 'https://' + d,
+  tag: 'puter',
+  badge: 'PUTER',
+}));
+
+const ALL_DEPLOYS = PRODUCTION_DEPLOYS.concat(PUTER_DEPLOYS);
+let deployTag = 'all';
+
+function renderDeploys(list) {
+  const grid = document.getElementById('deploy-grid');
+  if (!grid) return;
+  grid.innerHTML = list.map((d) => `
+    <a class="deploy-row" href="${d.url}" target="_blank" rel="noopener" title="${d.badge || ''}">
+      <div class="deploy-dot"></div>
+      <div class="deploy-name">${d.name}</div>
+      <div class="deploy-folder">${d.badge || d.tag || ''}</div>
+    </a>`).join('');
+}
+
+function filterDeploys(tag, el) {
+  deployTag = tag;
+  document.querySelectorAll('#deploy-filters .filter-tag').forEach((t) => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const list = tag === 'all' ? ALL_DEPLOYS : ALL_DEPLOYS.filter((d) => d.tag === tag);
+  renderDeploys(list);
+}
+
+renderDeploys(ALL_DEPLOYS);
+
+function goPanel(name, btn) {
+  const el = btn || document.querySelector('.nav-btn[data-panel="' + name + '"]');
+  switchPanel(name, el || null);
+  try {
+    if (['wallet','account','treaty','forge','deployments','apps','dns','stack','ai','overview'].includes(name)) {
+      const u = new URL(location.href);
+      if (name === 'overview') u.searchParams.delete('panel');
+      else u.searchParams.set('panel', name);
+      history.replaceState({}, '', u.pathname + (u.search || '') + (u.hash || ''));
+    }
+  } catch {}
+}
+
+// Wire Grudge ID quick link redirect_uri after CLIENT_URL is known
+(function wireIdLink() {
+  const a = document.getElementById('qlink-id');
+  if (a) a.href = FLEET.auth + '/login?redirect_uri=' + encodeURIComponent(location.origin + '/');
+})();
+
 
 // ===== AI CONSOLE � Powered by Puter.js (FREE, user-pays model) =====
-const AI_CONTEXT = `You are the Grudge Studio AI assistant for the grudgeDot launcher (launcher.grudge-studio.com).
+const AI_CONTEXT = `You are the Grudge Studio AI assistant for the canonical hub at grudge.studio (grudgeDot merged).
 ONE TRUTH fleet (2026):
-- Auth: id.grudge-studio.com (Grudge ID) � /login?redirect_uri= ? Railway auth implementation
-- Player SSOT: Railway Postgres grudge-api-production-0d46.up.railway.app � characters, account bag, islands, wallet
-- NEVER MySQL or api.grudge-studio.com as character SSOT (retired split-brain)
-- Definitions: objectstore.grudge-studio.com/api/v1 (JSON recipes/items)
-- Binaries: assets.grudge-studio.com (R2 CDN)
-- AI: ai.grudge-studio.com + Puter AI (user-pays)
-- Games: grudgewarlords.com, grudge-crafting.puter.site, forge.grudge-studio.com, character.grudge-studio.com
-- Inventory is account-shared; profession XP is per character UUID
+- Hub: https://grudge.studio — accounts, wallet, Treaty, Forge entry, deploy map
+- Auth: id.grudge-studio.com /login?redirect_uri= → Railway auth
+- Player SSOT: Railway Postgres grudge-api-production-0d46.up.railway.app — characters, account, islands, wallet, treaty
+- NEVER MySQL or api.grudge-studio.com as character SSOT
+- Forge: forge.grudge-studio.com (scene/map/effects) · ObjectStore + R2
+- Definitions: objectstore.grudge-studio.com/api/v1/*.json
+- Binaries: assets.grudge-studio.com
+- Games: grudgewarlords.com, grudge-crafting.puter.site, character.grudge-studio.com, grudox, gameopen
+- Inventory account-shared; profession XP per character UUID
 Be concise, technical, and production-ready.`;
 
 function aiPrompt(text) {
@@ -2490,7 +2595,7 @@ document.getElementById('treaty-input')?.addEventListener('keydown', (e) => {
       : path === '/apps' ? 'apps'
       : null;
     const p = fromQuery || fromPath;
-    if (p && ['wallet', 'account', 'treaty', 'apps', 'overview'].includes(p)) {
+    if (p && ['wallet', 'account', 'treaty', 'forge', 'deployments', 'apps', 'dns', 'stack', 'ai', 'overview'].includes(p)) {
       setTimeout(() => switchPanel(p, null), 400);
     }
   } catch {}
