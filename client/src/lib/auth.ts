@@ -57,11 +57,39 @@ export function storeAuth(data: {
 /** Clear all auth data. */
 function clearAuth() {
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+  localStorage.removeItem('grudge_puter_auth');
+  localStorage.removeItem('grudge_auth_provider');
 }
+
+// ── Token helpers ──
+
+/** Decode a JWT payload without verification (client-side only). */
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
+/** Check if a JWT is expired (or will expire within `bufferSeconds`). */
+export function isTokenExpired(token: string, bufferSeconds = 60): boolean {
+  const payload = decodeJwtPayload(token);
+  if (!payload || typeof payload.exp !== 'number') return true;
+  const nowSec = Math.floor(Date.now() / 1000);
+  return payload.exp - bufferSeconds <= nowSec;
+}
+
+// Canonical Grudge ID SSO (fleet ONE TRUTH)
+const GRUDGE_AUTH_LOGIN_URL = 'https://id.grudge-studio.com/login';
+const APP_ID = 'grudgedot';
 
 // ── Public API ──
 
-/** Get current auth data without redirecting. Returns null if not logged in. */
+/** Get current auth data without redirecting. Returns null if not logged in / expired. */
 export function getAuthData(): AuthData | null {
   const token = localStorage.getItem(KEYS.token);
   const grudgeId = localStorage.getItem(KEYS.grudgeId);
@@ -69,6 +97,11 @@ export function getAuthData(): AuthData | null {
   const username = localStorage.getItem(KEYS.username);
 
   if (!token) return null;
+
+  if (isTokenExpired(token)) {
+    clearAuth();
+    return null;
+  }
 
   return {
     token,
@@ -93,10 +126,31 @@ export function hasAuthToken(): boolean {
   return !!localStorage.getItem(KEYS.token);
 }
 
-/** Redirect to in-app auth page. */
+/**
+ * Build login URL. Prefers Grudge ID SSO (fleet allowlisted redirect_uri).
+ * Falls back to in-app /auth for local multi-flow testing.
+ */
+export function getLoginHref(customReturnUrl?: string): string {
+  let ret = customReturnUrl || (typeof window !== 'undefined' ? window.location.href.split('#')[0] : '/');
+  try {
+    const u = new URL(ret, typeof window !== 'undefined' ? window.location.origin : 'https://grudge.studio');
+    ['token', 'sso_token', 'jwt', 'grudge_token', 'launch_token'].forEach((k) =>
+      u.searchParams.delete(k),
+    );
+    ret = u.origin + u.pathname + (u.search || '');
+  } catch {
+    /* keep ret */
+  }
+  // Use SSO when not on localhost without proxy; keep /auth as progressive fallback
+  if (typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname)) {
+    return `/auth?return=${encodeURIComponent(ret)}`;
+  }
+  return `${GRUDGE_AUTH_LOGIN_URL}?redirect_uri=${encodeURIComponent(ret)}&app=${APP_ID}`;
+}
+
+/** Redirect to Grudge ID SSO (or local /auth on localhost). */
 export function redirectToLogin(customReturnUrl?: string) {
-  const returnUrl = encodeURIComponent(customReturnUrl || window.location.pathname);
-  window.location.href = `/auth?return=${returnUrl}`;
+  window.location.href = getLoginHref(customReturnUrl);
 }
 
 // ── Auth API base: same-origin proxy avoids CORS issues across all domains ──
