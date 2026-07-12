@@ -177,31 +177,35 @@
     },
     {
       "source": "/treaty",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/wallet",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
       "source": "/account",
-      "destination": "/portal.html"
+      "destination": "/index.html"
     },
     {
-      "source": "/",
-      "destination": "/portal.html"
+      "source": "/accounts",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/hub",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/launcher",
+      "destination": "/index.html"
     },
     {
       "source": "/app",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/app/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/((?!api/|assets/|favicon|apple-touch|admin|portal|robots\\.txt|manifest|grudge-logo|.*\\..*).*)",
-      "destination": "/index.html"
+      "destination": "/app.html"
     }
   ],
   "headers": [
