@@ -19,7 +19,10 @@
     "scan:models": "tsx server/scripts/scan-models.ts",
     "scan:models:custom": "tsx server/scripts/scan-models.ts --dir",
     "fleet:sweep": "tsx scripts/dns-sweep.ts",
-    "build:vercel": "vite build"
+    "build:vercel": "vite build",
+    "verify": "node scripts/ci-verify.mjs",
+    "ci:verify": "node scripts/ci-verify.mjs",
+    "check:ci": "node scripts/ci-verify.mjs && npm run build"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.54",

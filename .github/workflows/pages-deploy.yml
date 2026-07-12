@@ -1,8 +1,11 @@
 name: Deploy to Cloudflare Pages
 
+# Builds always on main/production. Publish only when Cloudflare secrets exist.
+# Missing CLOUDFLARE_* secrets → green skip, not red fail.
+
 on:
   push:
-    branches: [main]
+    branches: [main, production]
   workflow_dispatch:
 
 concurrency:
@@ -10,27 +13,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
+    name: build-pages
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: ".node-version"
           cache: npm
 
       - name: Install
-        run: npm install --no-audit --no-fund
+        run: npm ci
+
+      - name: Verify critical exports
+        run: node scripts/ci-verify.mjs
 
       - name: Build
         run: npm run vercel-build
         env:
-          # Fleet ONE TRUTH — Railway Postgres SSOT (not api.grudge-studio.com)
+          # Fleet ONE TRUTH — Railway Postgres SSOT
           VITE_AUTH_GATEWAY_URL: https://id.grudge-studio.com
           VITE_API_URL: ""
           VITE_GAME_DATA_URL: https://grudge-api-production-0d46.up.railway.app
@@ -40,6 +44,30 @@ jobs:
           VITE_AI_URL: https://ai.grudge-studio.com
           VITE_BADGE_READER_URL: https://edge.grudge-studio.com
 
+      - name: Upload pages artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-dist
+          path: dist/public
+          retention-days: 3
+
+  publish:
+    name: publish-cloudflare
+    needs: build
+    runs-on: ubuntu-latest
+    # Skip cleanly when token/account not configured
+    if: >
+      secrets.CLOUDFLARE_API_TOKEN != '' &&
+      secrets.CLOUDFLARE_ACCOUNT_ID != ''
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pages-dist
+          path: dist/public
+
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
@@ -47,5 +75,24 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: grudgedot
           directory: dist/public
-          branch: main
+          branch: ${{ github.ref_name }}
           wranglerVersion: "3"
+
+  # Always-green summary so the workflow status stays green when publish is skipped
+  status:
+    name: pages-status
+    needs: [build, publish]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "Build failed"
+            exit 1
+          fi
+          if [ "${{ needs.publish.result }}" = "failure" ]; then
+            echo "Publish failed"
+            exit 1
+          fi
+          echo "Build OK (publish: ${{ needs.publish.result }})"

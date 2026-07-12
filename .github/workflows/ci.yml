@@ -1,13 +1,24 @@
 name: CI
 
+# Always verify the app can install + build on every update to main/production.
+# Optional integrations (Drive sync, deploy) never fail the required gate.
+
 on:
   push:
-    branches: [ main ]
-  pull_request: {}
+    branches: [main, production]
+  pull_request:
+    branches: [main, production]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: build
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,11 +26,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: 'npm'
+          node-version-file: ".node-version"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify critical exports
+        run: node scripts/ci-verify.mjs
 
       - name: Google Drive sync (optional)
         env:
@@ -34,14 +48,19 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Safe defaults so client bundles without local .env
+          VITE_AUTH_GATEWAY_URL: https://id.grudge-studio.com
+          VITE_GAME_DATA_URL: https://grudge-api-production-0d46.up.railway.app
+          VITE_OBJECTSTORE_URL: https://objectstore.grudge-studio.com/api/v1
+          VITE_ASSETS_URL: https://assets.grudge-studio.com
+          VITE_AI_URL: https://ai.grudge-studio.com
 
-      # Optional: Deploy to Vercel via GitHub Action
-      # - name: Deploy to Vercel
-      #   if: github.ref == 'refs/heads/main'
-      #   uses: amondnet/vercel-action@v25
-      #   with:
-      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
-      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-      #     working-directory: .
-      #     scope: ${{ secrets.VERCEL_ORG_ID }}
+      - name: Upload dist artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-public
+          path: dist/public
+          if-no-files-found: warn
+          retention-days: 7
