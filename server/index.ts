@@ -70,6 +70,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health early so Railway probes work even if other setup is slow
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({
+    status: "ok",
+    version: process.env.npm_package_version || "2.0.0",
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 (async () => {
   // Auth routes proxy to auth-gateway — no DB required
   setupGrudgeAuth(app);
@@ -93,20 +103,10 @@ app.use((req, res, next) => {
       console.error(error);
     }
   } else {
-    log("Warning: DATABASE_URL not set - running without database (games still work)");
+    log("Warning: DATABASE_URL not set - running without database (game still work)");
   }
 
   const server = await registerRoutes(app);
-
-  // ── Health endpoint (used by RouteHealthBadge & uptime monitors) ──
-  app.get("/api/health", (_req: Request, res: Response) => {
-    res.json({
-      status: "ok",
-      version: process.env.npm_package_version || "2.0.0",
-      uptime: Math.floor(process.uptime()),
-      timestamp: new Date().toISOString(),
-    });
-  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -135,4 +135,14 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
-})();
+})().catch((err) => {
+  console.error("Fatal boot error:", err);
+  process.exit(1);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("uncaughtException:", err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("unhandledRejection:", err);
+});

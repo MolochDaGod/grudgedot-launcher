@@ -7,8 +7,20 @@ import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/** Resolve module dir for both ESM (import.meta) and CJS bundles. */
+function resolveModuleDir(): string {
+  try {
+    // ESM path
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const metaUrl = (import.meta as any)?.url as string | undefined;
+    if (metaUrl) return path.dirname(fileURLToPath(metaUrl));
+  } catch {
+    /* cjs bundle */
+  }
+  // CJS / dist/index.js → project root is parent of dist
+  return path.resolve(process.cwd());
+}
+const __dirname = resolveModuleDir();
 
 const viteLogger = createLogger();
 
