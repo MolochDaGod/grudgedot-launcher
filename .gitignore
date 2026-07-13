@@ -35,3 +35,9 @@ Grudge-Engine-Web-1/
 # Visual Studio
 .vs/
 
+
+# Jekyll
+docs/_site/
+docs/.jekyll-cache/
+docs/vendor/
+

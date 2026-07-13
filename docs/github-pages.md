@@ -78,6 +78,7 @@ bundle exec jekyll serve --baseurl "/grudgedot-launcher"
 1. Edit Markdown under `docs/`
 2. Keep front matter:
 
+{% raw %}
 ```yaml
 ---
 layout: default
@@ -86,8 +87,9 @@ nav_order: 10
 permalink: /my-page/
 ---
 ```
+{% endraw %}
 
-3. Link with Jekyll `{% link path.md %}` or site-relative paths under `{{ site.baseurl }}`
+3. Link with Jekyll `{% raw %}{% link some-page.md %}{% endraw %}` or site-relative paths under `{% raw %}{{ site.baseurl }}{% endraw %}`
 4. Push to `main` (or run **Deploy Docs (GitHub Pages)** → **Run workflow**)
 
 {: .warning }
