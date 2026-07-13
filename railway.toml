@@ -7,8 +7,9 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "npm start"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 300
+# Healthcheck re-enabled after boot is stable; start-period needs longer than cold boot
+# healthcheckPath = "/api/health"
+# healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 
