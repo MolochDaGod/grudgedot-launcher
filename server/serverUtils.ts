@@ -21,7 +21,9 @@ const __dirname_safe: string = (() => {
   try {
     // ESM fallback
     const { fileURLToPath } = require("url");
-    return path.dirname(fileURLToPath(import.meta.url));
+    const metaUrl = typeof import.meta !== "undefined" ? (import.meta as { url?: string }).url : undefined;
+    if (!metaUrl) return process.cwd();
+    return path.dirname(fileURLToPath(metaUrl));
   } catch {}
   return process.cwd();
 })();

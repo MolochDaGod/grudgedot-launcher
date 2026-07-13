@@ -4,7 +4,17 @@ import path from "path";
 import { fileURLToPath } from "url";
 import viteCompression from "vite-plugin-compression";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+function resolveConfigDir(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const metaUrl = (import.meta as any)?.url as string | undefined;
+    if (metaUrl) return path.dirname(fileURLToPath(metaUrl));
+  } catch {
+    /* cjs */
+  }
+  return process.cwd();
+}
+const __dirname = resolveConfigDir();
 
 export default defineConfig({
   plugins: [
