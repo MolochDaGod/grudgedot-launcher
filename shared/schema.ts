@@ -276,6 +276,12 @@ export const insertGrudgedotAssetSchema = createInsertSchema(grudgedotAssets).om
 export type InsertGrudgedotAsset = z.infer<typeof insertGrudgedotAssetSchema>;
 export type GrudgedotAsset = typeof grudgedotAssets.$inferSelect;
 
+/** Legacy aliases — server still imports pre-rebrand names */
+export const gdevelopAssets = grudgedotAssets;
+export const insertGdevelopAssetSchema = insertGrudgedotAssetSchema;
+export type InsertGdevelopAsset = InsertGrudgedotAsset;
+export type GdevelopAsset = GrudgedotAsset;
+
 // grudgeDot Tools Schema — game-tools metadata blob stored on rts projects
 export const grudgedotToolsSchema = z.object({
   behaviors: z.array(z.object({
@@ -298,6 +304,8 @@ export const grudgedotToolsSchema = z.object({
 });
 
 export type GrudgedotTools = z.infer<typeof grudgedotToolsSchema>;
+/** Legacy alias */
+export const gdevelopToolsSchema = grudgedotToolsSchema;
 
 export const rtsProjects = pgTable("rts_projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
