@@ -1,5 +1,11 @@
 source "https://rubygems.org"
+
+# GitHub Pages via Actions (custom workflow) — pin Jekyll 4 + just-the-docs.
+# Docs: https://docs.github.com/en/pages
+#        https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+
 gem "jekyll", "~> 4.3"
-gem "just-the-docs"
-gem "jekyll-seo-tag"
-gem "jekyll-sitemap"
+gem "just-the-docs", "~> 0.10"
+gem "jekyll-seo-tag", "~> 2.8"
+gem "jekyll-sitemap", "~> 1.4"
+gem "webrick", "~> 1.8"

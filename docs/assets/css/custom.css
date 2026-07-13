@@ -1,0 +1,107 @@
+/* Grudge Studio polish for just-the-docs (dark) */
+
+:root {
+  --grudge-ember: #f97316;
+  --grudge-blood: #dc2626;
+  --grudge-ink: #0b0b10;
+  --grudge-panel: #14141c;
+}
+
+body {
+  font-feature-settings: "ss01" on, "liga" on;
+}
+
+a {
+  text-underline-offset: 0.15em;
+}
+
+.site-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.main-content h1:first-child {
+  border-bottom: 1px solid rgba(249, 115, 22, 0.35);
+  padding-bottom: 0.4rem;
+}
+
+/* Homepage hero */
+.grudge-hero {
+  margin: 0 0 1.75rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: 12px;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(249, 115, 22, 0.18), transparent 55%),
+    radial-gradient(90% 90% at 100% 0%, rgba(220, 38, 38, 0.12), transparent 50%),
+    var(--grudge-panel, #14141c);
+}
+
+.grudge-hero h1 {
+  margin-top: 0 !important;
+  border: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.grudge-hero p {
+  margin-bottom: 0.75rem;
+  opacity: 0.92;
+}
+
+.grudge-hero .btn {
+  margin-right: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+/* Card grid */
+.grudge-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.85rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.grudge-card {
+  display: block;
+  padding: 1rem 1.05rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none !important;
+  color: inherit !important;
+  transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.grudge-card:hover {
+  border-color: rgba(249, 115, 22, 0.55);
+  background: rgba(249, 115, 22, 0.08);
+  transform: translateY(-1px);
+}
+
+.grudge-card strong {
+  display: block;
+  color: #f8fafc;
+  margin-bottom: 0.35rem;
+  font-size: 1.02rem;
+}
+
+.grudge-card span {
+  display: block;
+  opacity: 0.8;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+/* Status table polish */
+.main-content table {
+  font-size: 0.95rem;
+}
+
+.main-content code {
+  border-radius: 4px;
+}
+
+/* Side nav active accent */
+.nav-list .nav-list-item .nav-list-link.active {
+  box-shadow: inset 3px 0 0 var(--grudge-ember);
+}

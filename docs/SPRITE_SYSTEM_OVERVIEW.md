@@ -1,8 +1,11 @@
 ---
-title: Sprite System Overview
+layout: default
+title: Sprite system
 nav_order: 5
+description: Layered sprite animation architecture for grudgeDot.
+permalink: /sprite-system-overview/
 ---
-# Sprite Animation System - Technical Overview
+# Sprite Animation System — Technical Overview
 
 ## Architecture
 

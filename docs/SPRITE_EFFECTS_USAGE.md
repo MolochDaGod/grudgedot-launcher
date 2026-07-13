@@ -1,6 +1,9 @@
 ---
-title: Sprite Effects Usage
-nav_order: 4
+layout: default
+title: Sprite effects
+nav_order: 6
+description: Effects and projectile overlays with the grudgeDot sprite loader.
+permalink: /sprite-effects-usage/
 ---
 # Sprite Effects & Projectile Usage Guide
 

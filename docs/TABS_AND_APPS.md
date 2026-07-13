@@ -1,6 +1,9 @@
 ---
-title: Tabs and Apps
-nav_order: 6
+layout: default
+title: Tabs & apps
+nav_order: 7
+description: Organize and scaffold game tabs and apps in the grudgeDot launcher.
+permalink: /tabs-and-apps/
 ---
 # Tabs, Apps, and Project Organization
 

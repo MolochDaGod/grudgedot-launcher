@@ -1,6 +1,9 @@
 ---
-title: Backend Connection Guide
-nav_order: 3
+layout: default
+title: Backend connections
+nav_order: 4
+description: Production proxy architecture for Grudge Studio backends.
+permalink: /backend-connection-guide/
 ---
 # Grudge Backend Connection Guide
 

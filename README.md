@@ -1,5 +1,11 @@
 # grudgeDot — Grudge Studio Launcher
 > Games, crafting, AI agents, CNFT character ownership, and dev tools for the Grudge Warlords universe, wrapped in a single launcher.
+## Documentation
+
+**Live docs (GitHub Pages):** [https://molochdagod.github.io/grudgedot-launcher/](https://molochdagod.github.io/grudgedot-launcher/)
+
+Source: `docs/` · published with a **GitHub Actions** workflow (Settings → Pages → Source: **GitHub Actions**). See [docs/github-pages.md](docs/github-pages.md). Do not publish raw Markdown from a branch.
+
 ## Overview
 grudgeDot is the full-stack web launcher for Grudge Studio. It hosts multiple games and creator tools on top of a shared **universal hero system** — the same 8 WCS attributes (Strength, Vitality, Endurance, Intellect, Wisdom, Dexterity, Agility, Tactics), tier gear (T0–T5), professions, and crafting — so a character created once lives across every Grudge Warlords title.
 Characters and home islands are owned on-chain as **Solana cNFTs via Crossmint**. The canonical character creation flow lives in [Grudge Builder](https://github.com/MolochDaGod/Grudge-Builder); any Grudge game (Gruda Wars, Warlord Crafting Suite, grudgeDot, etc.) reads a player's cNFT to load their hero.

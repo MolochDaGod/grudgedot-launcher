@@ -1,6 +1,9 @@
 ---
-title: AI Systems Guide
-nav_order: 2
+layout: default
+title: AI systems
+nav_order: 3
+description: AIWorker, GRUDA Legion, agents, combat AI, sprites, and cNFT practices for grudgeDot.
+permalink: /ai-systems-guide/
 ---
 # AI Systems Guide — grudgeDot (GGE)
 
@@ -191,7 +194,7 @@ Attributes array on each cNFT: Race, Class, Level, Strength, Vitality, Endurance
 
 ## 8. Adding New Games
 
-Follow the tab system in `docs/TABS_AND_APPS.md`:
+Follow the tab system in [Tabs & apps]({% link TABS_AND_APPS.md %}):
 
 1. `npm run scaffold:tab {slug} "{Title}"` — creates tab config, entry component, asset dirs
 2. Register in `client/src/tabs.registry.json`
@@ -203,7 +206,7 @@ Follow the tab system in `docs/TABS_AND_APPS.md`:
 
 ## 8. Backend Connection Architecture
 
-> Full details: [BACKEND_CONNECTION_GUIDE.md](BACKEND_CONNECTION_GUIDE.md)
+> Full details: [Backend connections]({% link BACKEND_CONNECTION_GUIDE.md %})
 
 ### Proxy Pattern (Critical for All Grudge Apps)
 
