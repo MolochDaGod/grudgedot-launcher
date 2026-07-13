@@ -3,9 +3,11 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Install dependencies (npm install is more resilient when lock drifts)
+# Install dependencies.
+# --ignore-scripts avoids native gyp packages (fast-find-in-files, canvas, etc.)
+# that are not required for the launcher server runtime.
 COPY package*.json ./
-RUN npm install --omit=dev=false --legacy-peer-deps
+RUN npm install --legacy-peer-deps --ignore-scripts
 
 # App sources
 COPY server/ ./server/
