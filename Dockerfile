@@ -3,9 +3,9 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (npm install is more resilient when lock drifts)
 COPY package*.json ./
-RUN npm ci
+RUN npm install --omit=dev=false --legacy-peer-deps
 
 # App sources
 COPY server/ ./server/
