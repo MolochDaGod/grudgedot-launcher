@@ -6,8 +6,21 @@ import { Skull, ArrowLeft, Sword, Shield, Wand2, Footprints } from 'lucide-react
 import { Link } from 'wouter';
 import { GrudgeGameWrapper } from '@/components/GrudgeGameWrapper';
 import type { GrudgeGameSession } from '@/hooks/useGrudgeGameSession';
+import { TVS_CRYPT, TVS_PREFIX } from '@/lib/tvs-cdn';
 // SpriteEffects2DManager removed (Three.js) — 2D effects will be rebuilt
 type SpriteEffects2DManager = { spawnAt: (type: string, x: number, y: number, color: string, opts?: any) => void; dispose: () => void };
+
+/** Floor flavor tied to TVS cathedral / knights / wizards packs (D1/R2). */
+const TVS_FLOOR_THEMES = [
+  { pack: 'voxel-cathedral', label: 'Cathedral Crypt', enemy: 'Undead', unit: 'voxel-cathedral-crusader' },
+  { pack: 'voxel-knights', label: 'Keep Catacombs', enemy: 'Fallen Knight', unit: 'voxel-knights-champion' },
+  { pack: 'voxel-wizards', label: 'Arcane Vault', enemy: 'Warlock', unit: 'voxel-wizards-warlock' },
+  { pack: 'voxel-rangers', label: 'Wild Sepulcher', enemy: 'Shade Archer', unit: 'voxel-rangers-hooded' },
+] as const;
+
+function tvsThemeForFloor(floor: number) {
+  return TVS_FLOOR_THEMES[(floor - 1) % TVS_FLOOR_THEMES.length];
+}
 
 // ── Tile types ─────────────────────────────────────────────────────
 
@@ -844,7 +857,13 @@ function CryptCrawlersInner({ session }: { session: GrudgeGameSession }) {
           <div className="flex items-center gap-3">
             <Link href="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
             <div className="p-2 rounded-lg bg-primary/20"><Skull className="h-6 w-6 text-primary" /></div>
-            <div><h1 className="text-xl font-bold">Crypt Crawlers</h1><p className="text-sm text-muted-foreground">Dungeon Crawler — Descend the Crypts</p></div>
+            <div>
+              <h1 className="text-xl font-bold">Crypt Crawlers</h1>
+              <p className="text-sm text-muted-foreground">DCQ · Top-down · TVS cathedral / knights / wizards</p>
+            </div>
+            <Badge variant="outline" className="ml-auto text-[10px] border-amber-700/50 text-amber-200">
+              D1/R2 · {TVS_PREFIX.replace('https://', '')}
+            </Badge>
           </div>
         </div>
         <div className="flex-1 p-6 overflow-auto">
@@ -852,6 +871,9 @@ function CryptCrawlersInner({ session }: { session: GrudgeGameSession }) {
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-1">Choose Your Class</h2>
               <p className="text-muted-foreground text-sm">Each class has unique stats and a special ability</p>
+              <p className="text-[11px] text-amber-500/80 mt-2 tracking-wide uppercase">
+                Floor themes rotate: Cathedral · Keep · Arcane · Wild Sepulcher
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {CLASSES.map((cls, i) => {
@@ -891,6 +913,16 @@ function CryptCrawlersInner({ session }: { session: GrudgeGameSession }) {
                 <p>E — Interact (doors, stairs, chests)</p>
               </div>
             </CardContent></Card>
+            <Card className="bg-card/20 border-amber-900/30"><CardContent className="p-4">
+              <h4 className="font-bold mb-2 text-amber-200/90">TVS content map</h4>
+              <div className="text-xs text-muted-foreground space-y-1 font-mono">
+                {TVS_FLOOR_THEMES.map((t) => (
+                  <p key={t.pack}>{t.label} · {t.pack} · {t.unit}</p>
+                ))}
+                <p className="pt-1 opacity-70">Crypt props: statue · grave · cathedral · crusader</p>
+                <p className="opacity-50 break-all">CDN {TVS_CRYPT.cathedral.model}</p>
+              </div>
+            </CardContent></Card>
           </div>
         </div>
       </div>
@@ -898,15 +930,23 @@ function CryptCrawlersInner({ session }: { session: GrudgeGameSession }) {
   }
 
   // ── Play Screen ──────────────────────────────────────────────
+  const theme = tvsThemeForFloor(floorRef.current || 1);
 
   return (
     <div className="flex flex-col h-full bg-black" data-testid="page-crypt-crawlers">
+      <div className="absolute top-2 left-2 z-20 pointer-events-none">
+        <Badge variant="outline" className="bg-black/70 border-amber-800/40 text-amber-100 text-[10px]">
+          F{floorRef.current || 1} · {theme.label} · {theme.enemy}
+        </Badge>
+      </div>
       <div ref={containerRef} className="flex-1 flex items-center justify-center" style={{ position: 'relative' }}>
         <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} style={{ width: '100%', maxHeight: '100%', objectFit: 'contain', imageRendering: 'pixelated' }} />
         <canvas ref={miniRef} className="absolute top-2 right-2 border border-gray-700" style={{ width: '96px', height: '72px', imageRendering: 'pixelated' }} />
       </div>
       <div className="p-1 bg-black/80 flex justify-center gap-4 text-xs text-muted-foreground">
         <span>WASD:move J:atk K:special E:interact</span>
+        <span>|</span>
+        <span className="text-amber-600/80">TVS {theme.pack}</span>
         <span>|</span>
         <Button variant="ghost" size="sm" className="h-5 text-xs" onClick={() => setPhase('select')}>Quit</Button>
       </div>
